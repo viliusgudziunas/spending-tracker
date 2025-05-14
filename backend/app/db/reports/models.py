@@ -85,7 +85,7 @@ class Transaction(ReportsBase):
     fee: Mapped[float] = mapped_column(Integer, nullable=False)
     started_date: Mapped[str] = mapped_column(DateTime, nullable=False)
     completed_date: Mapped[str] = mapped_column(DateTime, nullable=False)
-    source: Mapped[TransactionSource] = mapped_column(Enum(TransactionSource))
+    source: Mapped[TransactionSource] = mapped_column(Enum(TransactionSource), default=TransactionSource.generated)
 
     report_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("report.id"), nullable=False)
     report: Mapped[Report] = relationship(back_populates="transactions")
