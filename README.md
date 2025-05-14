@@ -21,7 +21,7 @@ cd spending-tracker
 To start in development mode with file watching:
 
 ```bash
-docker-compose up --build --watch
+docker compose up --build --watch
 ```
 
 This will start three services:
@@ -60,5 +60,5 @@ The frontend is built with:
 To stop all services:
 
 ```bash
-docker-compose down
+docker compose down
 ```
