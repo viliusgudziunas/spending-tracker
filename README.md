@@ -18,8 +18,10 @@ cd spending-tracker
 
 ### Start the application
 
+To start in development mode with file watching:
+
 ```bash
-docker-compose up --build
+docker-compose up --build --watch
 ```
 
 This will start three services:

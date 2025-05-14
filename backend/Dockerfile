@@ -17,4 +17,4 @@ COPY ./app /code/app/
 
 ENV PATH="/code/.venv/bin:$PATH"
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--reload"]

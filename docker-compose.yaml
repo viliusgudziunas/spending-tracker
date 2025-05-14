@@ -26,6 +26,15 @@ services:
       - ORIGIN_URL=http://localhost:5173
     depends_on:
       - postgres
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /code
+          ignore:
+            - .venv/
+        - action: rebuild
+          path: ./backend/poetry.lock
 
   frontend:
     build:
@@ -37,11 +46,17 @@ services:
       - "5173:5173"
     environment:
       - VITE_API_URL=http://localhost:8000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     depends_on:
       - backend
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /code
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./frontend/package-lock.json
 
 volumes:
   postgres_data:
