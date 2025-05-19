@@ -13,7 +13,7 @@ async def parse_upload_file(file: UploadFile) -> pd.DataFrame:
 
 
 def parse_statement(statement: pd.DataFrame) -> list[dict[Hashable, Any]]:
-    current_account = statement[statement["Product"] == "Current"]
+    current_account = statement[statement["Product"] != "Deposit"]
     current_account = current_account.rename(
         columns={col: col.replace(" ", "_").lower() for col in current_account.columns},
     )
