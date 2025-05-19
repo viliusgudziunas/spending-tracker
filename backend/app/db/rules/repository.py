@@ -148,6 +148,13 @@ def update_filter(db: Session, filter_: Filter, filter_dto: UpdateFilterDTO) -> 
     return filter_
 
 
+def delete_filter(db: Session, filter_id: uuid.UUID) -> None:
+    filter_ = get_filter(db=db, filter_id=filter_id)
+
+    db.delete(filter_)
+    db.commit()
+
+
 class CreateSingleRuleDTO(CreateRuleDTO):
     filter_id: uuid.UUID
 

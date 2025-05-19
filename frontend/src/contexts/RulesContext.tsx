@@ -47,6 +47,7 @@ export interface RulesContextType {
         createFilter: (filter: CreateFilterPayload) => Promise<Filter>;
         fetchCategories: () => Promise<void>;
         updateFilter: (filterId: string, payload: UpdateFilterPayload) => Promise<Filter>;
+        deleteFilter: (filterId: string) => Promise<void>;
     };
     state: {
         categories: Category[];
@@ -59,6 +60,7 @@ const defaultContext: RulesContextType = {
         createFilter: async () => ({} as Filter),
         fetchCategories: async () => {},
         updateFilter: async () => ({} as Filter),
+        deleteFilter: async () => {},
     },
     state: {
         categories: [],
@@ -76,6 +78,7 @@ export const RulesProvider: React.FC<PropsWithChildren> = ({ children }) => {
     const fetchCategories = async (): Promise<void> => setCategories(await rulesApi.fetchCategories());
     const updateFilter = async (filterId: string, payload: UpdateFilterPayload): Promise<Filter> =>
         rulesApi.updateFilter(filterId, payload);
+    const deleteFilter = async (filterId: string): Promise<void> => rulesApi.deleteFilter(filterId);
 
     return (
         <RulesContext.Provider
@@ -85,6 +88,7 @@ export const RulesProvider: React.FC<PropsWithChildren> = ({ children }) => {
                     createFilter,
                     fetchCategories,
                     updateFilter,
+                    deleteFilter,
                 },
                 state: {
                     categories,

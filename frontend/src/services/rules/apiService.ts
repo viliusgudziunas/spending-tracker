@@ -85,9 +85,19 @@ const updateFilter = async (filterId: string, payload: UpdateFilterPayload): Pro
     }
 };
 
+const deleteFilter = async (filterId: string): Promise<void> => {
+    try {
+        await axios.delete(`${API_URL}/filters/${filterId}`);
+    } catch (error) {
+        console.error("Error deleting filter:", error);
+        throw error;
+    }
+};
+
 export default {
     createCategory,
     createFilter,
     fetchCategories,
     updateFilter,
+    deleteFilter,
 };

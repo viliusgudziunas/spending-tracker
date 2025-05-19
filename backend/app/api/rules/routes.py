@@ -28,6 +28,7 @@ from app.db.rules.repository import (
     create_category,
     create_filter,
     create_rule,
+    delete_filter,
     get_categories,
     get_filter,
     get_filters,
@@ -109,6 +110,14 @@ def update_filter_(form_data: FilterInput, filter_id: uuid.UUID, db: Annotated[S
             ],
         ),
     )
+
+
+@router.delete("/filters/{filter_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_filter_(filter_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> None:
+    try:
+        delete_filter(db=db, filter_id=filter_id)
+    except FilterNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Filter not found") from exc
 
 
 @router.post("/filters/{filter_id}/rules", response_model=RuleResponse, status_code=status.HTTP_201_CREATED)

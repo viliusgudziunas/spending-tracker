@@ -31,7 +31,11 @@ class Filter(Base):
     category_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("category.id"), nullable=False)
     category: Mapped[Category] = relationship(back_populates="filters")
 
-    rule_groups: Mapped[list[RuleGroup]] = relationship("RuleGroup", back_populates="filter")
+    rule_groups: Mapped[list[RuleGroup]] = relationship(
+        "RuleGroup",
+        back_populates="filter",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"Filter({self.name=})"
@@ -51,7 +55,7 @@ class RuleGroup(Base):
     filter_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("filter.id"), nullable=False)
     filter: Mapped[Filter] = relationship(back_populates="rule_groups")
 
-    rules: Mapped[list[Rule]] = relationship("Rule", back_populates="group")
+    rules: Mapped[list[Rule]] = relationship("Rule", back_populates="group", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"RuleGroup({self.operator=!s})"
