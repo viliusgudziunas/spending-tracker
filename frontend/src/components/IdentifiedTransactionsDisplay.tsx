@@ -25,7 +25,7 @@ const IdentifiedTransactionsDisplay: React.FC<IdentifiedTransactionsDisplayProps
                         </thead>
                         <tbody>
                             {category.filters
-                                .filter((filter) => parseFloat(filter.amount) !== 0)
+                                .filter((filter) => filter.transactions.length > 0)
                                 .map((filter) => (
                                     <IdentifiedTransaction key={filter.id} filter={filter} />
                                 ))}
