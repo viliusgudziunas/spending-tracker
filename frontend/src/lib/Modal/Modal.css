@@ -16,6 +16,12 @@
     border-radius: 5px;
     width: 400px;
     max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal::-webkit-scrollbar {
+    display: none;
 }
 
 .modal-buttons {
