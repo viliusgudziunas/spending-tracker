@@ -87,6 +87,10 @@ class Transaction(ReportsBase):
     completed_date: Mapped[str] = mapped_column(DateTime, nullable=False)
     source: Mapped[TransactionSource] = mapped_column(Enum(TransactionSource), default=TransactionSource.generated)
 
+    # Denormalized columns for category and filter names
+    category_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    filter_name: Mapped[str | None] = mapped_column(String, nullable=True)
+
     report_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("report.id"), nullable=False)
     report: Mapped[Report] = relationship(back_populates="transactions")
 
