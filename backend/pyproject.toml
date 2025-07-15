@@ -17,6 +17,7 @@ sqlalchemy = "~2.0.35"
 uvicorn = "~0.30.6"
 
 [tool.poetry.group.dev.dependencies]
+alembic = "~1.16.4"
 pandas-stubs = "^2.2.2.240909"
 ruff = "^0.11.9"
 types-psycopg2 = "^2.9.21.20240819"
@@ -105,6 +106,14 @@ select = [
 ignore = [
     "TC001", # typing-only-third-party-import
     "TC003", # typing-only-third-party-import
+]
+
+[tool.ruff.lint.per-file-ignores]
+"migrations/*" = [
+    "INP001", # implicit-namespace-package
+]
+"migrations/env.py" = [
+    "E402", # module-import-not-at-top-of-file
 ]
 
 [tool.ruff.lint.pep8-naming]
