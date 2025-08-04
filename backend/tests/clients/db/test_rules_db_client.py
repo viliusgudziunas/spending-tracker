@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.clients.db.rules_db_client import get_all_categories, insert_new_category
-from app.schemas.spapi_category_schema import SpapiCategory
+from app.schemas.spapi.spapi_category_schema import SpapiCategory
 from tests.fixtures.rules import InsertCategory
 
 

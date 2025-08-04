@@ -1,5 +1,5 @@
 from app.parsers.spapi_rules_parser import parse_category_input_to_spapi
-from app.schemas.rules_schema import CategoryCreate
+from app.schemas.api.rules_schema import CategoryCreate
 
 
 class TestParseCategoryInputToSPAPI:

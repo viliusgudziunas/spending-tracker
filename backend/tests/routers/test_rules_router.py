@@ -3,7 +3,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.schemas.spapi_category_schema import SpapiCategory
+from app.schemas.spapi.spapi_category_schema import SpapiCategory
 from tests.fixtures.rules import GetCategory, InsertCategory
 
 
