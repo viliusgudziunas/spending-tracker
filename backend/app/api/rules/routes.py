@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_db
 from app.api.rules.models import (
     CategoryFullResponse,
-    CategoryInput,
     FilterFullResponse,
     FilterInput,
     RuleInput,
@@ -20,12 +19,10 @@ from app.db.rules.repository import (
     CreateRuleDTO,
     CreateRuleGroupDTO,
     CreateSingleRuleDTO,
-    DuplicateCategoryError,
     FilterNotFoundError,
     UpdateFilterDTO,
     UpdateRuleDTO,
     UpdateRuleGroupDTO,
-    create_category,
     create_filter,
     create_rule,
     delete_filter,
@@ -36,16 +33,6 @@ from app.db.rules.repository import (
 )
 
 router = APIRouter()
-
-
-@router.post("/categories", response_model=CategoryFullResponse, status_code=status.HTTP_201_CREATED)
-def create_category_(form_data: CategoryInput, db: Annotated[Session, Depends(get_db)]) -> Category:
-    try:
-        category = create_category(db=db, name=form_data.name)
-    except DuplicateCategoryError as exc:
-        raise HTTPException(status_code=400, detail="Category already exists") from exc
-
-    return category
 
 
 @router.get("/categories", response_model=list[CategoryFullResponse], status_code=status.HTTP_200_OK)
