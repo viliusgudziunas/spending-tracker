@@ -2,6 +2,8 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
+from tests.fixtures.rules import GetCategory
+
 
 class TestCreateCategory:
     endpoint = "/categories"
@@ -55,3 +57,12 @@ class TestCreateCategory:
             "id": response.json()["id"],
             "name": "Test Category",
         }
+
+    def test_creates_category_in_db(self, get_category: GetCategory) -> None:
+        response = self.client.post(self.endpoint, json={"name": "Test Category"})
+
+        category_id = response.json()["id"]
+        category = get_category(category_id)
+
+        assert category is not None
+        assert category.name == "Test Category"
