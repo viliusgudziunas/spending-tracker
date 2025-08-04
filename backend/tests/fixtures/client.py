@@ -22,7 +22,7 @@ def test_settings() -> TestSettings:
 
 @pytest.fixture
 def client(db_session: Session, test_settings: TestSettings) -> Generator[TestClient]:
-    def get_test_db() -> Generator[Session, None, None]:
+    def get_test_db() -> Generator[Session]:
         try:
             yield db_session
         finally:
