@@ -1,4 +1,4 @@
-from app.parsers.spapi_rules_parser import parse_category_input_to_spapi
+from app.parsers.categories_parser import parse_category_input_to_spapi
 from app.schemas.api.categories_schemas import CategoryCreate
 
 

@@ -3,7 +3,7 @@ from collections.abc import Iterable
 from sqlalchemy.orm import Session
 
 from app.clients.db.rules_db_client import get_all_categories, insert_new_category
-from app.parsers.spapi_rules_parser import parse_category_input_to_spapi
+from app.parsers.categories_parser import parse_category_input_to_spapi
 from app.schemas.api.categories_schemas import CategoryCreate, CategoryRead
 
 
