@@ -1,0 +1,148 @@
+"""initial migration
+
+Revision ID: 127d5718371c
+Revises:
+Create Date: 2025-08-04 22:43:23.489199
+
+"""
+
+from collections.abc import Sequence
+
+import sqlalchemy as sa
+from alembic import op
+
+# revision identifiers, used by Alembic.
+revision: str = "127d5718371c"
+down_revision: str | Sequence[str] | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
+
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    op.execute("create schema report;")
+    op.create_table(
+        "category",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("name"),
+    )
+    op.create_table(
+        "report",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+        schema="report",
+    )
+    op.create_table(
+        "filter",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("position", sa.Integer(), nullable=False),
+        sa.Column("category_id", sa.UUID(), nullable=False),
+        sa.ForeignKeyConstraint(["category_id"], ["category.id"]),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("name"),
+    )
+    op.create_table(
+        "category",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("report_id", sa.UUID(), nullable=False),
+        sa.ForeignKeyConstraint(["report_id"], ["report.report.id"]),
+        sa.PrimaryKeyConstraint("id"),
+        schema="report",
+    )
+    op.create_table(
+        "filter",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("position", sa.Integer(), nullable=False),
+        sa.Column("category_id", sa.UUID(), nullable=False),
+        sa.ForeignKeyConstraint(["category_id"], ["report.category.id"]),
+        sa.PrimaryKeyConstraint("id"),
+        schema="report",
+    )
+    op.create_table(
+        "rule_group",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("operator", sa.Enum("AND", "OR", name="rulegroupoperator"), nullable=False),
+        sa.Column("filter_id", sa.UUID(), nullable=False),
+        sa.ForeignKeyConstraint(["filter_id"], ["filter.id"]),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "transaction",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("description", sa.String(), nullable=False),
+        sa.Column("amount", sa.Float(), nullable=False),
+        sa.Column("fee", sa.Integer(), nullable=False),
+        sa.Column("started_date", sa.DateTime(), nullable=False),
+        sa.Column("completed_date", sa.DateTime(), nullable=False),
+        sa.Column("source", sa.Enum("generated", "override", name="transactionsource"), nullable=False),
+        sa.Column("report_id", sa.UUID(), nullable=False),
+        sa.Column("filter_id", sa.UUID(), nullable=True),
+        sa.ForeignKeyConstraint(["filter_id"], ["report.filter.id"]),
+        sa.ForeignKeyConstraint(["report_id"], ["report.report.id"]),
+        sa.PrimaryKeyConstraint("id"),
+        schema="report",
+    )
+    op.create_table(
+        "rule",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("type", sa.Enum("DESCRIPTION", "AMOUNT", name="ruletype"), nullable=False),
+        sa.Column(
+            "operator",
+            sa.Enum(
+                "EQUAL",
+                "NOT_EQUAL",
+                "GREATER_THAN",
+                "LESS_THAN",
+                "GREATER_THAN_EQUAL",
+                "LESS_THAN_EQUAL",
+                name="ruleoperator",
+            ),
+            nullable=False,
+        ),
+        sa.Column("value", sa.String(), nullable=False),
+        sa.Column("group_id", sa.UUID(), nullable=False),
+        sa.ForeignKeyConstraint(["group_id"], ["rule_group.id"]),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
+        "override",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("category_name", sa.String(), nullable=False),
+        sa.Column("filter_name", sa.String(), nullable=False),
+        sa.Column("transaction_id", sa.UUID(), nullable=False),
+        sa.Column("report_id", sa.UUID(), nullable=False),
+        sa.ForeignKeyConstraint(["report_id"], ["report.report.id"]),
+        sa.ForeignKeyConstraint(["transaction_id"], ["report.transaction.id"]),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("transaction_id"),
+        schema="report",
+    )
+    # ### end Alembic commands ###
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_table("override", schema="report")
+    op.drop_table("rule")
+    op.execute("drop type ruletype;")
+    op.execute("drop type ruleoperator;")
+    op.drop_table("transaction", schema="report")
+    op.execute("drop type transactionsource;")
+    op.drop_table("rule_group")
+    op.execute("drop type rulegroupoperator;")
+    op.drop_table("filter", schema="report")
+    op.drop_table("category", schema="report")
+    op.drop_table("filter")
+    op.drop_table("report", schema="report")
+    op.drop_table("category")
+    op.execute("drop schema report;")
+    # ### end Alembic commands ###
