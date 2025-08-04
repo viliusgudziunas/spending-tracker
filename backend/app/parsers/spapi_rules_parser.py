@@ -1,4 +1,4 @@
-from app.schemas.api.rules_schema import CategoryCreate
+from app.schemas.api.categories_schemas import CategoryCreate
 from app.schemas.spapi.spapi_category_schema import SpapiCategory
 
 
