@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.rules.models import Category
-from app.schemas.spapi.spapi_category_schema import SpapiCategory
+from app.schemas.spapi.categories_schemas import SpapiCategory
 
 
 def insert_new_category(db: Session, category: SpapiCategory) -> Category:
