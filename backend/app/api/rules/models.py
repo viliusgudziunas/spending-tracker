@@ -52,9 +52,3 @@ class FilterFullResponse(BaseModel):
     position: int
     category_id: uuid.UUID
     rule_groups: list[RuleGroupFullResponse]
-
-
-class CategoryFullResponse(BaseModel):
-    id: uuid.UUID
-    name: str
-    filters: list[FilterFullResponse]

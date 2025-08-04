@@ -1,8 +1,10 @@
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
-from tests.fixtures.rules import GetCategory
+from app.schemas.spapi_category_schema import SpapiCategory
+from tests.fixtures.rules import GetCategory, InsertCategory
 
 
 class TestCreateCategory:
@@ -66,3 +68,36 @@ class TestCreateCategory:
 
         assert category is not None
         assert category.name == "Test Category"
+
+
+class TestReadCategories:
+    endpoint = "/categories"
+
+    client: TestClient
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, client: TestClient) -> None:
+        self.client = client
+
+    def test_returns_200(self) -> None:
+        response = self.client.get(self.endpoint)
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_returns_categories(self, db_session: Session, insert_category: InsertCategory) -> None:
+        with db_session.begin():
+            category = insert_category(SpapiCategory(name="Test Category"))
+            category2 = insert_category(SpapiCategory(name="Test Category 2"))
+
+        response = self.client.get(self.endpoint)
+
+        assert response.json() == [
+            {
+                "id": str(category.id),
+                "name": "Test Category",
+            },
+            {
+                "id": str(category2.id),
+                "name": "Test Category 2",
+            },
+        ]

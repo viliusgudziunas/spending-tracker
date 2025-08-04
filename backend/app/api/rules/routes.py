@@ -7,13 +7,12 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
 from app.api.rules.models import (
-    CategoryFullResponse,
     FilterFullResponse,
     FilterInput,
     RuleInput,
     RuleResponse,
 )
-from app.db.rules.models import Category, Filter, Rule
+from app.db.rules.models import Filter, Rule
 from app.db.rules.repository import (
     CreateFilterDTO,
     CreateRuleDTO,
@@ -26,18 +25,12 @@ from app.db.rules.repository import (
     create_filter,
     create_rule,
     delete_filter,
-    get_categories,
     get_filter,
     get_filters,
     update_filter,
 )
 
 router = APIRouter()
-
-
-@router.get("/categories", response_model=list[CategoryFullResponse], status_code=status.HTTP_200_OK)
-def get_categories_(db: Annotated[Session, Depends(get_db)]) -> Iterable[Category]:
-    return get_categories(db=db)
 
 
 @router.post("/filters", response_model=FilterFullResponse, status_code=status.HTTP_201_CREATED)
