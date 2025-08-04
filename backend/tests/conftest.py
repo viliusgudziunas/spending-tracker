@@ -5,7 +5,8 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.db.base import Base, ReportsBase
+from app.db.reports.models import ReportsBase
+from app.db.rules.models import Base
 
 TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/spending-tracker"
 

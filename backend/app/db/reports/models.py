@@ -5,10 +5,12 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import UUID, DateTime, Enum, Float, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import UUID, DateTime, Enum, Float, ForeignKey, Integer, MetaData, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from app.db.base import ReportsBase
+
+class ReportsBase(DeclarativeBase):
+    metadata = MetaData(schema="report")
 
 
 def naive_utcnow() -> datetime:

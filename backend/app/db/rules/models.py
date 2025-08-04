@@ -4,9 +4,11 @@ import enum
 import uuid
 
 from sqlalchemy import UUID, Enum, ForeignKey, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from app.db.base import Base
+
+class Base(DeclarativeBase):
+    pass
 
 
 class Category(Base):

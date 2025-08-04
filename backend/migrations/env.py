@@ -16,9 +16,8 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from app.db.base import Base, ReportsBase
-from app.db.reports.models import Override, Report, Transaction  # noqa: F401
-from app.db.rules.models import Category, Filter, Rule, RuleGroup  # noqa: F401
+from app.db.reports.models import Override, Report, ReportsBase, Transaction  # noqa: F401
+from app.db.rules.models import Base, Category, Filter, Rule, RuleGroup  # noqa: F401
 
 # Combine metadata from both schemas
 target_metadata = Base.metadata
