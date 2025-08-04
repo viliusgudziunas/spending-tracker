@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_db
+from app.adapter.db import get_db
 from app.schemas.rules_schema import CategoryCreate, CategoryRead
 from app.use_cases.rules_use_cases import add_new_category
 
