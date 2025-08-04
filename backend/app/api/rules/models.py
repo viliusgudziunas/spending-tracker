@@ -5,10 +5,6 @@ from pydantic import BaseModel
 from app.db.rules.models import RuleGroupOperator, RuleOperator, RuleType
 
 
-class CategoryInput(BaseModel):
-    name: str
-
-
 class RuleInput(BaseModel):
     type: RuleType
     operator: RuleOperator

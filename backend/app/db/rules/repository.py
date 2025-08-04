@@ -1,34 +1,11 @@
 import uuid
 from collections.abc import Sequence
 
-from psycopg2.errors import UniqueViolation
 from pydantic import BaseModel
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.rules.models import Category, Filter, Rule, RuleGroup
-
-
-class DuplicateCategoryError(Exception):
-    pass
-
-
-def create_category(db: Session, name: str) -> Category:
-    category = Category(name=name)
-    db.add(category)
-
-    try:
-        db.commit()
-    except IntegrityError as exc:
-        db.rollback()
-        if isinstance(exc.orig, UniqueViolation):
-            raise DuplicateCategoryError from exc
-
-        raise
-
-    db.refresh(category)
-    return category
 
 
 def get_categories(db: Session) -> Sequence[Category]:
