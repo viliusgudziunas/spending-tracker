@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.adapter.db import get_db
 from app.schemas.api.categories_schemas import CategoryCreate, CategoryRead
-from app.use_cases.rules_use_cases import add_new_category, get_categories
+from app.use_cases.categories_use_cases import add_new_category, get_categories
 
 router = APIRouter()
 
