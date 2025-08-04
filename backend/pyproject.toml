@@ -19,6 +19,7 @@ uvicorn = "~0.30.6"
 [tool.poetry.group.dev.dependencies]
 alembic = "~1.16.4"
 pandas-stubs = "^2.2.2.240909"
+pytest = "^8.0.0"
 ruff = "^0.11.9"
 types-psycopg2 = "^2.9.21.20240819"
 
@@ -109,6 +110,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "S101", # assert
+]
 "migrations/*" = [
     "INP001", # implicit-namespace-package
 ]
