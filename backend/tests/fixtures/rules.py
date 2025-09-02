@@ -5,8 +5,9 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.rules.models import Category
+from app.db.rules.models import Category, Filter
 from app.schemas.spapi.categories_schemas import SpapiCategory
+from app.schemas.spapi.filters_schemas import SpapiFilter
 
 type GetCategory = Callable[[uuid.UUID], Category | None]
 
@@ -31,3 +32,17 @@ def insert_category(db_session: Session) -> InsertCategory:
         return category
 
     return _insert_category
+
+
+type InsertFilter = Callable[[SpapiFilter, uuid.UUID], Filter]
+
+
+@pytest.fixture
+def insert_filter(db_session: Session) -> InsertFilter:
+    def _insert_filter(spapi_filter: SpapiFilter, category_id: uuid.UUID) -> Filter:
+        filter_ = Filter(name=spapi_filter.name, position=spapi_filter.position, category_id=category_id)
+        db_session.add(filter_)
+        db_session.flush()
+        return filter_
+
+    return _insert_filter
