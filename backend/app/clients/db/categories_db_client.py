@@ -7,8 +7,8 @@ from app.db.rules.models import Category
 from app.schemas.spapi.categories_schemas import SpapiCategory
 
 
-def insert_new_category(db: Session, category: SpapiCategory) -> Category:
-    category = Category(name=category.name)
+def insert_new_category(db: Session, spapi_category: SpapiCategory) -> Category:
+    category = Category(name=spapi_category.name)
     db.add(category)
     db.flush()
     db.refresh(category)
