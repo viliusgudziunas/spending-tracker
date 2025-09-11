@@ -15,8 +15,8 @@ RULE_OPERATOR_MAP: dict[RuleOperator, Callable[[Decimal, Decimal], bool]] = {
     RuleOperator.NOT_EQUAL: operator.ne,
     RuleOperator.GREATER_THAN: operator.gt,
     RuleOperator.LESS_THAN: operator.lt,
-    RuleOperator.GREATER_THAN_EQUAL: operator.ge,
-    RuleOperator.LESS_THAN_EQUAL: operator.le,
+    RuleOperator.GREATER_THAN_OR_EQUAL: operator.ge,
+    RuleOperator.LESS_THAN_OR_EQUAL: operator.le,
 }
 
 
