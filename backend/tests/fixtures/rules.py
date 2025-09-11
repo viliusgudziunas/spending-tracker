@@ -5,9 +5,10 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.db.rules.models import Category, Filter
+from app.db.rules.models import Category, Filter, RuleGroup
 from app.schemas.spapi.categories_schemas import SpapiCategory
 from app.schemas.spapi.filters_schemas import SpapiFilter
+from app.schemas.spapi.rule_groups_schemas import SpapiRuleGroup
 
 type GetCategory = Callable[[uuid.UUID], Category | None]
 
@@ -46,3 +47,17 @@ def insert_filter(db_session: Session) -> InsertFilter:
         return filter_
 
     return _insert_filter
+
+
+type InsertRuleGroup = Callable[[SpapiRuleGroup, uuid.UUID], RuleGroup]
+
+
+@pytest.fixture
+def insert_rule_group(db_session: Session) -> InsertRuleGroup:
+    def _insert_rule_group(spapi_rule_group: SpapiRuleGroup, filter_id: uuid.UUID) -> RuleGroup:
+        rule_group = RuleGroup(operator=spapi_rule_group.operator, filter_id=filter_id)
+        db_session.add(rule_group)
+        db_session.flush()
+        return rule_group
+
+    return _insert_rule_group
