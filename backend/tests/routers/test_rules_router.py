@@ -3,6 +3,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.db.rules.models import RuleGroupOperator, RuleOperator, RuleType
 from app.schemas.spapi.categories_schemas import SpapiCategory
 from tests.fixtures.rules import GetCategory, InsertCategory
 
@@ -101,3 +102,75 @@ class TestReadCategories:
                 "name": "Test Category 2",
             },
         ]
+
+
+class TestCreateFilter:
+    endpoint = "/filters/v2"
+
+    client: TestClient
+    db_session: Session
+    insert_category: InsertCategory
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, client: TestClient, db_session: Session, insert_category: InsertCategory) -> None:
+        self.client = client
+        self.db_session = db_session
+        self.insert_category = insert_category
+
+    def test_accepts_simple_filter(self) -> None:
+        with self.db_session.begin():
+            category = self.insert_category(SpapiCategory(name="Test Category"))
+
+        response = self.client.post(
+            self.endpoint,
+            json={
+                "name": "Test Filter",
+                "category_id": str(category.id),
+                "rule_groups": [],
+            },
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+    def test_accepts_filter_with_position(self) -> None:
+        with self.db_session.begin():
+            category = self.insert_category(SpapiCategory(name="Test Category"))
+
+        response = self.client.post(
+            self.endpoint,
+            json={
+                "name": "Test Filter",
+                "position": 1,
+                "category_id": str(category.id),
+                "rule_groups": [],
+            },
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+    def test_accepts_filter_with_rule_groups(self) -> None:
+        with self.db_session.begin():
+            category = self.insert_category(SpapiCategory(name="Test Category"))
+
+        response = self.client.post(
+            self.endpoint,
+            json={
+                "name": "Test Filter",
+                "position": 1,
+                "category_id": str(category.id),
+                "rule_groups": [
+                    {
+                        "operator": RuleGroupOperator.OR,
+                        "rules": [
+                            {
+                                "type": RuleType.DESCRIPTION,
+                                "operator": RuleOperator.EQUAL,
+                                "value": "Test Rule",
+                            },
+                        ],
+                    },
+                ],
+            },
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.adapter.db import get_db
 from app.schemas.api.categories_schemas import CategoryCreate, CategoryRead
+from app.schemas.api.filters_schemas import FilterCreate
 from app.use_cases.categories_use_cases import add_new_category, get_categories
 
 router = APIRouter()
@@ -19,3 +20,8 @@ def create_category(input_category: CategoryCreate, db: Annotated[Session, Depen
 @router.get("/categories", response_model=list[CategoryRead], status_code=status.HTTP_200_OK)
 def read_categories(db: Annotated[Session, Depends(get_db)]) -> Iterable[CategoryRead]:
     return get_categories(db)
+
+
+@router.post("/filters/v2", status_code=status.HTTP_201_CREATED)
+def create_filter(input_filter: FilterCreate) -> None:
+    pass
