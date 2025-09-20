@@ -19,7 +19,14 @@ class TestInsertNewRuleGroup:
             category = insert_category(SpapiCategory(name="Test Category"))
             filter_ = insert_filter(SpapiFilter(name="Test Filter", position=1), category.id)
 
-            rule_group = insert_new_rule_group(db_session, SpapiRuleGroup(operator=RuleGroupOperator.AND), filter_.id)
+            rule_group = insert_new_rule_group(
+                db_session,
+                SpapiRuleGroup(
+                    operator=RuleGroupOperator.AND,
+                    rules=[],
+                ),
+                filter_.id,
+            )
 
         assert rule_group.id is not None
         assert rule_group.operator == RuleGroupOperator.AND
