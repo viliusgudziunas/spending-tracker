@@ -11,7 +11,15 @@ class TestInsertNewFilter:
         with db_session.begin():
             category = insert_category(SpapiCategory(name="Test Category"))
 
-            filter_ = insert_new_filter(db_session, SpapiFilter(name="Test Filter", position=1), category.id)
+            filter_ = insert_new_filter(
+                db_session,
+                SpapiFilter(
+                    name="Test Filter",
+                    position=1,
+                    rule_groups=[],
+                ),
+                category.id,
+            )
 
         assert filter_.id is not None
         assert filter_.name == "Test Filter"

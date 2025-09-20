@@ -24,7 +24,14 @@ class TestInsertNewRule:
     ) -> None:
         with db_session.begin():
             category = insert_category(SpapiCategory(name="Test Category"))
-            filter_ = insert_filter(SpapiFilter(name="Test Filter", position=1), category.id)
+            filter_ = insert_filter(
+                SpapiFilter(
+                    name="Test Filter",
+                    position=1,
+                    rule_groups=[],
+                ),
+                category.id,
+            )
             rule_group = insert_rule_group(
                 SpapiRuleGroup(
                     operator=RuleGroupOperator.AND,
