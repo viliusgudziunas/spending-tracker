@@ -17,5 +17,7 @@ def add_new_category(db: Session, input_category: CategoryCreate) -> CategoryRea
 
 
 def get_categories(db: Session) -> Iterable[CategoryRead]:
-    categories = get_all_categories(db)
+    with db.begin():
+        categories = get_all_categories(db)
+
     return [CategoryRead.model_validate(c) for c in categories]
