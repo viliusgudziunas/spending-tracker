@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from app.clients.db.filters_db_client import get_category_filters_max_position, insert_new_filter
+from app.clients.db.filters_db_client import get_all_filters, get_category_filters_max_position, insert_new_filter
 from app.schemas.spapi.categories_schemas import SpapiCategory
 from app.schemas.spapi.filters_schemas import SpapiFilter
 from tests.fixtures.rules import InsertCategory, InsertFilter
@@ -74,3 +74,40 @@ class TestGetCategoryFiltersMaxPosition:
 
         expected_max_position = -4
         assert get_category_filters_max_position(self.db_session, category.id) == expected_max_position
+
+
+class TestGetAllFilters:
+    db_session: Session
+    insert_category: InsertCategory
+    insert_filter: InsertFilter
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, db_session: Session, insert_category: InsertCategory, insert_filter: InsertFilter) -> None:
+        self.db_session = db_session
+        self.insert_category = insert_category
+        self.insert_filter = insert_filter
+
+    def test_gets_multiple_filters(self) -> None:
+        with self.db_session.begin():
+            category = self.insert_category(SpapiCategory(name="Test Category"))
+            filter1 = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category.id)
+            filter2 = self.insert_filter(SpapiFilter(name="Test Filter 2", position=2, rule_groups=[]), category.id)
+
+            filters = get_all_filters(self.db_session)
+
+        assert filters == [filter1, filter2]
+
+    def test_gets_a_single_filter(self) -> None:
+        with self.db_session.begin():
+            category = self.insert_category(SpapiCategory(name="Test Category"))
+            filter_ = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category.id)
+
+            filters = get_all_filters(self.db_session)
+
+        assert filters == [filter_]
+
+    def test_gets_no_filters(self) -> None:
+        with self.db_session.begin():
+            filters = get_all_filters(self.db_session)
+
+        assert filters == []

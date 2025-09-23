@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Iterable
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -21,3 +22,7 @@ def insert_new_filter(db: Session, spapi_filter: SpapiFilter, category_id: uuid.
 
 def get_category_filters_max_position(db: Session, category_id: uuid.UUID) -> int | None:
     return db.scalar(select(func.max(Filter.position)).where(Filter.category_id == category_id))
+
+
+def get_all_filters(db: Session) -> Iterable[Filter]:
+    return db.scalars(select(Filter)).all()
