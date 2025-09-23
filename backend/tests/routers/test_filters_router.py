@@ -204,3 +204,75 @@ class TestCreateFilter:
         assert filter_.rule_groups[0].rules[0].type == RuleType.DESCRIPTION
         assert filter_.rule_groups[0].rules[0].operator == RuleOperator.EQUAL
         assert filter_.rule_groups[0].rules[0].value == "Test Rule"
+
+
+class TestReadFilters:
+    endpoint = "/filters/v2"
+
+    client: TestClient
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, client: TestClient) -> None:
+        self.client = client
+
+    def test_returns_200(self) -> None:
+        response = self.client.get(self.endpoint)
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_returns_filters(
+        self,
+        db_session: Session,
+        insert_category: InsertCategory,
+        insert_filter: InsertFilter,
+    ) -> None:
+        with db_session.begin():
+            category = insert_category(SpapiCategory(name="Test Category"))
+            filter1 = insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category.id)
+            filter2 = insert_filter(SpapiFilter(name="Test Filter 2", position=2, rule_groups=[]), category.id)
+
+        response = self.client.get(self.endpoint)
+
+        assert response.json() == [
+            {
+                "id": str(filter1.id),
+                "name": "Test Filter",
+                "position": 1,
+                "category_id": str(category.id),
+            },
+            {
+                "id": str(filter2.id),
+                "name": "Test Filter 2",
+                "position": 2,
+                "category_id": str(category.id),
+            },
+        ]
+
+    def test_returns_filters_from_different_categories(
+        self,
+        db_session: Session,
+        insert_category: InsertCategory,
+        insert_filter: InsertFilter,
+    ) -> None:
+        with db_session.begin():
+            category1 = insert_category(SpapiCategory(name="Test Category"))
+            category2 = insert_category(SpapiCategory(name="Test Category 2"))
+            filter1 = insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category1.id)
+            filter2 = insert_filter(SpapiFilter(name="Test Filter 2", position=2, rule_groups=[]), category2.id)
+
+        response = self.client.get(self.endpoint)
+
+        assert response.json() == [
+            {
+                "id": str(filter1.id),
+                "name": "Test Filter",
+                "position": 1,
+                "category_id": str(category1.id),
+            },
+            {
+                "id": str(filter2.id),
+                "name": "Test Filter 2",
+                "position": 2,
+                "category_id": str(category2.id),
+            },
+        ]
