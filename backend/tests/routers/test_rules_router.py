@@ -141,6 +141,12 @@ class TestCreateFilter:
         )
 
         assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {
+            "id": response.json()["id"],
+            "name": "Test Filter",
+            "position": 0,
+            "category_id": str(category.id),
+        }
 
     def test_inserts_filter_into_database(self) -> None:
         with self.db_session.begin():
@@ -155,7 +161,7 @@ class TestCreateFilter:
             },
         )
 
-        filter_id = uuid.UUID(str(response.json()))
+        filter_id = uuid.UUID(response.json()["id"])
         filter_ = self.get_filter(filter_id)
         assert filter_ is not None
         assert filter_.name == "Test Filter"
@@ -176,6 +182,12 @@ class TestCreateFilter:
         )
 
         assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {
+            "id": response.json()["id"],
+            "name": "Test Filter",
+            "position": 1,
+            "category_id": str(category.id),
+        }
 
     def test_inserts_filter_with_position_into_database(self) -> None:
         with self.db_session.begin():
@@ -191,7 +203,7 @@ class TestCreateFilter:
             },
         )
 
-        filter_id = uuid.UUID(str(response.json()))
+        filter_id = uuid.UUID(response.json()["id"])
         filter_ = self.get_filter(filter_id)
         assert filter_ is not None
         assert filter_.position == 1
@@ -221,6 +233,12 @@ class TestCreateFilter:
         )
 
         assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {
+            "id": response.json()["id"],
+            "name": "Test Filter",
+            "position": 0,
+            "category_id": str(category.id),
+        }
 
     def test_inserts_filter_with_rule_groups_into_database(self) -> None:
         with self.db_session.begin():
@@ -246,7 +264,7 @@ class TestCreateFilter:
             },
         )
 
-        filter_id = uuid.UUID(str(response.json()))
+        filter_id = uuid.UUID(response.json()["id"])
         filter_ = self.get_filter(filter_id)
         assert filter_ is not None
         assert len(filter_.rule_groups) == 1

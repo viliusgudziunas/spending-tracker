@@ -1,8 +1,17 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.schemas.api.rule_groups_schemas import RuleGroupCreate
+
+
+class FilterRead(BaseModel):
+    id: uuid.UUID
+    name: str
+    position: int
+    category_id: uuid.UUID
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FilterCreate(BaseModel):

@@ -1,4 +1,3 @@
-import uuid
 from collections.abc import Iterable
 from typing import Annotated
 
@@ -7,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.adapter.db import get_db
 from app.schemas.api.categories_schemas import CategoryCreate, CategoryRead
-from app.schemas.api.filters_schemas import FilterCreate
+from app.schemas.api.filters_schemas import FilterCreate, FilterRead
 from app.use_cases.categories_use_cases import add_new_category, get_categories
 from app.use_cases.filters_use_cases import add_new_filter
 
@@ -24,6 +23,6 @@ def read_categories(db: Annotated[Session, Depends(get_db)]) -> Iterable[Categor
     return get_categories(db)
 
 
-@router.post("/filters/v2", status_code=status.HTTP_201_CREATED)
-def create_filter(input_filter: FilterCreate, db: Annotated[Session, Depends(get_db)]) -> uuid.UUID:
+@router.post("/filters/v2", response_model=FilterRead, status_code=status.HTTP_201_CREATED)
+def create_filter(input_filter: FilterCreate, db: Annotated[Session, Depends(get_db)]) -> FilterRead:
     return add_new_filter(db, input_filter)

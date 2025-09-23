@@ -1,15 +1,13 @@
-import uuid
-
 from sqlalchemy.orm import Session
 
 from app.clients.db.filters_db_client import insert_new_filter
 from app.clients.db.rule_groups_db_client import insert_new_rule_group
 from app.clients.db.rules_db_client import insert_new_rule
 from app.parsers.filters_parser import parse_filter_input_to_spapi
-from app.schemas.api.filters_schemas import FilterCreate
+from app.schemas.api.filters_schemas import FilterCreate, FilterRead
 
 
-def add_new_filter(db: Session, input_filter: FilterCreate) -> uuid.UUID:
+def add_new_filter(db: Session, input_filter: FilterCreate) -> FilterRead:
     next_position = input_filter.position or 0
     spapi_filter = parse_filter_input_to_spapi(input_filter, next_position)
 
@@ -22,4 +20,4 @@ def add_new_filter(db: Session, input_filter: FilterCreate) -> uuid.UUID:
             for r in rg.rules:
                 insert_new_rule(db, r, rule_group.id)
 
-    return filter_.id
+    return FilterRead.model_validate(filter_)
