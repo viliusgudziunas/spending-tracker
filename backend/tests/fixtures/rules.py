@@ -35,6 +35,17 @@ def insert_category(db_session: Session) -> InsertCategory:
     return _insert_category
 
 
+type GetFilter = Callable[[uuid.UUID], Filter | None]
+
+
+@pytest.fixture
+def get_filter(db_session: Session) -> GetFilter:
+    def _get_filter(id_: uuid.UUID) -> Filter | None:
+        return db_session.scalar(select(Filter).where(Filter.id == id_))
+
+    return _get_filter
+
+
 type InsertFilter = Callable[[SpapiFilter, uuid.UUID], Filter]
 
 
