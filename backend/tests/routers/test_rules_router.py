@@ -108,7 +108,7 @@ class TestReadCategories:
 
 
 class TestCreateFilter:
-    endpoint = "/filters/v2"
+    endpoint = "/filters"
 
     client: TestClient
     db_session: Session

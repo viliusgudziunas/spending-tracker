@@ -23,6 +23,6 @@ def read_categories(db: Annotated[Session, Depends(get_db)]) -> Iterable[Categor
     return get_categories(db)
 
 
-@router.post("/filters/v2", response_model=FilterRead, status_code=status.HTTP_201_CREATED)
+@router.post("/filters", response_model=FilterRead, status_code=status.HTTP_201_CREATED)
 def create_filter(input_filter: FilterCreate, db: Annotated[Session, Depends(get_db)]) -> FilterRead:
     return add_new_filter(db, input_filter)
