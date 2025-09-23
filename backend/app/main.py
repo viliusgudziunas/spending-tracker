@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.reports import routes as reports
 from app.api.rules import routes as rules
 from app.config import get_settings
-from app.routers.rules_router import router as rules_router
+from app.routers.categories_router import router as categories_router
+from app.routers.filters_router import router as filters_router
 
 settings = get_settings()
 
@@ -18,6 +19,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(rules_router, tags=["Rules"])
+app.include_router(categories_router, tags=["Categories"])
+app.include_router(filters_router, tags=["Filters"])
+
 app.include_router(rules.router, tags=["Rules"])
 app.include_router(reports.router, tags=["Reports"])
