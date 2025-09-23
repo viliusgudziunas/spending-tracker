@@ -207,7 +207,7 @@ class TestCreateFilter:
 
 
 class TestReadFilters:
-    endpoint = "/filters/v2"
+    endpoint = "/filters"
 
     client: TestClient
 

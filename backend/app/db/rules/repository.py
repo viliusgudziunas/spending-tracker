@@ -18,10 +18,6 @@ class CreateRuleDTO(BaseModel):
     value: str
 
 
-def get_filters(db: Session) -> Sequence[Filter]:
-    return db.scalars(select(Filter)).all()
-
-
 class FilterNotFoundError(Exception):
     pass
 

@@ -16,6 +16,6 @@ def create_filter(input_filter: FilterCreate, db: Annotated[Session, Depends(get
     return add_new_filter(db, input_filter)
 
 
-@router.get("/filters/v2", response_model=list[FilterRead], status_code=status.HTTP_200_OK)
+@router.get("/filters", response_model=list[FilterRead], status_code=status.HTTP_200_OK)
 def read_filters(db: Annotated[Session, Depends(get_db)]) -> Iterable[FilterRead]:
     return get_filters(db=db)
