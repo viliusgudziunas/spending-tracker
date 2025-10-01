@@ -22,6 +22,6 @@ def read_filters(db: Annotated[Session, Depends(get_db)]) -> Iterable[FilterRead
     return get_filters(db=db)
 
 
-@router.get("/filters/{filter_id}/v2", response_model=FilterRead, status_code=status.HTTP_200_OK)
+@router.get("/filters/{filter_id}", response_model=FilterRead, status_code=status.HTTP_200_OK)
 def read_filter(filter_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> FilterRead:
     return get_filter(db=db, filter_id=filter_id)

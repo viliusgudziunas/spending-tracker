@@ -22,16 +22,6 @@ from app.db.rules.repository import (
 router = APIRouter()
 
 
-@router.get("/filters/{filter_id}", response_model=FilterFullResponse, status_code=status.HTTP_200_OK)
-def get_filter_(filter_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> Filter:
-    try:
-        filter_ = get_filter(db=db, filter_id=filter_id)
-    except FilterNotFoundError as exc:
-        raise HTTPException(status_code=404, detail="Filter not found") from exc
-
-    return filter_
-
-
 @router.put("/filters/{filter_id}", response_model=FilterFullResponse, status_code=status.HTTP_200_OK)
 def update_filter_(form_data: FilterInput, filter_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> Filter:
     try:

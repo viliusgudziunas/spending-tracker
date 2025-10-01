@@ -281,7 +281,7 @@ class TestReadFilters:
 
 
 class TestReadFilter:
-    endpoint = "/filters/{filter_id}/v2"
+    endpoint = "/filters/{filter_id}"
 
     client: TestClient
     db_session: Session
