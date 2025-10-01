@@ -11,7 +11,7 @@ from app.clients.db.filters_db_client import (
 )
 from app.clients.db.rule_groups_db_client import insert_new_rule_group
 from app.clients.db.rules_db_client import insert_new_rule
-from app.parsers.filters_parser import parse_create_filter_input_to_spapi
+from app.parsers.filters_parser import parse_create_filter_input_to_spapi, parse_overwrite_filter_input_to_spapi
 from app.schemas.api.filters_schemas import FilterCreate, FilterOverwrite, FilterRead
 
 
@@ -49,8 +49,9 @@ def get_filter(db: Session, filter_id: uuid.UUID) -> FilterRead:
     return FilterRead.model_validate(filter_)
 
 
-def overwrite_existing_filter(db: Session, filter_id: uuid.UUID, _input_filter: FilterOverwrite) -> FilterRead:
+def overwrite_existing_filter(db: Session, filter_id: uuid.UUID, input_filter: FilterOverwrite) -> FilterRead:
     with db.begin():
         filter_ = get_filter_by_id(db, filter_id)
+        parse_overwrite_filter_input_to_spapi(input_filter, filter_.position)
 
     return FilterRead.model_validate(filter_)
