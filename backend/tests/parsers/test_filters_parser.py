@@ -1,15 +1,15 @@
 import uuid
 
 from app.db.rules.models import RuleGroupOperator, RuleOperator, RuleType
-from app.parsers.filters_parser import parse_filter_input_to_spapi
+from app.parsers.filters_parser import parse_create_filter_input_to_spapi
 from app.schemas.api.filters_schemas import FilterCreate
 from app.schemas.api.rule_groups_schemas import RuleGroupCreate
 from app.schemas.api.rules_schemas import RuleCreate
 
 
-class TestParseFilterInputToSPAPI:
-    def test_parse_filter_input_to_spapi_model(self) -> None:
-        spapi_filter = parse_filter_input_to_spapi(
+class TestParseCreateFilterInputToSPAPI:
+    def test_parse_create_filter_input_to_spapi_model(self) -> None:
+        spapi_filter = parse_create_filter_input_to_spapi(
             FilterCreate(
                 name="Test Filter",
                 position=1,

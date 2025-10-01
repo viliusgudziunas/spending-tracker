@@ -11,7 +11,7 @@ from app.clients.db.filters_db_client import (
 )
 from app.clients.db.rule_groups_db_client import insert_new_rule_group
 from app.clients.db.rules_db_client import insert_new_rule
-from app.parsers.filters_parser import parse_filter_input_to_spapi
+from app.parsers.filters_parser import parse_create_filter_input_to_spapi
 from app.schemas.api.filters_schemas import FilterCreate, FilterRead
 
 
@@ -22,7 +22,7 @@ def add_new_filter(db: Session, input_filter: FilterCreate) -> FilterRead:
             max_position = get_category_filters_max_position(db, input_filter.category_id) or 0
             next_position = max_position + 1
 
-        spapi_filter = parse_filter_input_to_spapi(input_filter, next_position)
+        spapi_filter = parse_create_filter_input_to_spapi(input_filter, next_position)
 
         filter_ = insert_new_filter(db, spapi_filter, input_filter.category_id)
 

@@ -3,7 +3,7 @@ from app.schemas.api.filters_schemas import FilterCreate
 from app.schemas.spapi.filters_schemas import SpapiFilter
 
 
-def parse_filter_input_to_spapi(input_filter: FilterCreate, next_position: int) -> SpapiFilter:
+def parse_create_filter_input_to_spapi(input_filter: FilterCreate, next_position: int) -> SpapiFilter:
     return SpapiFilter(
         name=input_filter.name,
         position=next_position,
