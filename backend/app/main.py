@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.reports import routes as reports
 from app.api.rules import routes as rules
 from app.config import get_settings
+from app.exceptions import add_exception_handlers
 from app.routers.categories_router import router as categories_router
 from app.routers.filters_router import router as filters_router
 
@@ -18,6 +19,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+add_exception_handlers(app)
 
 app.include_router(categories_router, tags=["Categories"])
 app.include_router(filters_router, tags=["Filters"])

@@ -278,3 +278,54 @@ class TestReadFilters:
                 "category_id": str(category2.id),
             },
         ]
+
+
+class TestReadFilter:
+    endpoint = "/filters/{filter_id}/v2"
+
+    client: TestClient
+    db_session: Session
+    insert_category: InsertCategory
+    insert_filter: InsertFilter
+
+    @pytest.fixture(autouse=True)
+    def _setup(
+        self,
+        client: TestClient,
+        db_session: Session,
+        insert_category: InsertCategory,
+        insert_filter: InsertFilter,
+    ) -> None:
+        self.db_session = db_session
+        self.insert_category = insert_category
+        self.insert_filter = insert_filter
+        self.client = client
+
+    def test_returns_200(self) -> None:
+        with self.db_session.begin():
+            category = self.insert_category(SpapiCategory(name="Test Category"))
+            filter_ = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category.id)
+
+        response = self.client.get(self.endpoint.format(filter_id=filter_.id))
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_returns_filter(self) -> None:
+        with self.db_session.begin():
+            category = self.insert_category(SpapiCategory(name="Test Category"))
+            filter_ = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category.id)
+
+        response = self.client.get(self.endpoint.format(filter_id=filter_.id))
+
+        assert response.json() == {
+            "id": str(filter_.id),
+            "name": "Test Filter",
+            "position": 1,
+            "category_id": str(category.id),
+        }
+
+    def test_rejects_request_when_non_existent_filter_id_is_provided(self) -> None:
+        response = self.client.get(self.endpoint.format(filter_id=uuid.uuid4()))
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json() == {"detail": "Not Found"}

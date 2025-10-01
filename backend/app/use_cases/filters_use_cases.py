@@ -1,8 +1,14 @@
+import uuid
 from collections.abc import Iterable
 
 from sqlalchemy.orm import Session
 
-from app.clients.db.filters_db_client import get_all_filters, get_category_filters_max_position, insert_new_filter
+from app.clients.db.filters_db_client import (
+    get_all_filters,
+    get_category_filters_max_position,
+    get_filter_by_id,
+    insert_new_filter,
+)
 from app.clients.db.rule_groups_db_client import insert_new_rule_group
 from app.clients.db.rules_db_client import insert_new_rule
 from app.parsers.filters_parser import parse_filter_input_to_spapi
@@ -34,3 +40,10 @@ def get_filters(db: Session) -> Iterable[FilterRead]:
         filters = get_all_filters(db)
 
     return [FilterRead.model_validate(f) for f in filters]
+
+
+def get_filter(db: Session, filter_id: uuid.UUID) -> FilterRead:
+    with db.begin():
+        filter_ = get_filter_by_id(db, filter_id)
+
+    return FilterRead.model_validate(filter_)
