@@ -1,5 +1,5 @@
 from app.parsers.rule_groups_parser import parse_create_rule_group_input_to_spapi
-from app.schemas.api.filters_schemas import FilterCreate
+from app.schemas.api.filters_schemas import FilterCreate, FilterOverwrite
 from app.schemas.spapi.filters_schemas import SpapiFilter
 
 
@@ -8,4 +8,13 @@ def parse_create_filter_input_to_spapi(input_filter: FilterCreate, next_position
         name=input_filter.name,
         position=next_position,
         rule_groups=[parse_create_rule_group_input_to_spapi(rg) for rg in input_filter.rule_groups],
+    )
+
+
+def parse_overwrite_filter_input_to_spapi(input_filter: FilterOverwrite, current_position: int) -> SpapiFilter:
+    position = input_filter.position if input_filter.position is not None else current_position
+    return SpapiFilter(
+        name=input_filter.name,
+        position=position,
+        rule_groups=[],
     )
