@@ -210,26 +210,33 @@ class TestReadFilters:
     endpoint = "/filters"
 
     client: TestClient
+    db_session: Session
+    insert_category: InsertCategory
+    insert_filter: InsertFilter
 
     @pytest.fixture(autouse=True)
-    def _setup(self, client: TestClient) -> None:
+    def _setup(
+        self,
+        client: TestClient,
+        db_session: Session,
+        insert_category: InsertCategory,
+        insert_filter: InsertFilter,
+    ) -> None:
         self.client = client
+        self.db_session = db_session
+        self.insert_category = insert_category
+        self.insert_filter = insert_filter
 
     def test_returns_200(self) -> None:
         response = self.client.get(self.endpoint)
 
         assert response.status_code == status.HTTP_200_OK
 
-    def test_returns_filters(
-        self,
-        db_session: Session,
-        insert_category: InsertCategory,
-        insert_filter: InsertFilter,
-    ) -> None:
-        with db_session.begin():
-            category = insert_category(SpapiCategory(name="Test Category"))
-            filter1 = insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category.id)
-            filter2 = insert_filter(SpapiFilter(name="Test Filter 2", position=2, rule_groups=[]), category.id)
+    def test_returns_filters(self) -> None:
+        with self.db_session.begin():
+            category = self.insert_category(SpapiCategory(name="Test Category"))
+            filter1 = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category.id)
+            filter2 = self.insert_filter(SpapiFilter(name="Test Filter 2", position=2, rule_groups=[]), category.id)
 
         response = self.client.get(self.endpoint)
 
@@ -248,17 +255,12 @@ class TestReadFilters:
             },
         ]
 
-    def test_returns_filters_from_different_categories(
-        self,
-        db_session: Session,
-        insert_category: InsertCategory,
-        insert_filter: InsertFilter,
-    ) -> None:
-        with db_session.begin():
-            category1 = insert_category(SpapiCategory(name="Test Category"))
-            category2 = insert_category(SpapiCategory(name="Test Category 2"))
-            filter1 = insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category1.id)
-            filter2 = insert_filter(SpapiFilter(name="Test Filter 2", position=2, rule_groups=[]), category2.id)
+    def test_returns_filters_from_different_categories(self) -> None:
+        with self.db_session.begin():
+            category1 = self.insert_category(SpapiCategory(name="Test Category"))
+            category2 = self.insert_category(SpapiCategory(name="Test Category 2"))
+            filter1 = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category1.id)
+            filter2 = self.insert_filter(SpapiFilter(name="Test Filter 2", position=2, rule_groups=[]), category2.id)
 
         response = self.client.get(self.endpoint)
 
