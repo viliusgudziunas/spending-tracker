@@ -1,4 +1,4 @@
-from app.parsers.rule_groups_parser import parse_rule_group_input_to_spapi
+from app.parsers.rule_groups_parser import parse_create_rule_group_input_to_spapi
 from app.schemas.api.filters_schemas import FilterCreate
 from app.schemas.spapi.filters_schemas import SpapiFilter
 
@@ -7,5 +7,5 @@ def parse_create_filter_input_to_spapi(input_filter: FilterCreate, next_position
     return SpapiFilter(
         name=input_filter.name,
         position=next_position,
-        rule_groups=[parse_rule_group_input_to_spapi(rg) for rg in input_filter.rule_groups],
+        rule_groups=[parse_create_rule_group_input_to_spapi(rg) for rg in input_filter.rule_groups],
     )
