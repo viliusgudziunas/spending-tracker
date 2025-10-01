@@ -19,3 +19,9 @@ class FilterCreate(BaseModel):
     position: int | None = None
     category_id: uuid.UUID
     rule_groups: list[RuleGroupCreate]
+
+
+class FilterOverwrite(BaseModel):
+    name: str
+    position: int | None = None
+    category_id: uuid.UUID

@@ -12,7 +12,7 @@ from app.clients.db.filters_db_client import (
 from app.clients.db.rule_groups_db_client import insert_new_rule_group
 from app.clients.db.rules_db_client import insert_new_rule
 from app.parsers.filters_parser import parse_create_filter_input_to_spapi
-from app.schemas.api.filters_schemas import FilterCreate, FilterRead
+from app.schemas.api.filters_schemas import FilterCreate, FilterOverwrite, FilterRead
 
 
 def add_new_filter(db: Session, input_filter: FilterCreate) -> FilterRead:
@@ -43,6 +43,13 @@ def get_filters(db: Session) -> Iterable[FilterRead]:
 
 
 def get_filter(db: Session, filter_id: uuid.UUID) -> FilterRead:
+    with db.begin():
+        filter_ = get_filter_by_id(db, filter_id)
+
+    return FilterRead.model_validate(filter_)
+
+
+def overwrite_existing_filter(db: Session, filter_id: uuid.UUID, _input_filter: FilterOverwrite) -> FilterRead:
     with db.begin():
         filter_ = get_filter_by_id(db, filter_id)
 

@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.adapter.db import get_db
-from app.schemas.api.filters_schemas import FilterCreate, FilterRead
-from app.use_cases.filters_use_cases import add_new_filter, get_filter, get_filters
+from app.schemas.api.filters_schemas import FilterCreate, FilterOverwrite, FilterRead
+from app.use_cases.filters_use_cases import add_new_filter, get_filter, get_filters, overwrite_existing_filter
 
 router = APIRouter()
 
@@ -25,3 +25,12 @@ def read_filters(db: Annotated[Session, Depends(get_db)]) -> Iterable[FilterRead
 @router.get("/filters/{filter_id}", response_model=FilterRead, status_code=status.HTTP_200_OK)
 def read_filter(filter_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> FilterRead:
     return get_filter(db=db, filter_id=filter_id)
+
+
+@router.put("/filters/{filter_id}/v2", response_model=FilterRead, status_code=status.HTTP_200_OK)
+def overwrite_filter(
+    filter_id: uuid.UUID,
+    input_filter: FilterOverwrite,
+    db: Annotated[Session, Depends(get_db)],
+) -> FilterRead:
+    return overwrite_existing_filter(db, filter_id, input_filter)
