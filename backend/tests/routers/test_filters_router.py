@@ -368,25 +368,26 @@ class TestOverwriteFilter:
 
         assert response.status_code == status.HTTP_200_OK
 
-    def test_returns_filter(self) -> None:
+    def test_returns_overwritten_filter(self) -> None:
         with self.db_session.begin():
-            category = self.insert_category(SpapiCategory(name="Test Category"))
-            filter_ = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category.id)
+            category1 = self.insert_category(SpapiCategory(name="Test Category 1"))
+            category2 = self.insert_category(SpapiCategory(name="Test Category 2"))
+            filter_ = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category1.id)
 
         response = self.client.put(
             self.endpoint.format(filter_id=filter_.id),
             json={
                 "name": "Updated Filter",
                 "position": 2,
-                "category_id": str(category.id),
+                "category_id": str(category2.id),
             },
         )
 
         assert response.json() == {
             "id": str(filter_.id),
-            "name": "Test Filter",
-            "position": 1,
-            "category_id": str(category.id),
+            "name": "Updated Filter",
+            "position": 2,
+            "category_id": str(category2.id),
         }
 
     def test_rejects_request_when_non_existent_filter_id_is_provided(self) -> None:

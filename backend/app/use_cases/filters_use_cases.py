@@ -8,6 +8,7 @@ from app.clients.db.filters_db_client import (
     get_category_filters_max_position,
     get_filter_by_id,
     insert_new_filter,
+    update_filter,
 )
 from app.clients.db.rule_groups_db_client import insert_new_rule_group
 from app.clients.db.rules_db_client import insert_new_rule
@@ -52,6 +53,7 @@ def get_filter(db: Session, filter_id: uuid.UUID) -> FilterRead:
 def overwrite_existing_filter(db: Session, filter_id: uuid.UUID, input_filter: FilterOverwrite) -> FilterRead:
     with db.begin():
         filter_ = get_filter_by_id(db, filter_id)
-        parse_overwrite_filter_input_to_spapi(input_filter, filter_.position)
+        spapi_filter = parse_overwrite_filter_input_to_spapi(input_filter, filter_.position)
+        filter_ = update_filter(db, filter_, spapi_filter, input_filter.category_id)
 
     return FilterRead.model_validate(filter_)
