@@ -9,6 +9,7 @@ from app.clients.db.filters_db_client import (
     get_category_filters_max_position,
     get_filter_by_id,
     insert_new_filter,
+    update_filter,
 )
 from app.schemas.spapi.categories_schemas import SpapiCategory
 from app.schemas.spapi.filters_schemas import SpapiFilter
@@ -147,3 +148,50 @@ class TestGetFilterByID:
     def test_raises_error_if_filter_not_found(self) -> None:
         with self.db_session.begin(), pytest.raises(FilterNotFoundError):
             get_filter_by_id(self.db_session, uuid.uuid4())
+
+
+class TestUpdateFilter:
+    db_session: Session
+    insert_category: InsertCategory
+    insert_filter: InsertFilter
+
+    @pytest.fixture(autouse=True)
+    def _setup(self, db_session: Session, insert_category: InsertCategory, insert_filter: InsertFilter) -> None:
+        self.db_session = db_session
+        self.insert_category = insert_category
+        self.insert_filter = insert_filter
+
+    def test_updates_filter(self) -> None:
+        with self.db_session.begin():
+            category = self.insert_category(SpapiCategory(name="Test Category"))
+            filter_ = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category.id)
+
+        assert filter_.name == "Test Filter"
+        assert filter_.position == 1
+
+        update_filter(
+            self.db_session,
+            filter_,
+            SpapiFilter(name="Updated Filter", position=2, rule_groups=[]),
+            category.id,
+        )
+
+        assert filter_.name == "Updated Filter"
+        assert filter_.position == 2  # noqa: PLR2004
+
+    def test_updates_filter_category(self) -> None:
+        with self.db_session.begin():
+            category1 = self.insert_category(SpapiCategory(name="Test Category 1"))
+            category2 = self.insert_category(SpapiCategory(name="Test Category 2"))
+            filter_ = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category1.id)
+
+        assert filter_.category_id == category1.id
+
+        update_filter(
+            self.db_session,
+            filter_,
+            SpapiFilter(name="Test Filter", position=1, rule_groups=[]),
+            category2.id,
+        )
+
+        assert filter_.category_id == category2.id

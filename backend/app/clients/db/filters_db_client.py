@@ -36,3 +36,13 @@ def get_filter_by_id(db: Session, filter_id: uuid.UUID) -> Filter:
         raise FilterNotFoundError
 
     return filter_
+
+
+def update_filter(db: Session, filter_: Filter, spapi_filter: SpapiFilter, category_id: uuid.UUID) -> Filter:
+    filter_.name = spapi_filter.name
+    filter_.position = spapi_filter.position
+    filter_.category_id = category_id
+    db.add(filter_)
+    db.flush()
+    db.refresh(filter_)
+    return filter_
