@@ -2,7 +2,7 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict
 
-from app.schemas.api.rule_groups_schemas import RuleGroupCreate
+from app.schemas.api.rule_groups_schemas import RuleGroupCreate, RuleGroupOverwrite
 
 
 class FilterRead(BaseModel):
@@ -25,3 +25,4 @@ class FilterOverwrite(BaseModel):
     name: str
     position: int | None = None
     category_id: uuid.UUID
+    rule_groups: list[RuleGroupOverwrite]

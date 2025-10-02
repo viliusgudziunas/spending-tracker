@@ -3,7 +3,7 @@ import uuid
 from app.db.rules.models import RuleGroupOperator, RuleOperator, RuleType
 from app.parsers.filters_parser import parse_create_filter_input_to_spapi, parse_overwrite_filter_input_to_spapi
 from app.schemas.api.filters_schemas import FilterCreate, FilterOverwrite
-from app.schemas.api.rule_groups_schemas import RuleGroupCreate
+from app.schemas.api.rule_groups_schemas import RuleGroupCreate, RuleGroupOverwrite
 from app.schemas.api.rules_schemas import RuleCreate
 
 
@@ -45,6 +45,7 @@ class TestParseUpdateFilterInputToSPAPI:
                 name="Test Filter",
                 position=1,
                 category_id=uuid.uuid4(),
+                rule_groups=[],
             ),
             1,
         )
@@ -58,13 +59,12 @@ class TestParseUpdateFilterInputToSPAPI:
             FilterOverwrite(
                 name="Test Filter",
                 category_id=uuid.uuid4(),
+                rule_groups=[],
             ),
             1,
         )
 
-        assert spapi_filter.name == "Test Filter"
         assert spapi_filter.position == 1
-        assert spapi_filter.rule_groups == []
 
     def test_uses_current_position_if_position_is_provided_as_none(self) -> None:
         spapi_filter = parse_overwrite_filter_input_to_spapi(
@@ -72,24 +72,49 @@ class TestParseUpdateFilterInputToSPAPI:
                 name="Test Filter",
                 position=None,
                 category_id=uuid.uuid4(),
+                rule_groups=[],
             ),
             1,
         )
 
-        assert spapi_filter.name == "Test Filter"
         assert spapi_filter.position == 1
-        assert spapi_filter.rule_groups == []
 
-    def test_provided_position(self) -> None:
+    def test_uses_provided_position(self) -> None:
         spapi_filter = parse_overwrite_filter_input_to_spapi(
             FilterOverwrite(
                 name="Test Filter",
                 position=1,
                 category_id=uuid.uuid4(),
+                rule_groups=[],
             ),
             2,
         )
 
-        assert spapi_filter.name == "Test Filter"
         assert spapi_filter.position == 1
-        assert spapi_filter.rule_groups == []
+
+    def test_parses_rule_groups(self) -> None:
+        id_ = uuid.uuid4()
+
+        spapi_filter = parse_overwrite_filter_input_to_spapi(
+            FilterOverwrite(
+                name="Test Filter",
+                position=1,
+                category_id=uuid.uuid4(),
+                rule_groups=[
+                    RuleGroupOverwrite(
+                        id=id_,
+                        operator=RuleGroupOperator.AND,
+                    ),
+                    RuleGroupOverwrite(
+                        operator=RuleGroupOperator.OR,
+                    ),
+                ],
+            ),
+            2,
+        )
+
+        assert len(spapi_filter.rule_groups) == 2  # noqa: PLR2004
+        assert spapi_filter.rule_groups[0].id == id_
+        assert spapi_filter.rule_groups[0].operator == RuleGroupOperator.AND
+        assert spapi_filter.rule_groups[1].id is None
+        assert spapi_filter.rule_groups[1].operator == RuleGroupOperator.OR

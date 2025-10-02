@@ -363,6 +363,15 @@ class TestOverwriteFilter:
                 "name": "Updated Filter",
                 "position": 2,
                 "category_id": str(category.id),
+                "rule_groups": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "operator": RuleGroupOperator.AND,
+                    },
+                    {
+                        "operator": RuleGroupOperator.OR,
+                    },
+                ],
             },
         )
 
@@ -380,6 +389,15 @@ class TestOverwriteFilter:
                 "name": "Updated Filter",
                 "position": 2,
                 "category_id": str(category2.id),
+                "rule_groups": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "operator": RuleGroupOperator.AND,
+                    },
+                    {
+                        "operator": RuleGroupOperator.OR,
+                    },
+                ],
             },
         )
 
@@ -397,6 +415,7 @@ class TestOverwriteFilter:
                 "name": "Updated Filter",
                 "position": 2,
                 "category_id": str(uuid.uuid4()),
+                "rule_groups": [],
             },
         )
 

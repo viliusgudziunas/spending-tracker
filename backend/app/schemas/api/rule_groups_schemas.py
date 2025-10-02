@@ -12,5 +12,5 @@ class RuleGroupCreate(BaseModel):
 
 
 class RuleGroupOverwrite(BaseModel):
-    id: uuid.UUID | None
+    id: uuid.UUID | None = None
     operator: RuleGroupOperator
