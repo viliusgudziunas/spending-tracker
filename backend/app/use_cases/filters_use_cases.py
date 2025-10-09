@@ -56,4 +56,8 @@ def overwrite_existing_filter(db: Session, filter_id: uuid.UUID, input_filter: F
         spapi_filter = parse_overwrite_filter_input_to_spapi(input_filter, filter_.position)
         filter_ = update_filter(db, filter_, spapi_filter, input_filter.category_id)
 
+        for rg in spapi_filter.rule_groups:
+            if rg.id is None:
+                insert_new_rule_group(db, rg, filter_.id)
+
     return FilterRead.model_validate(filter_)

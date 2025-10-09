@@ -408,6 +408,32 @@ class TestOverwriteFilter:
             "category_id": str(category2.id),
         }
 
+    def test_inserts_filter_data_into_database(self, get_filter: GetFilter) -> None:
+        with self.db_session.begin():
+            category1 = self.insert_category(SpapiCategory(name="Test Category 1"))
+            category2 = self.insert_category(SpapiCategory(name="Test Category 2"))
+            filter_ = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category1.id)
+            filter_id = filter_.id
+            category_id = category2.id
+
+        self.client.put(
+            self.endpoint.format(filter_id=filter_id),
+            json={
+                "name": "Updated Filter",
+                "position": 2,
+                "category_id": str(category_id),
+                "rule_groups": [],
+            },
+        )
+
+        with self.db_session.begin():
+            db_filter = get_filter(filter_.id)
+            assert db_filter is not None
+            assert db_filter.name == "Updated Filter"
+            assert db_filter.position == 2  # noqa: PLR2004
+            assert db_filter.category_id == category2.id
+            assert len(db_filter.rule_groups) == 0
+
     def test_rejects_request_when_non_existent_filter_id_is_provided(self) -> None:
         response = self.client.put(
             self.endpoint.format(filter_id=uuid.uuid4()),
@@ -421,3 +447,35 @@ class TestOverwriteFilter:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.json() == {"detail": "Not Found"}
+
+    def test_inserts_new_rule_groups_into_database(self) -> None:
+        with self.db_session.begin():
+            category = self.insert_category(SpapiCategory(name="Test Category 1"))
+            filter_ = self.insert_filter(SpapiFilter(name="Test Filter", position=1, rule_groups=[]), category.id)
+            filter_id = filter_.id
+            category_id = category.id
+
+        self.client.put(
+            self.endpoint.format(filter_id=filter_id),
+            json={
+                "name": "Test Filter",
+                "position": 1,
+                "category_id": str(category_id),
+                "rule_groups": [
+                    {
+                        "operator": RuleGroupOperator.AND,
+                    },
+                    {
+                        "operator": RuleGroupOperator.OR,
+                    },
+                ],
+            },
+        )
+
+        with self.db_session.begin():
+            db_filter = get_filter(filter_.id)
+            assert db_filter is not None
+            assert db_filter.name == "Updated Filter"
+            assert db_filter.position == 2  # noqa: PLR2004
+            assert db_filter.category_id == category2.id
+            assert len(db_filter.rule_groups) == 0

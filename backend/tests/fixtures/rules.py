@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Callable
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import Sequence, select
 from sqlalchemy.orm import Session
 
 from app.db.rules.models import Category, Filter, RuleGroup
@@ -72,3 +72,14 @@ def insert_rule_group(db_session: Session) -> InsertRuleGroup:
         return rule_group
 
     return _insert_rule_group
+
+
+type GetAllRuleGroups = Callable[[], Sequence[RuleGroup]]
+
+
+@pytest.fixture
+def get_all_rule_groups(db_session: Session) -> GetAllRuleGroups:
+    def _get_all_rule_groups() -> Sequence[RuleGroup]:
+        return db_session.scalars(select(RuleGroup)).all()
+
+    return _get_all_rule_groups
