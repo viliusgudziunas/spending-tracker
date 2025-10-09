@@ -10,8 +10,8 @@ from app.clients.db.filters_db_client import (
     insert_new_filter,
     update_filter,
 )
-from app.clients.db.rule_groups_db_client import insert_new_rule_group
-from app.clients.db.rules_db_client import insert_new_rule
+from app.clients.db.rule_groups_db_client import get_rule_group_by_id, insert_new_rule_group, update_rule_group
+from app.clients.db.rules_db_client import get_rule_by_id, insert_new_rule, update_rule
 from app.parsers.filters_parser import parse_create_filter_input_to_spapi, parse_overwrite_filter_input_to_spapi
 from app.schemas.api.filters_schemas import FilterCreate, FilterOverwrite, FilterRead
 
@@ -58,6 +58,16 @@ def overwrite_existing_filter(db: Session, filter_id: uuid.UUID, input_filter: F
 
         for rg in spapi_filter.rule_groups:
             if rg.id is None:
-                insert_new_rule_group(db, rg, filter_.id)
+                rule_group = insert_new_rule_group(db, rg, filter_.id)
+            else:
+                rule_group = get_rule_group_by_id(db, rg.id)
+                rule_group = update_rule_group(db, rule_group, rg)
+
+            for r in rg.rules:
+                if r.id is None:
+                    rule = insert_new_rule(db, r, rule_group.id)
+                else:
+                    rule = get_rule_by_id(db, r.id)
+                    rule = update_rule(db, rule, r)
 
     return FilterRead.model_validate(filter_)

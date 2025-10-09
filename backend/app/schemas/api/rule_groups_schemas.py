@@ -3,7 +3,7 @@ import uuid
 from pydantic import BaseModel
 
 from app.db.rules.models import RuleGroupOperator
-from app.schemas.api.rules_schemas import RuleCreate
+from app.schemas.api.rules_schemas import RuleCreate, RuleOverwrite
 
 
 class RuleGroupCreate(BaseModel):
@@ -12,5 +12,6 @@ class RuleGroupCreate(BaseModel):
 
 
 class RuleGroupOverwrite(BaseModel):
-    id: uuid.UUID | None = None
+    id: uuid.UUID | None
     operator: RuleGroupOperator
+    rules: list[RuleOverwrite]

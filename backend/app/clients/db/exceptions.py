@@ -4,3 +4,11 @@ class EntityNotFoundError(Exception):
 
 class FilterNotFoundError(EntityNotFoundError):
     pass
+
+
+class RuleGroupNotFoundError(EntityNotFoundError):
+    pass
+
+
+class RuleNotFoundError(EntityNotFoundError):
+    pass

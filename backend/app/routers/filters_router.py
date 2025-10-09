@@ -27,7 +27,7 @@ def read_filter(filter_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -
     return get_filter(db=db, filter_id=filter_id)
 
 
-@router.put("/filters/{filter_id}/v2", response_model=FilterRead, status_code=status.HTTP_200_OK)
+@router.put("/filters/{filter_id}", response_model=FilterRead, status_code=status.HTTP_200_OK)
 def overwrite_filter(
     filter_id: uuid.UUID,
     input_filter: FilterOverwrite,
