@@ -4,6 +4,8 @@ CONTAINER_ID=$(docker ps | grep "postgres" | awk '{print $1}')
 
 # Ensure the /backup directory exists in the container
 docker exec "$CONTAINER_ID" mkdir -p /backup
+# on Windows you will need to use
+# docker exec "$CONTAINER_ID" sh -c "mkdir -p /backup"
 
 # Copy the backup file from host to the container's /backup directory
 docker cp ./db.backup "$CONTAINER_ID":/backup/db.backup
@@ -20,4 +22,6 @@ echo "Dropped the 'spending-tracker' database"
 
 # Execute the pg_restore command inside the container to the newly created 'spending-tracker' database
 docker exec "$CONTAINER_ID" pg_restore -U postgres -d postgres -C /backup/db.backup
+# on Windows you will need to use
+# docker exec "$CONTAINER_ID" sh -c "pg_restore -U postgres -d postgres -C /backup/db.backup"
 echo "Restored the 'spending-tracker' database"
