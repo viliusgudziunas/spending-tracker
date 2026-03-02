@@ -24,7 +24,7 @@ graph LR
 
 ---
 
-## Commit 1 — Makefile: add lint, db-autogenerate, db-upgrade targets
+## Commit 1 — Makefile: add lint, db-autogenerate, db-upgrade targets [COMMITTED]
 
 Standalone tooling change with no code dependencies.
 
