@@ -45,6 +45,31 @@ class TestCreateReportEndpoint:
         report = get_report(db=db, report_id=report_id)
         descriptions = {t.description for t in report.transactions}
         amounts = {t.amount for t in report.transactions}
+        products = {t.product for t in report.transactions}
+        types = {t.type for t in report.transactions}
+        currencies = {t.currency for t in report.transactions}
+        states = {t.state for t in report.transactions}
+        balances = {t.balance for t in report.transactions}
+        raw_data_keys = {tuple(sorted(t.raw_data.keys())) for t in report.transactions if t.raw_data is not None}
 
-        assert descriptions == {"Coffee", "Savings"}
-        assert amounts == {4.5, 100.0}
+        assert descriptions == {"Dummy grocery store", "Dummy transfer description"}
+        assert amounts == {-36.73, 118.13}
+        assert products == {"Current", "Savings"}
+        assert types == {"Card Payment", "Transfer"}
+        assert currencies == {"EUR"}
+        assert states == {"COMPLETED"}
+        assert balances == {2062.7, 7564.76}
+        assert raw_data_keys == {
+            (
+                "Amount",
+                "Balance",
+                "Completed Date",
+                "Currency",
+                "Description",
+                "Fee",
+                "Product",
+                "Started Date",
+                "State",
+                "Type",
+            ),
+        }

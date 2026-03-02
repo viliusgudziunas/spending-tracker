@@ -149,7 +149,7 @@ Removes the `Product != "Deposit"` filter and attaches original row data as `raw
 
 ---
 
-## Commit 7 — Backend: update repository DTOs and route handler for new fields
+## Commit 7 — Backend: update repository DTOs and route handler for new fields [COMMITTED]
 
 Wires the new fields through the create-report flow end-to-end.
 
@@ -157,6 +157,9 @@ Wires the new fields through the create-report flow end-to-end.
 
 - [backend/app/db/reports/repository.py](../../../backend/app/db/reports/repository.py) — add `type`, `product`, `currency`, `state`, `balance`, `raw_data` to `CreateReportTransactionDto` and `create_report()`
 - [backend/app/api/reports/routes.py](../../../backend/app/api/reports/routes.py) — map new fields from parsed CSV records in `create_report_()`
+- [backend/app/db/reports/models.py](../../../backend/app/db/reports/models.py) — add `type` and `product` fields to `Transaction` so routed values are persisted
+- `backend/tests/integration/fixtures/report_upload.csv` — include realistic upload column order and new stage 7 columns (`Type`, `Product`, `Currency`, `State`, `Balance`)
+- `backend/tests/integration/test_reports_routes.py` — assert endpoint persists new fields and `raw_data` content to DB
 
 ---
 

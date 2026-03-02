@@ -18,6 +18,12 @@ class CreateReportTransactionDto(BaseModel):
     fee: float
     started_date: str
     completed_date: str
+    type: str | None = None
+    product: str | None = None
+    currency: str | None = None
+    state: str | None = None
+    balance: float | None = None
+    raw_data: dict | None = None
 
 
 class CreateReportDto(BaseModel):
@@ -36,6 +42,12 @@ def create_report(db: Session, report_dto: CreateReportDto) -> Report:
             fee=transaction_dto.fee,
             started_date=transaction_dto.started_date,
             completed_date=transaction_dto.completed_date,
+            type=transaction_dto.type,
+            product=transaction_dto.product,
+            currency=transaction_dto.currency,
+            state=transaction_dto.state,
+            balance=transaction_dto.balance,
+            raw_data=transaction_dto.raw_data,
             report=report,
         )
         db.add(transaction)

@@ -1,3 +1,3 @@
-Product,Description,Amount,Fee,Started Date,Completed Date
-Current,Coffee,4.50,0.00,2025-01-01 10:00:00,2025-01-01 10:00:00
-Deposit,Savings,100.00,0.00,2025-01-02 10:00:00,2025-01-02 10:00:00
+Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
+Transfer,Savings,2026-01-03 12:51:39,2026-01-03 12:51:39,Dummy transfer description,118.13,0.00,EUR,COMPLETED,2062.70
+Card Payment,Current,2025-12-31 19:30:22,2026-01-01 14:46:05,Dummy grocery store,-36.73,0,EUR,COMPLETED,7564.76

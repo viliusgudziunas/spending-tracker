@@ -57,6 +57,12 @@ async def create_report_(
                     fee=r["fee"],
                     started_date=r["started_date"],
                     completed_date=r["completed_date"],
+                    type=r.get("type"),
+                    product=r.get("product"),
+                    currency=r.get("currency"),
+                    state=r.get("state"),
+                    balance=r.get("balance"),
+                    raw_data=r.get("raw_data"),
                 )
                 for r in records
             ],

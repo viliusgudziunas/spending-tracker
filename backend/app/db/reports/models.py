@@ -101,6 +101,8 @@ class Transaction(ReportsBase):
     started_date: Mapped[str] = mapped_column(DateTime, nullable=False)
     completed_date: Mapped[str] = mapped_column(DateTime, nullable=False)
     schema_version: Mapped[int] = mapped_column(Integer, default=CURRENT_TRANSACTION_SCHEMA_VERSION, nullable=False)
+    type: Mapped[str | None] = mapped_column(String, nullable=True)
+    product: Mapped[str | None] = mapped_column(String, nullable=True)
     currency: Mapped[str | None] = mapped_column(String, nullable=True)
     state: Mapped[str | None] = mapped_column(String, nullable=True)
     balance: Mapped[float | None] = mapped_column(Float, nullable=True)
