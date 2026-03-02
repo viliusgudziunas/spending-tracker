@@ -27,10 +27,16 @@ export interface ReportFilter {
 
 export interface Transaction {
     id: string;
+    type: string;
+    product: string;
     description: string;
     startedDate: string;
-    completedDate: string;
+    completedDate: string | null;
     amount: number;
+    fee: number;
+    currency: string;
+    state: string;
+    balance: number;
     source: TransactionSource;
 }
 

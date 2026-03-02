@@ -240,7 +240,7 @@ Replaces the old provider-wrapped `App` entry point with router-based rendering.
 
 ---
 
-## Commit 10 — Frontend: update API types for new transaction fields
+## Commit 10 — Frontend: update API types for new transaction fields [COMMITTED]
 
 Adds the new backend fields to all three type layers.
 

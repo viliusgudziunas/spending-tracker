@@ -32,10 +32,16 @@ export const parseApiReportFilter = (filter: ApiReportFilter): ReportFilter => (
 
 const parseApiReportTransaction = (transaction: ApiTransaction): Transaction => ({
     id: transaction.id,
+    type: transaction.type,
+    product: transaction.product,
     description: transaction.description,
     startedDate: transaction.started_date,
     completedDate: transaction.completed_date,
     amount: transaction.amount,
+    fee: transaction.fee,
+    currency: transaction.currency,
+    state: transaction.state,
+    balance: transaction.balance,
     source: parseApiReportTransactionSource(transaction.source),
 });
 

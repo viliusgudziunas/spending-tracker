@@ -20,10 +20,16 @@ export interface ApiReportFilter {
 
 export interface ApiTransaction {
     id: string;
+    type: string;
+    product: string;
     description: string;
     amount: number;
+    fee: number;
+    currency: string;
+    state: string;
+    balance: number;
     started_date: string;
-    completed_date: string;
+    completed_date: string | null;
     source: string | null;
 }
 
