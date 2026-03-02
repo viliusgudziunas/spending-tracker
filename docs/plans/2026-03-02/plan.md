@@ -93,7 +93,7 @@ Adds schema versioning and new fields to the data model, with a migration that s
 
 ---
 
-## Commit 5 — Backend API: add versioned transaction response models
+## Commit 5 — Backend API: add versioned transaction response models [COMMITTED]
 
 Introduces `TransactionV1Response` and `TransactionV2Response` with a discriminated union, and adds `schema_version` to report responses.
 
