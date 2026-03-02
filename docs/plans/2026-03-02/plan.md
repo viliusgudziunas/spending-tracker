@@ -113,6 +113,27 @@ Adds `--max-warnings 0` to the ESLint invocation in `lint-frontend` so that warn
 
 ---
 
+## Commit 5.6 — Backend: set up pytest with unit and integration test structure [COMMITTED]
+
+Set up pytest as the backend test framework with a clear separation between unit and integration tests. Integration tests now run against the real Alembic schema (`upgrade head` before tests and `downgrade base` in teardown), and use settings loaded from `.env`.
+
+**Files:**
+
+- [backend/pyproject.toml](../../../backend/pyproject.toml) — add `pytest` to dev dependencies; add `[tool.pytest.ini_options]` config with test paths and markers for `unit` and `integration`; add Ruff test-file ignores for assertions and common test patterns
+- [backend/poetry.lock](../../../backend/poetry.lock) — lockfile update after adding pytest
+- [Makefile](../../../Makefile) — add `test`, `test-unit`, `test-integration` targets
+- `backend/tests/__init__.py` — empty init
+- `backend/tests/unit/__init__.py` — empty init
+- `backend/tests/integration/__init__.py` — empty init
+- `backend/tests/unit/test_bank_statement_parser.py` — unit tests for the existing `parse_statement()` function
+- `backend/tests/unit/test_transactions_service.py` — unit tests for the rule-matching logic
+- `backend/tests/conftest.py` — shared fixtures that load DB URL from `TEST_DATABASE_URL` or `.env`, run Alembic upgrade/downgrade, and provide a rollback-isolated DB session per test
+- `backend/tests/integration/test_reports_repository.py` — integration tests for report CRUD against a real database
+- [backend/app/db/reports/models.py](../../../backend/app/db/reports/models.py) — align SQLAlchemy model with migrated schema (`Transaction.schema_version` default + `fee` as `Float`) so inserts pass against migrated DB
+- [backend/app/db/base.py](../../../backend/app/db/base.py) — switch `declarative_base` import to `sqlalchemy.orm` to remove SQLAlchemy deprecation warnings
+
+---
+
 ## Commit 6 — Backend: update CSV parser to preserve all rows and raw data
 
 Removes the `Product != "Deposit"` filter and attaches original row data as `raw_data`.

@@ -19,6 +19,7 @@ uvicorn = "~0.30.6"
 [tool.poetry.group.dev.dependencies]
 alembic = "~1.16.4"
 pandas-stubs = "^2.2.2.240909"
+pytest = "^9.0.2"
 ruff = "^0.11.9"
 types-psycopg2 = "^2.9.21.20240819"
 
@@ -115,6 +116,18 @@ ignore = [
 "migrations/env.py" = [
     "E402", # module-import-not-at-top-of-file
 ]
+"tests/*" = [
+    "S101",    # assert
+    "PLR2004", # magic-value-comparison
+]
 
 [tool.ruff.lint.pep8-naming]
 classmethod-decorators = ["pydantic.field_validator"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: Unit tests (no external dependencies)",
+    "integration: Integration tests (require database)",
+]

@@ -1,4 +1,4 @@
-.PHONY: up lint lint-backend lint-frontend db-autogenerate db-upgrade db-downgrade-1
+.PHONY: up lint lint-backend lint-frontend test test-unit test-integration db-autogenerate db-upgrade db-downgrade-1
 
 up: ## Start all services (Ctrl+C to stop and clean up)
 	docker compose up --build --watch; docker compose down
@@ -20,6 +20,15 @@ lint-frontend: ## Run frontend linters (eslint + prettier)
 	npx eslint --fix --max-warnings 0 . || EXIT_CODE=$$?; \
 	npx prettier --write src/ || EXIT_CODE=$$?; \
 	exit $$EXIT_CODE
+
+test: ## Run all backend tests
+	cd backend && poetry run pytest
+
+test-unit: ## Run backend unit tests
+	cd backend && poetry run pytest -m unit
+
+test-integration: ## Run backend integration tests
+	cd backend && poetry run pytest -m integration
 
 db-autogenerate: ## Auto-generate alembic migration (usage: make db-autogenerate msg="migration message")
 	cd backend && poetry run alembic revision --autogenerate -m "$(msg)"
