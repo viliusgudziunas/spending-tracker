@@ -48,7 +48,7 @@ Standalone tooling change with no code dependencies. Adds `lint` (runs both back
 
 ---
 
-## Commit 2 — Alembic: add ruff post-write hooks and modernize migration template
+## Commit 2 — Alembic: add ruff post-write hooks and modernize migration template [COMMITTED]
 
 Improves the migration authoring workflow. No impact on existing code.
 
