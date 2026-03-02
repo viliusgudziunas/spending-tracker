@@ -59,7 +59,7 @@ Improves the migration authoring workflow. No impact on existing code.
 
 ---
 
-## Commit 3 — Backend models: update UUID column syntax to generic form
+## Commit 3 — Backend models: update UUID column syntax to generic form [COMMITTED]
 
 Pure refactor — changes `UUID(as_uuid=True)` to `UUID[uuid.UUID](as_uuid=True)` across all report-domain models. No schema change, no migration needed.
 

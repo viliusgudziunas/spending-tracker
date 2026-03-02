@@ -18,7 +18,7 @@ def naive_utcnow() -> datetime:
 class Report(ReportsBase):
     __tablename__ = "report"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=naive_utcnow, nullable=False)
@@ -39,10 +39,10 @@ class Report(ReportsBase):
 class Category(ReportsBase):
     __tablename__ = "category"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
 
-    report_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("report.id"), nullable=False)
+    report_id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), ForeignKey("report.id"), nullable=False)
     report: Mapped[Report] = relationship(back_populates="categories")
 
     filters: Mapped[list[Filter]] = relationship("Filter", back_populates="category", order_by="Filter.position")
@@ -54,11 +54,15 @@ class Category(ReportsBase):
 class Filter(ReportsBase):
     __tablename__ = "filter"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    category_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("category.id"), nullable=False)
+    category_id: Mapped[uuid.UUID] = mapped_column(
+        UUID[uuid.UUID](as_uuid=True),
+        ForeignKey("category.id"),
+        nullable=False,
+    )
     category: Mapped[Category] = relationship(back_populates="filters")
 
     transactions: Mapped[list[Transaction]] = relationship("Transaction", back_populates="filter")
@@ -79,7 +83,7 @@ class TransactionSource(enum.StrEnum):
 class Transaction(ReportsBase):
     __tablename__ = "transaction"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), primary_key=True, default=uuid.uuid4)
     description: Mapped[str] = mapped_column(String, nullable=False)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     fee: Mapped[float] = mapped_column(Integer, nullable=False)
@@ -87,10 +91,10 @@ class Transaction(ReportsBase):
     completed_date: Mapped[str] = mapped_column(DateTime, nullable=False)
     source: Mapped[TransactionSource] = mapped_column(Enum(TransactionSource), default=TransactionSource.generated)
 
-    report_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("report.id"), nullable=False)
+    report_id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), ForeignKey("report.id"), nullable=False)
     report: Mapped[Report] = relationship(back_populates="transactions")
 
-    filter_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("filter.id"))
+    filter_id: Mapped[uuid.UUID | None] = mapped_column(UUID[uuid.UUID](as_uuid=True), ForeignKey("filter.id"))
     filter: Mapped[Filter | None] = relationship(back_populates="transactions")
 
     override: Mapped[Override | None] = relationship("Override", back_populates="transaction")
@@ -110,17 +114,17 @@ class Transaction(ReportsBase):
 class Override(ReportsBase):
     __tablename__ = "override"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), primary_key=True, default=uuid.uuid4)
     category_name: Mapped[str] = mapped_column(String, nullable=False)
     filter_name: Mapped[str] = mapped_column(String, nullable=False)
 
     transaction_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        UUID[uuid.UUID](as_uuid=True),
         ForeignKey("transaction.id"),
         nullable=False,
         unique=True,
     )
     transaction: Mapped[Transaction] = relationship("Transaction")
 
-    report_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("report.id"), nullable=False)
+    report_id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), ForeignKey("report.id"), nullable=False)
     report: Mapped[Report] = relationship(back_populates="overrides")
