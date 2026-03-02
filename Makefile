@@ -17,7 +17,7 @@ lint-frontend: ## Run frontend linters (eslint + prettier)
 	@echo "🔍 Frontend linter"
 	@EXIT_CODE=0; \
 	cd frontend && \
-	npx eslint --fix . || EXIT_CODE=$$?; \
+	npx eslint --fix --max-warnings 0 . || EXIT_CODE=$$?; \
 	npx prettier --write src/ || EXIT_CODE=$$?; \
 	exit $$EXIT_CODE
 

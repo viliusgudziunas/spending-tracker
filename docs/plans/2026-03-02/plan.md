@@ -103,6 +103,16 @@ Introduces `TransactionV1Response` and `TransactionV2Response` with a discrimina
 
 ---
 
+## Commit 5.5 — Makefile: make ESLint warnings fail the lint command [COMMITTED]
+
+Adds `--max-warnings 0` to the ESLint invocation in `lint-frontend` so that warnings are treated as failures.
+
+**Files:**
+
+- [Makefile](../../../Makefile) — add `--max-warnings 0` to `npx eslint` in `lint-frontend`
+
+---
+
 ## Commit 6 — Backend: update CSV parser to preserve all rows and raw data
 
 Removes the `Product != "Deposit"` filter and attaches original row data as `raw_data`.
