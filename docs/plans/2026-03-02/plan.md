@@ -163,7 +163,7 @@ Wires the new fields through the create-report flow end-to-end.
 
 ---
 
-## Commit 8 — Frontend: add TanStack Router and AG Grid dependencies
+## Commit 8 — Frontend: add TanStack Router and AG Grid dependencies [COMMITTED]
 
 Package-only change. No source code modifications.
 
@@ -171,6 +171,7 @@ Package-only change. No source code modifications.
 
 - [frontend/package.json](../../../frontend/package.json) — add `@tanstack/react-router`, `ag-grid-community`, `ag-grid-react`, `@tanstack/router-devtools`, `@tanstack/router-plugin`
 - [frontend/package-lock.json](../../../frontend/package-lock.json) — lockfile update
+- [frontend/.nvmrc](../../../frontend/.nvmrc) — bump Node version to `v20.19.0` to satisfy TanStack engine requirements
 
 ### Table Library Investigation (Google Sheets-like UX)
 
