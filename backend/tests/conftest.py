@@ -4,10 +4,13 @@ from collections.abc import Generator
 import pytest
 from alembic import command
 from alembic.config import Config
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.api.dependencies import get_db
 from app.config import get_settings
+from app.main import app
 
 
 def _get_alembic_config(url: str) -> Config:
@@ -43,3 +46,14 @@ def db(db_engine: Engine) -> Generator[Session]:
     session.close()
     transaction.rollback()
     connection.close()
+
+
+@pytest.fixture
+def client(db: Session) -> Generator[TestClient]:
+    def _get_test_db() -> Generator[Session]:
+        yield db
+
+    app.dependency_overrides[get_db] = _get_test_db
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()

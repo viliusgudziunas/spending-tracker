@@ -134,13 +134,18 @@ Set up pytest as the backend test framework with a clear separation between unit
 
 ---
 
-## Commit 6 — Backend: update CSV parser to preserve all rows and raw data
+## Commit 6 — Backend: update CSV parser to preserve all rows and raw data [COMMITTED]
 
 Removes the `Product != "Deposit"` filter and attaches original row data as `raw_data`.
 
 **Files:**
 
 - [backend/app/bank_statement_parser.py](../../../backend/app/bank_statement_parser.py) — rewrite `parse_statement()` to keep all rows and add `raw_data`
+- `backend/tests/unit/test_bank_statement_parser.py` — update parser unit tests for the new behavior (no row filtering, `raw_data` included)
+- `backend/tests/integration/test_reports_routes.py` — integration tests for `POST /reports` uploading real CSV files and asserting both API response and persisted DB rows
+- `backend/tests/integration/fixtures/report_upload.csv` — CSV fixture used by endpoint integration tests
+- `backend/tests/conftest.py` — add `TestClient` fixture with DB dependency override for endpoint integration tests
+- [backend/pyproject.toml](../../../backend/pyproject.toml) and [backend/poetry.lock](../../../backend/poetry.lock) — add `httpx` (dev dependency) required by FastAPI/Starlette `TestClient`
 
 ---
 

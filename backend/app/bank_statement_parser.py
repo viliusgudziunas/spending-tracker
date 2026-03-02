@@ -13,8 +13,13 @@ async def parse_upload_file(file: UploadFile) -> pd.DataFrame:
 
 
 def parse_statement(statement: pd.DataFrame) -> list[dict[Hashable, Any]]:
-    current_account = statement[statement["Product"] != "Deposit"]
-    current_account = current_account.rename(
-        columns={col: col.replace(" ", "_").lower() for col in current_account.columns},
+    original_records = statement.to_dict(orient="records")
+    normalized = statement.rename(
+        columns={col: col.replace(" ", "_").lower() for col in statement.columns},
     )
-    return current_account.to_dict(orient="records")
+
+    records = normalized.to_dict(orient="records")
+    for i, record in enumerate(records):
+        record["raw_data"] = original_records[i] if i < len(original_records) else {}
+
+    return records
