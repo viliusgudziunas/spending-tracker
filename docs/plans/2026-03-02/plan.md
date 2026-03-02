@@ -225,17 +225,18 @@ Implementation notes for upcoming frontend commits:
 
 ---
 
-## Commit 9 — Frontend: set up TanStack Router with file-based routing
+## Commit 9 — Frontend: set up TanStack Router with file-based routing [COMMITTED]
 
 Replaces the old provider-wrapped `App` entry point with router-based rendering. The existing `App` component is preserved at `/`.
 
 **Files:**
 
-- [frontend/vite.config.ts](../../../frontend/vite.config.ts) — add `TanStackRouterVite()` plugin
+- [frontend/vite.config.ts](../../../frontend/vite.config.ts) — add `tanstackRouter()` plugin
 - [frontend/src/main.tsx](../../../frontend/src/main.tsx) — replace provider nesting with `RouterProvider`, add router type declaration
 - [frontend/src/routes/\_\_root.tsx](../../../frontend/src/routes/__root.tsx) — root route wrapping `Outlet` in `ReportsProvider` / `RulesProvider` / `ModalProvider`
 - [frontend/src/routes/index.tsx](../../../frontend/src/routes/index.tsx) — `/` route mapping to `App`
 - [frontend/src/routeTree.gen.ts](../../../frontend/src/routeTree.gen.ts) — auto-generated route tree (include only the `/` and root routes at this point; the other routes will be added by later commits)
+- [frontend/package.json](../../../frontend/package.json) and [frontend/package-lock.json](../../../frontend/package-lock.json) — `typescript-eslint` toolchain compatibility update so linting supports the current TypeScript version in use
 
 ---
 
