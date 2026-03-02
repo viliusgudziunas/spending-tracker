@@ -69,6 +69,17 @@ Pure refactor — changes `UUID(as_uuid=True)` to `UUID[uuid.UUID](as_uuid=True)
 
 ---
 
+## Commit 3.5 — Backend: add .env files for local development [COMMITTED]
+
+Adds `.env.example` (committed) and `.env` (secret, local copy) so that Alembic migrations and other local commands can access required environment variables (`DATABASE_URL`, `ORIGIN_URL`) without Docker.
+
+**Files:**
+
+- [backend/.env.example](../../../backend/.env.example) — committed template with default local values
+- `backend/.env` — local copy (not committed)
+
+---
+
 ## Commit 4 — Backend: add schema versioning, new transaction fields, and migration
 
 The core data model evolution. Adds `schema_version` and `data` to `Report`, adds `schema_version`, `type`, `product`, `currency`, `state`, `balance`, `raw_data` to `Transaction`, fixes `fee` from `Integer` to `Float`.
