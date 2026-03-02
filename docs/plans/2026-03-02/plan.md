@@ -2,6 +2,16 @@
 
 The staged diff touches 23 files across backend and frontend. The plan below splits them into 12 small commits ordered by dependency so each commit leaves the codebase in a working state.
 
+## Workflow
+
+Most changes already exist in a git stash. For each commit:
+
+1. **Pop the stash** to restore all pending changes.
+2. **Keep only the files for the current commit** — unstage and revert everything else, delete any new files that belong to later commits.
+3. **Refine** — review and adjust the kept changes as needed.
+4. **Commit** — stage and commit the current step.
+5. **Repeat** — pop the stash again for the next commit.
+
 ```mermaid
 graph LR
   subgraph backend [Backend]
