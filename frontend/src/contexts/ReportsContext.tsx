@@ -30,11 +30,11 @@ export interface ReportsContextType {
 
 const defaultContext: ReportsContextType = {
     actions: {
-        addToReportLine: async () => ({} as Override),
-        createReport: async () => ({} as Report),
-        fetchReport: async () => ({} as ReportFull),
+        addToReportLine: async () => ({}) as Override,
+        createReport: async () => ({}) as Report,
+        fetchReport: async () => ({}) as ReportFull,
         fetchReports: async () => {},
-        generateReport: async () => ({} as ReportFull),
+        generateReport: async () => ({}) as ReportFull,
         removeFromReportLine: async () => {},
         selectReport: () => {},
     },

@@ -96,7 +96,7 @@ const AddToFilterModal: React.FC<AddToFilterModalProps> = ({ transaction }) => {
                                                 group.id as string,
                                                 rule.id as string,
                                                 "type",
-                                                e.target.value as RuleType
+                                                e.target.value as RuleType,
                                             )
                                         }
                                         operatorValue={rule.operator}
@@ -105,7 +105,7 @@ const AddToFilterModal: React.FC<AddToFilterModalProps> = ({ transaction }) => {
                                                 group.id as string,
                                                 rule.id as string,
                                                 "operator",
-                                                e.target.value as RuleOperator
+                                                e.target.value as RuleOperator,
                                             )
                                         }
                                         ruleValue={rule.value}
@@ -114,7 +114,7 @@ const AddToFilterModal: React.FC<AddToFilterModalProps> = ({ transaction }) => {
                                                 group.id as string,
                                                 rule.id as string,
                                                 "value",
-                                                e.target.value
+                                                e.target.value,
                                             )
                                         }
                                     />

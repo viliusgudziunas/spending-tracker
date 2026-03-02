@@ -94,7 +94,7 @@ const useFilterForm = (): UseFilterForm => {
         groupId: string,
         ruleId: string,
         field: keyof NewRule,
-        value: RuleType | RuleOperator | string
+        value: RuleType | RuleOperator | string,
     ) => {
         const changingRuleGroup = filter.ruleGroups.find((group) => group.id === groupId);
         const changingRule = changingRuleGroup?.rules.find((rule) => rule.id === ruleId);

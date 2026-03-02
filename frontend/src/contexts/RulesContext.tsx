@@ -56,10 +56,10 @@ export interface RulesContextType {
 
 const defaultContext: RulesContextType = {
     actions: {
-        createCategory: async () => ({} as Category),
-        createFilter: async () => ({} as Filter),
+        createCategory: async () => ({}) as Category,
+        createFilter: async () => ({}) as Filter,
         fetchCategories: async () => {},
-        updateFilter: async () => ({} as Filter),
+        updateFilter: async () => ({}) as Filter,
         deleteFilter: async () => {},
     },
     state: {

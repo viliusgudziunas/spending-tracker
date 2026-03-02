@@ -15,5 +15,5 @@ createRoot(document.getElementById("root")!).render(
                 </ModalProvider>
             </RulesProvider>
         </ReportsProvider>
-    </StrictMode>
+    </StrictMode>,
 );

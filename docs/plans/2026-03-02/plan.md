@@ -24,13 +24,17 @@ graph LR
 
 ---
 
-## Commit 1 — Makefile: add lint, db-autogenerate, db-upgrade targets [COMMITTED]
+## Commit 1 — Makefile and frontend linting: add make targets + prettier [COMMITTED]
 
-Standalone tooling change with no code dependencies.
+Standalone tooling change with no code dependencies. Adds `lint` (runs both backend and frontend), `lint-backend`, `lint-frontend`, `db-autogenerate`, and `db-upgrade` make targets. Installs prettier as a frontend dev dependency with a `.prettierrc` config (4-space indent, 120-char print width) to match existing code style. Fixes the 7 files that didn't conform to prettier formatting.
 
 **Files:**
 
-- [Makefile](../../../Makefile) — add `lint`, `db-autogenerate`, `db-upgrade` targets and update `.PHONY`
+- [Makefile](../../../Makefile) — add `lint` (runs both), `lint-backend` (check-only), `lint-frontend` (auto-fix with `--fix` and `--write`), `db-autogenerate`, `db-upgrade` targets and update `.PHONY`
+- [frontend/.prettierrc](../../../frontend/.prettierrc) — new config: `tabWidth: 4`, `printWidth: 120`
+- [frontend/package.json](../../../frontend/package.json) — add `prettier` to devDependencies
+- [frontend/package-lock.json](../../../frontend/package-lock.json) — lockfile update
+- 7 source files reformatted to pass prettier (`AddToFilterModal.tsx`, `CreateFilterModal.tsx`, `ReportsContext.tsx`, `RulesContext.tsx`, `useFilterForm.ts`, `main.tsx`, `api.parser.ts`)
 
 ---
 

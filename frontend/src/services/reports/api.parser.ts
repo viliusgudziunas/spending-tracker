@@ -13,7 +13,7 @@ export const parseApiReport = (apiReport: ApiReport): ReportFull => ({
     name: apiReport.name,
     categories: apiReport.categories.map((category) => parseApiReportCategory(category)),
     unidentifiedTransactions: apiReport.unidentified_transactions.map((transaction) =>
-        parseApiReportTransaction(transaction)
+        parseApiReportTransaction(transaction),
     ),
 });
 
