@@ -20,6 +20,10 @@ export interface CreateReportPayload {
 }
 
 const createReport = async (payload: CreateReportPayload): Promise<Report> => {
+    if (!API_URL) {
+        throw new Error("API URL is not configured. Set VITE_API_URL in frontend env.");
+    }
+
     const formData = new FormData();
     formData.append("file", payload.bankStatement);
     formData.append("name", payload.name);
@@ -29,8 +33,18 @@ const createReport = async (payload: CreateReportPayload): Promise<Report> => {
             headers: { "Content-Type": "multipart/form-data" },
         });
         return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error creating report:", error);
+        if (axios.isAxiosError(error)) {
+            if (!error.response) {
+                throw new Error(`Cannot connect to backend at ${API_URL}. Is the backend server running?`);
+            }
+            const detail =
+                typeof error.response?.data?.detail === "string"
+                    ? error.response.data.detail
+                    : "Request failed while creating report.";
+            throw new Error(detail);
+        }
         throw error;
     }
 };

@@ -252,15 +252,23 @@ Adds the new backend fields to all three type layers.
 
 ---
 
-## Commit 11 — Frontend: add HelloWorld page (CSV upload and preview)
+## Commit 11 — Frontend: add upload page (CSV upload and preview) [COMMITTED]
 
 New page for uploading bank statement CSVs with a client-side AG Grid preview.
 
 **Files:**
 
-- [frontend/src/routes/hello.tsx](../../../frontend/src/routes/hello.tsx) — `/hello` route definition
-- [frontend/src/components/HelloWorld.tsx](../../../frontend/src/components/HelloWorld.tsx) — full component (sidebar, file input, AG Grid preview, upload flow)
-- `frontend/src/routeTree.gen.ts` — regenerated to include `/hello`
+- [frontend/src/routes/upload.tsx](../../../frontend/src/routes/upload.tsx) — `/upload` route definition
+- [frontend/src/components/ReportUploadPage.tsx](../../../frontend/src/components/ReportUploadPage.tsx) — `ReportUploadPage` component with a compact form in a dedicated sidebar and AG Grid preview area, styled with Tailwind utility classes (no inline styles)
+- [frontend/package.json](../../../frontend/package.json) and [frontend/package-lock.json](../../../frontend/package-lock.json) — add Tailwind dependencies for Vite (`tailwindcss`, `@tailwindcss/vite`)
+- [frontend/package.json](../../../frontend/package.json) and [frontend/package-lock.json](../../../frontend/package-lock.json) — add TanStack Query dependency (`@tanstack/react-query`) for upload mutation handling
+- [frontend/vite.config.ts](../../../frontend/vite.config.ts) — register Tailwind Vite plugin
+- [frontend/src/index.css](../../../frontend/src/index.css) — switch to Tailwind entrypoint (`@import "tailwindcss";`)
+- [frontend/src/services/reports/apiService.ts](../../../frontend/src/services/reports/apiService.ts) — add robust upload error handling so submit failures show actionable messages in the upload UI
+- [frontend/.env.example](../../../frontend/.env.example) — frontend env template with `VITE_API_URL`
+- `frontend/.env` — local frontend env file for development
+- [frontend/src/routes/\_\_root.tsx](../../../frontend/src/routes/__root.tsx) and [frontend/src/services/reports/queries.ts](../../../frontend/src/services/reports/queries.ts) — set up `QueryClientProvider` and `useCreateReportMutation` so upload submit uses TanStack Query mutation flow instead of context action calls
+- `frontend/src/routeTree.gen.ts` — regenerated to include `/upload`
 
 ---
 
