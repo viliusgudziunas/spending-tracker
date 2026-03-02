@@ -172,6 +172,56 @@ Package-only change. No source code modifications.
 - [frontend/package.json](../../../frontend/package.json) — add `@tanstack/react-router`, `ag-grid-community`, `ag-grid-react`, `@tanstack/router-devtools`, `@tanstack/router-plugin`
 - [frontend/package-lock.json](../../../frontend/package-lock.json) — lockfile update
 
+### Table Library Investigation (Google Sheets-like UX)
+
+Goal: pick a frontend grid that supports:
+
+- Google Sheets-like **multi-cell copy** (multiple rows/columns at once)
+- **row-level actions**
+- report structure where **categories are sections**, and **filters + transactions are rows**
+- **no AG Grid Enterprise subscription**
+- **no inline editing**
+
+**Options evaluated**
+
+- **AG Grid (`ag-grid-react`)**
+  - Pros: mature table component; good copy/selection UX; easy action column per row; strong performance and docs.
+  - Cons: row grouping/tree data/master-detail style features are tied to Enterprise, so we must avoid those patterns.
+  - Fit for this project: still viable in Community edition if we model categories as UI sections and render plain row tables inside each section.
+
+- **Glide Data Grid (`@glideapps/glide-data-grid`)**
+  - Pros: very spreadsheet-like interaction model, strong copy behavior, MIT/open-source (no enterprise split risk).
+  - Cons: more custom wiring for per-row actions and sectioned report UX; smaller ecosystem than AG Grid.
+  - Fit for this project: strongest fallback if AG Grid Community misses required copy UX in practice.
+
+- **TanStack Table**
+  - Pros: lightweight, headless, highly flexible.
+  - Cons: not a ready-made spreadsheet grid; most spreadsheet UX must be built manually.
+  - Fit for this project: not ideal for your stated goal unless we intentionally want to build a custom table system from scratch.
+
+- **Handsontable**
+  - Pros: spreadsheet-first UX.
+  - Cons: commercial licensing is typically required for production/commercial use.
+  - Fit for this project: technically strong but license cost/constraints make it a less practical default choice.
+
+**Recommendation**
+
+Proceed with **AG Grid** for this codebase now.
+
+For your stated needs, AG Grid gives the fastest path:
+
+- multi-row/multi-column copy via range selection + clipboard support
+- row-level actions via a dedicated actions column (button/menu cell renderer)
+- no edit complexity (we can keep cells read-only and still support copy/selection UX)
+
+Implementation notes for upcoming frontend commits:
+
+- use **categories as separate sections** (not grouped rows)
+- inside each section, render rows for **filters** and **transactions** in read-only grids
+- include an **actions** column for row operations
+- avoid Enterprise-only AG Grid features (grouping/tree/master-detail)
+- if Community copy UX falls short in a quick prototype, switch to Glide Data Grid before building deeper UI
+
 ---
 
 ## Commit 9 — Frontend: set up TanStack Router with file-based routing
