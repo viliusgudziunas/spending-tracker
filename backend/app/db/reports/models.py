@@ -4,8 +4,10 @@ import enum
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Final
 
 from sqlalchemy import UUID, DateTime, Enum, Float, ForeignKey, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import ReportsBase
@@ -15,14 +17,20 @@ def naive_utcnow() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
+CURRENT_REPORT_SCHEMA_VERSION: Final[int] = 2
+
+
 class Report(ReportsBase):
     __tablename__ = "report"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, default=CURRENT_REPORT_SCHEMA_VERSION, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=naive_utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=naive_utcnow, onupdate=naive_utcnow, nullable=False)
+
+    data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     transactions: Mapped[list[Transaction]] = relationship("Transaction", back_populates="report")
     categories: Mapped[list[Category]] = relationship("Category", back_populates="report")
@@ -80,6 +88,9 @@ class TransactionSource(enum.StrEnum):
     override = enum.auto()
 
 
+CURRENT_TRANSACTION_SCHEMA_VERSION: Final[int] = 2
+
+
 class Transaction(ReportsBase):
     __tablename__ = "transaction"
 
@@ -89,6 +100,12 @@ class Transaction(ReportsBase):
     fee: Mapped[float] = mapped_column(Integer, nullable=False)
     started_date: Mapped[str] = mapped_column(DateTime, nullable=False)
     completed_date: Mapped[str] = mapped_column(DateTime, nullable=False)
+    currency: Mapped[str | None] = mapped_column(String, nullable=True)
+    state: Mapped[str | None] = mapped_column(String, nullable=True)
+    balance: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    raw_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
     source: Mapped[TransactionSource] = mapped_column(Enum(TransactionSource), default=TransactionSource.generated)
 
     report_id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), ForeignKey("report.id"), nullable=False)

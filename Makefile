@@ -1,4 +1,4 @@
-.PHONY: up lint lint-backend lint-frontend db-autogenerate db-upgrade
+.PHONY: up lint lint-backend lint-frontend db-autogenerate db-upgrade db-downgrade-1
 
 up: ## Start all services (Ctrl+C to stop and clean up)
 	docker compose up --build --watch; docker compose down
@@ -26,3 +26,6 @@ db-autogenerate: ## Auto-generate alembic migration (usage: make db-autogenerate
 
 db-upgrade: ## Upgrade database to latest migration
 	cd backend && poetry run alembic upgrade head
+
+db-downgrade-1: ## Downgrade database by one migration
+	cd backend && poetry run alembic downgrade -1

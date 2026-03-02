@@ -80,14 +80,16 @@ Adds `.env.example` (committed) and `.env` (secret, local copy) so that Alembic 
 
 ---
 
-## Commit 4 — Backend: add schema versioning, new transaction fields, and migration
+## Commit 4 — Backend: add schema versioning, new transaction fields, migration, and local dev setup [COMMITTED]
 
-The core data model evolution. Adds `schema_version` and `data` to `Report`, adds `schema_version`, `type`, `product`, `currency`, `state`, `balance`, `raw_data` to `Transaction`, fixes `fee` from `Integer` to `Float`.
+Adds schema versioning and new fields to the data model, with a migration that safely backfills existing data. Also adds `.env` support for running commands locally and a `db-downgrade` make target.
 
 **Files:**
 
-- [backend/app/db/reports/models.py](../../../backend/app/db/reports/models.py) — add `CURRENT_REPORT_SCHEMA_VERSION`, `CURRENT_TRANSACTION_SCHEMA_VERSION` constants; add new columns; add `JSONB` import
-- [backend/migrations/versions/x_2026_01_15_000841_0ace9745d299_add_jsonb_fields.py](../../../backend/migrations/versions/x_2026_01_15_000841_0ace9745d299_add_jsonb_fields.py) — new migration with nullable-first strategy, backfill, then not-null
+- [Makefile](../../../Makefile) — add `db-downgrade` target (rolls back one migration)
+- [backend/app/config.py](../../../backend/app/config.py) — configure pydantic-settings to load from `.env` file
+- [backend/app/db/reports/models.py](../../../backend/app/db/reports/models.py) — add `CURRENT_REPORT_SCHEMA_VERSION`, `CURRENT_TRANSACTION_SCHEMA_VERSION` constants; add `schema_version`, `data` (JSONB) to `Report`; add `schema_version`, `currency`, `state`, `balance`, `raw_data` (JSONB) to `Transaction`
+- [backend/migrations/versions/x*2026_03_02_233153_ae2302096d52*.py](../../../backend/migrations/versions/x_2026_03_02_233153_ae2302096d52_.py) — new migration: adds columns as nullable, backfills `schema_version = 1`, makes non-null; changes `fee` from INTEGER to Float
 
 ---
 
