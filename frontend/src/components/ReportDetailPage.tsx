@@ -36,12 +36,14 @@ const TRANSACTION_COLUMNS: ColDef<Transaction>[] = [
 ];
 
 function buildFilterRows(filters: ReportFilter[]): FilterRow[] {
-    return filters.map((filter) => ({
-        id: filter.id,
-        name: filter.name,
-        amount: filter.amount,
-        transactionCount: filter.transactions.length,
-    }));
+    return filters
+        .filter((filter) => filter.transactions.length > 0)
+        .map((filter) => ({
+            id: filter.id,
+            name: filter.name,
+            amount: filter.amount,
+            transactionCount: filter.transactions.length,
+        }));
 }
 
 function buildCategoryTsv(category: ReportCategory): string {
