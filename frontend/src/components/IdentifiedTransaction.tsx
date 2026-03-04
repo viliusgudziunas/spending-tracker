@@ -26,7 +26,7 @@ const IdentifiedTransaction: React.FC<IdentifiedTransactionProps> = ({ filter })
     return (
         <>
             <tr key={filter.id}>
-                <td>{(-parseFloat(filter.amount)).toString()}</td>
+                <td>{filter.amount}</td>
                 <td>{filter.name}</td>
                 <td style={{ textAlign: "center" }}>
                     <button onClick={() => setExpanded(!expanded)} style={{ cursor: "pointer" }}>

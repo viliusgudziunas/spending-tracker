@@ -26,7 +26,7 @@ const parseApiReportCategory = (category: ApiReportCategory): ReportCategory => 
 export const parseApiReportFilter = (filter: ApiReportFilter): ReportFilter => ({
     id: filter.id,
     name: filter.name,
-    amount: filter.amount,
+    amount: String(-Number(filter.amount)),
     transactions: filter.transactions.map((transaction) => parseApiReportTransaction(transaction)),
 });
 
@@ -37,7 +37,7 @@ const parseApiReportTransaction = (transaction: ApiTransaction): Transaction => 
     description: transaction.description,
     startedDate: transaction.started_date,
     completedDate: transaction.completed_date,
-    amount: transaction.amount,
+    amount: -transaction.amount,
     fee: transaction.fee,
     currency: transaction.currency,
     state: transaction.state,
