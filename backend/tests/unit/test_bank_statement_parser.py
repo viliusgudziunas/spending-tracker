@@ -48,7 +48,7 @@ class TestParseStatement:
 
         result = parse_statement(statement)
 
-        assert all(key == key.lower() for key in result[0])
+        assert all(key == str(key).lower() for key in result[0])
 
     def test_returns_list_of_dicts(self) -> None:
         statement = pd.DataFrame(

@@ -5,12 +5,13 @@ up: ## Start all services (Ctrl+C to stop and clean up)
 
 lint: lint-backend lint-frontend ## Run all linters
 
-lint-backend: ## Run backend linters (ruff)
+lint-backend: ## Run backend linters (ruff + ty)
 	@echo "🔍 Backend linter"
 	@EXIT_CODE=0; \
 	cd backend && \
 	poetry run ruff check --fix || EXIT_CODE=$$?; \
 	poetry run ruff format || EXIT_CODE=$$?; \
+	poetry run ty check || EXIT_CODE=$$?; \
 	exit $$EXIT_CODE
 
 lint-frontend: ## Run frontend linters (eslint + prettier)
