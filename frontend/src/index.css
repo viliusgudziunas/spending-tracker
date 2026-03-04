@@ -3,3 +3,7 @@
 .ag-layout-auto-height .ag-center-cols-viewport {
     min-height: unset !important;
 }
+
+.ag-layout-auto-height .ag-root:has(.ag-overlay-no-rows-wrapper) .ag-center-cols-viewport {
+    min-height: 42px !important;
+}
