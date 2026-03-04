@@ -28,3 +28,14 @@ export function useCreateReportMutation(): UseMutationResult<Report, Error, Crea
         },
     });
 }
+
+export function useGenerateReportMutation(): UseMutationResult<ReportFull, Error, string> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (reportId: string) => await reportsApi.generateReport(reportId),
+        onSuccess: async (_data, reportId) => {
+            await queryClient.invalidateQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+        },
+    });
+}
