@@ -128,15 +128,7 @@ function ReportSections({ report, onFilterClick, selectedFilterId }: ReportSecti
                 />
             ))}
 
-            {hasUnidentified ? (
-                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h2 className="m-0 text-base font-semibold text-slate-700">Unidentified Transactions</h2>
-                    <p className="m-0 mt-1 text-xs text-slate-400">
-                        {report.unidentifiedTransactions.length} transaction
-                        {report.unidentifiedTransactions.length !== 1 ? "s" : ""}
-                    </p>
-                </div>
-            ) : null}
+            {hasUnidentified ? <UnidentifiedSection transactions={report.unidentifiedTransactions} /> : null}
         </>
     );
 }
@@ -214,6 +206,41 @@ function CategorySection({ category, onFilterClick, selectedFilterId }: Category
                     ensureDomOrder={true}
                     onRowClicked={handleRowClicked}
                     getRowClass={getRowClass}
+                />
+            </div>
+        </div>
+    );
+}
+
+interface UnidentifiedSectionProps {
+    transactions: Transaction[];
+}
+
+function UnidentifiedSection({ transactions }: UnidentifiedSectionProps): JSX.Element {
+    const defaultColDef = useMemo<ColDef<Transaction>>(
+        () => ({
+            resizable: false,
+            sortable: true,
+            filter: false,
+        }),
+        [],
+    );
+
+    return (
+        <div className="flex flex-col gap-2">
+            <h2 className="m-0 text-base font-semibold text-slate-700">
+                Unidentified Transactions ({transactions.length})
+            </h2>
+
+            <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
+                <AgGridReact<Transaction>
+                    theme={themeQuartz}
+                    columnDefs={TRANSACTION_COLUMNS}
+                    rowData={transactions}
+                    defaultColDef={defaultColDef}
+                    domLayout="autoHeight"
+                    enableCellTextSelection={true}
+                    ensureDomOrder={true}
                 />
             </div>
         </div>
