@@ -1,8 +1,22 @@
-import { UseMutationResult, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Report } from "./api.types.parsed";
+import { UseMutationResult, UseQueryResult, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Report, ReportFull } from "./api.types.parsed";
 import reportsApi, { CreateReportPayload } from "./apiService";
 
 export const REPORTS_QUERY_KEY = ["reports"] as const;
+
+export function useReportsQuery(): UseQueryResult<Report[]> {
+    return useQuery({
+        queryKey: REPORTS_QUERY_KEY,
+        queryFn: reportsApi.fetchReports,
+    });
+}
+
+export function useReportQuery(reportId: string): UseQueryResult<ReportFull> {
+    return useQuery({
+        queryKey: [...REPORTS_QUERY_KEY, reportId],
+        queryFn: async () => await reportsApi.fetchReport(reportId),
+    });
+}
 
 export function useCreateReportMutation(): UseMutationResult<Report, Error, CreateReportPayload> {
     const queryClient = useQueryClient();

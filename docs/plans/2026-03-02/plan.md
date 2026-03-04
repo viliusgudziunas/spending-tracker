@@ -272,12 +272,18 @@ New page for uploading bank statement CSVs with a client-side AG Grid preview.
 
 ---
 
-## Commit 12 — Frontend: add ReportView page (report detail and generation)
+## Commit 12 — Frontend: add shared sidebar layout with reports list and report detail page [COMMITTED]
 
-New page for viewing a report's categorised transactions and triggering report generation.
+Introduces a TanStack Router layout route (`/_app`) with a persistent sidebar showing all reports and a "New Upload" link. The upload page and a new report detail page are children of this layout. The upload page form is moved into the main content area (no longer in the sidebar). Clicking a report in the sidebar navigates to `/reports/:reportId` which displays the report at the filter level — each category is a section with an AG Grid showing filter rows (Amount, Description, Txns columns). A "Copy" button per category copies all filters as TSV (amount, name, category) for pasting into Google Sheets. Clicking a filter row opens an inline side panel on the right showing that filter's transactions in a separate AG Grid; both the main report and the transaction panel are usable simultaneously (no modal overlay). The layout uses flex with a max-width of 1800px to accommodate the side panel.
 
 **Files:**
 
-- [frontend/src/routes/reports.$reportId.tsx](../../../frontend/src/routes/reports.$reportId.tsx) — `/reports/:reportId` route definition
-- [frontend/src/components/ReportView.tsx](../../../frontend/src/components/ReportView.tsx) — full component (sidebar, collapsible sections, AG Grid tables, generate button)
-- `frontend/src/routeTree.gen.ts` — regenerated to include `/reports/$reportId`
+- [frontend/src/routes/\_app.tsx](../../../frontend/src/routes/_app.tsx) — new pathless layout route rendering `AppSidebar` + `<Outlet />` in a flex layout (sidebar 300px, content flex-1, max-w-[1800px])
+- [frontend/src/routes/\_app/upload.tsx](../../../frontend/src/routes/_app/upload.tsx) — moved from `routes/upload.tsx`; child of `/_app` layout
+- [frontend/src/routes/\_app/reports.$reportId.tsx](../../../frontend/src/routes/_app/reports.$reportId.tsx) — `/reports/:reportId` route definition, reads `reportId` param
+- `frontend/src/routes/upload.tsx` — deleted (moved into `_app/`)
+- [frontend/src/components/AppSidebar.tsx](../../../frontend/src/components/AppSidebar.tsx) — new sidebar component: fetches reports list via `useReportsQuery`, renders `<Link>` elements with active highlighting, includes "New Upload" button
+- [frontend/src/components/ReportDetailPage.tsx](../../../frontend/src/components/ReportDetailPage.tsx) — new component: fetches single report via `useReportQuery`; renders categories as sections with filter-level AG Grids (Amount, Description, Txns); per-category "Copy" button for TSV clipboard export; clicking a filter row opens an inline sticky side panel (`TransactionPanel`) showing that filter's transactions in a full AG Grid; panel and main content are side-by-side (no overlay) so both can be interacted with simultaneously; clicking X or same row closes the panel
+- [frontend/src/components/ReportUploadPage.tsx](../../../frontend/src/components/ReportUploadPage.tsx) — simplified: removed outer `min-h-screen` layout wrapper and `<aside>` sidebar (now provided by layout route); upload form rendered inline as a card above the CSV preview grid
+- [frontend/src/services/reports/queries.ts](../../../frontend/src/services/reports/queries.ts) — added `useReportsQuery` (list) and `useReportQuery` (single report) TanStack Query hooks
+- `frontend/src/routeTree.gen.ts` — regenerated with `/_app` layout, `/_app/upload`, `/_app/reports/$reportId`
