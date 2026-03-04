@@ -154,7 +154,7 @@ function CategorySection({ category, onFilterClick, selectedFilterId }: Category
 
     const defaultColDef = useMemo<ColDef<FilterRow>>(
         () => ({
-            resizable: true,
+            resizable: false,
             sortable: false,
             filter: false,
         }),
@@ -228,7 +228,7 @@ interface TransactionPanelProps {
 function TransactionPanel({ filter, onClose }: TransactionPanelProps): JSX.Element {
     const defaultColDef = useMemo<ColDef<Transaction>>(
         () => ({
-            resizable: true,
+            resizable: false,
             sortable: true,
             filter: true,
         }),

@@ -99,7 +99,7 @@ export default function ReportUploadPage(): JSX.Element {
 
     const defaultColDef = useMemo<ColDef<PreviewRow>>(
         () => ({
-            resizable: true,
+            resizable: false,
             sortable: true,
             filter: true,
             flex: 1,
