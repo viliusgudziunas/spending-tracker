@@ -1,6 +1,6 @@
 import { AllCommunityModule, ModuleRegistry, themeQuartz, type ColDef } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { ChangeEvent, useMemo, useState } from "react";
+import { ChangeEvent, DragEvent, useRef, useMemo, useState } from "react";
 import { useCreateReportMutation } from "../services/reports/queries";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -108,8 +108,10 @@ export default function ReportUploadPage(): JSX.Element {
         [],
     );
 
-    const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
-        const selectedFile = event.target.files?.[0] ?? null;
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isDragOver, setIsDragOver] = useState(false);
+
+    const processFile = (selectedFile: File | null): void => {
         setFile(selectedFile);
         setUploadMessage("");
 
@@ -133,6 +135,25 @@ export default function ReportUploadPage(): JSX.Element {
             setRows(parsed.rows);
         };
         reader.readAsText(selectedFile);
+    };
+
+    const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
+        processFile(event.target.files?.[0] ?? null);
+    };
+
+    const handleDrop = (event: DragEvent<HTMLButtonElement>): void => {
+        event.preventDefault();
+        setIsDragOver(false);
+        processFile(event.dataTransfer.files[0] ?? null);
+    };
+
+    const handleDragOver = (event: DragEvent<HTMLButtonElement>): void => {
+        event.preventDefault();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (): void => {
+        setIsDragOver(false);
     };
 
     const handleUpload = async (): Promise<void> => {
@@ -163,35 +184,65 @@ export default function ReportUploadPage(): JSX.Element {
                 <h2 className="m-0 text-lg font-semibold text-slate-900">Upload CSV</h2>
                 <p className="m-0 mt-1 text-xs text-slate-500">Select a CSV file and create a new report.</p>
 
-                <div className="mt-3 flex flex-wrap items-end gap-3">
-                    <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700">
-                        CSV file
-                        <input type="file" accept=".csv,text/csv" onChange={handleFileChange} />
-                    </label>
-
-                    <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700">
-                        Report name
-                        <input
-                            value={reportName}
-                            onChange={(event): void => setReportName(event.target.value)}
-                            placeholder="e.g. January 2026"
-                            className="min-h-[34px] rounded-md border border-slate-300 px-2 py-1.5 text-xs font-normal text-slate-900 placeholder:text-slate-400"
-                        />
-                    </label>
-
+                <div className="mt-3 flex flex-col gap-3">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv,text/csv"
+                        onChange={handleFileChange}
+                        className="hidden"
+                    />
                     <button
                         type="button"
-                        onClick={(): void => void handleUpload()}
-                        disabled={createReportMutation.isPending}
-                        className="min-h-[34px] rounded-md bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                        onClick={(): void => fileInputRef.current?.click()}
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        className={`flex min-h-[80px] flex-col items-center justify-center rounded-lg border-2 border-dashed px-4 py-5 transition ${
+                            isDragOver
+                                ? "border-blue-400 bg-blue-50"
+                                : file !== null
+                                  ? "border-green-300 bg-green-50"
+                                  : "border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100"
+                        }`}
                     >
-                        {createReportMutation.isPending ? "Uploading..." : "Upload CSV"}
+                        {file !== null ? (
+                            <>
+                                <span className="text-sm font-medium text-green-700">{file.name}</span>
+                                <span className="mt-1 text-xs text-green-600">
+                                    {rows.length} rows &middot; {columnDefs.length} columns &middot; click or drop to
+                                    replace
+                                </span>
+                            </>
+                        ) : (
+                            <>
+                                <span className="text-sm font-medium text-slate-600">
+                                    Drop a CSV file here or click to browse
+                                </span>
+                                <span className="mt-1 text-xs text-slate-400">.csv files only</span>
+                            </>
+                        )}
                     </button>
 
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
-                        <span>{file !== null ? `File: ${file.name}` : "No file selected"}</span>
-                        <span>{`Rows: ${rows.length}`}</span>
-                        <span>{`Columns: ${columnDefs.length}`}</span>
+                    <div className="flex flex-wrap items-end gap-3">
+                        <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700">
+                            Report name
+                            <input
+                                value={reportName}
+                                onChange={(event): void => setReportName(event.target.value)}
+                                placeholder="e.g. January 2026"
+                                className="min-h-[34px] rounded-md border border-slate-300 px-2 py-1.5 text-xs font-normal text-slate-900 placeholder:text-slate-400"
+                            />
+                        </label>
+
+                        <button
+                            type="button"
+                            onClick={(): void => void handleUpload()}
+                            disabled={createReportMutation.isPending}
+                            className="min-h-[34px] rounded-md bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                        >
+                            {createReportMutation.isPending ? "Uploading..." : "Upload CSV"}
+                        </button>
                     </div>
                 </div>
 
