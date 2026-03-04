@@ -1,10 +1,9 @@
 import uuid
 from collections.abc import Iterable
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Body, Depends, UploadFile, status
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
 from app.api.reports.models import OverrideInput, OverrideResponse, ReportFullResponse, ReportResponse
@@ -29,6 +28,9 @@ from app.db.reports.repository import (
     reset_report,
 )
 from app.db.rules.repository import get_categories
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 router = APIRouter()
 

@@ -1,9 +1,11 @@
 from collections.abc import Hashable
 from io import BytesIO
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
-from fastapi import UploadFile
+
+if TYPE_CHECKING:
+    from fastapi import UploadFile
 
 
 async def parse_upload_file(file: UploadFile) -> pd.DataFrame:

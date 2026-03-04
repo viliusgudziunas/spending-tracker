@@ -1,13 +1,16 @@
 import uuid
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from psycopg2.errors import UniqueViolation
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
 from app.db.rules.models import Category, Filter, Rule, RuleGroup
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 
 class DuplicateCategoryError(Exception):

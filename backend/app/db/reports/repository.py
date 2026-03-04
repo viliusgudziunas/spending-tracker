@@ -1,15 +1,17 @@
 import uuid
 from collections.abc import Iterable, Sequence
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 from pydantic import BaseModel
 from sqlalchemy import update
-from sqlalchemy.orm import Session
 from sqlalchemy.sql import select
 
 from app.db.reports.models import Category, Filter, Override, Report, Transaction, TransactionSource
 from app.db.rules.models import Category as RuleCategory
 from app.transactions_service import get_transactions_matching_rule
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 
 class CreateReportTransactionDto(BaseModel):

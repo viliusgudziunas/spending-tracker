@@ -1,9 +1,8 @@
 import uuid
 from collections.abc import Iterable
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
 from app.api.rules.models import (
@@ -34,6 +33,9 @@ from app.db.rules.repository import (
     get_filters,
     update_filter,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 router = APIRouter()
 

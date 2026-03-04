@@ -1,7 +1,7 @@
 import uuid
+from typing import TYPE_CHECKING
 
 import pytest
-from sqlalchemy.orm import Session
 
 from app.db.reports.repository import (
     CreateReportDto,
@@ -11,6 +11,9 @@ from app.db.reports.repository import (
     get_report,
     get_reports,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 
 def _sample_transaction_dto() -> CreateReportTransactionDto:
