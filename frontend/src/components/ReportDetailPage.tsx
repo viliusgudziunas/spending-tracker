@@ -190,8 +190,6 @@ function CategorySection({ category, onFilterClick, selectedFilterId }: Category
         [selectedFilterId],
     );
 
-    const gridHeight = 42 + rows.length * 42;
-
     return (
         <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -205,15 +203,13 @@ function CategorySection({ category, onFilterClick, selectedFilterId }: Category
                 </button>
             </div>
 
-            <div
-                style={{ height: gridHeight }}
-                className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white"
-            >
+            <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
                 <AgGridReact<FilterRow>
                     theme={themeQuartz}
                     columnDefs={FILTER_COLUMNS}
                     rowData={rows}
                     defaultColDef={defaultColDef}
+                    domLayout="autoHeight"
                     enableCellTextSelection={true}
                     ensureDomOrder={true}
                     onRowClicked={handleRowClicked}
@@ -239,8 +235,6 @@ function TransactionPanel({ filter, onClose }: TransactionPanelProps): JSX.Eleme
         [],
     );
 
-    const gridHeight = Math.min(42 + filter.transactions.length * 42, 500);
-
     return (
         <div className="sticky top-4 flex w-[420px] shrink-0 flex-col gap-3 self-start">
             <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -262,15 +256,13 @@ function TransactionPanel({ filter, onClose }: TransactionPanelProps): JSX.Eleme
             </div>
 
             {filter.transactions.length > 0 ? (
-                <div
-                    style={{ height: gridHeight }}
-                    className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white"
-                >
+                <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white">
                     <AgGridReact<Transaction>
                         theme={themeQuartz}
                         columnDefs={TRANSACTION_COLUMNS}
                         rowData={filter.transactions}
                         defaultColDef={defaultColDef}
+                        domLayout="autoHeight"
                         enableCellTextSelection={true}
                         ensureDomOrder={true}
                     />

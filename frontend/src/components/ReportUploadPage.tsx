@@ -208,12 +208,13 @@ export default function ReportUploadPage(): JSX.Element {
                 ) : null}
             </div>
 
-            <div className="h-[640px] w-full overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white">
                 <AgGridReact<PreviewRow>
                     theme={themeQuartz}
                     columnDefs={columnDefs}
                     rowData={rows}
                     defaultColDef={defaultColDef}
+                    domLayout="autoHeight"
                 />
             </div>
         </div>

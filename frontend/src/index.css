@@ -1,1 +1,5 @@
 @import "tailwindcss";
+
+.ag-layout-auto-height .ag-center-cols-viewport {
+    min-height: unset !important;
+}
