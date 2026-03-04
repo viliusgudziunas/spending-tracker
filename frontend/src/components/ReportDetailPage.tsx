@@ -1,6 +1,6 @@
 import { AllCommunityModule, ModuleRegistry, themeQuartz, type ColDef, type RowClickedEvent } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReportCategory, ReportFull, ReportFilter, Transaction } from "../services/reports/api.types.parsed";
 import { useReportQuery } from "../services/reports/queries";
 
@@ -54,9 +54,15 @@ interface ReportDetailPageProps {
     reportId: string;
 }
 
+const MIN_PANEL_WIDTH = 300;
+const MAX_PANEL_WIDTH = 800;
+const DEFAULT_PANEL_WIDTH = 420;
+
 export default function ReportDetailPage({ reportId }: ReportDetailPageProps): JSX.Element {
     const { data: report, isLoading, isError } = useReportQuery(reportId);
     const [selectedFilter, setSelectedFilter] = useState<ReportFilter | null>(null);
+    const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
+    const isDragging = useRef(false);
 
     const handleFilterClick = useCallback((filter: ReportFilter): void => {
         setSelectedFilter((prev) => (prev?.id === filter.id ? null : filter));
@@ -64,6 +70,35 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
 
     const handleClosePanel = useCallback((): void => {
         setSelectedFilter(null);
+    }, []);
+
+    const handleMouseDown = useCallback((e: React.MouseEvent): void => {
+        e.preventDefault();
+        isDragging.current = true;
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+    }, []);
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent): void => {
+            if (!isDragging.current) return;
+            const newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, window.innerWidth - e.clientX - 20));
+            setPanelWidth(newWidth);
+        };
+
+        const handleMouseUp = (): void => {
+            if (!isDragging.current) return;
+            isDragging.current = false;
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        };
+
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+        return (): void => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
     }, []);
 
     if (isLoading) {
@@ -83,7 +118,7 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
     }
 
     return (
-        <div className="flex gap-3">
+        <div className="flex">
             <div className="flex min-w-0 flex-1 flex-col gap-3">
                 <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <h1 className="m-0 text-2xl font-semibold text-slate-900">{report.name}</h1>
@@ -96,7 +131,17 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
                 />
             </div>
 
-            {selectedFilter !== null ? <TransactionPanel filter={selectedFilter} onClose={handleClosePanel} /> : null}
+            {selectedFilter !== null ? (
+                <>
+                    <div
+                        onMouseDown={handleMouseDown}
+                        className="group flex w-3 shrink-0 cursor-col-resize items-stretch justify-center"
+                    >
+                        <div className="w-px bg-slate-200 transition-colors group-hover:w-0.5 group-hover:bg-slate-400" />
+                    </div>
+                    <TransactionPanel filter={selectedFilter} onClose={handleClosePanel} width={panelWidth} />
+                </>
+            ) : null}
         </div>
     );
 }
@@ -252,9 +297,10 @@ function UnidentifiedSection({ transactions }: UnidentifiedSectionProps): JSX.El
 interface TransactionPanelProps {
     filter: ReportFilter;
     onClose: () => void;
+    width: number;
 }
 
-function TransactionPanel({ filter, onClose }: TransactionPanelProps): JSX.Element {
+function TransactionPanel({ filter, onClose, width }: TransactionPanelProps): JSX.Element {
     const defaultColDef = useMemo<ColDef<Transaction>>(
         () => ({
             resizable: false,
@@ -265,7 +311,7 @@ function TransactionPanel({ filter, onClose }: TransactionPanelProps): JSX.Eleme
     );
 
     return (
-        <div className="sticky top-4 flex w-[420px] shrink-0 flex-col gap-3 self-start">
+        <div className="sticky top-4 flex shrink-0 flex-col gap-3 self-start" style={{ width }}>
             <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="min-w-0">
                     <h2 className="m-0 truncate text-lg font-semibold text-slate-900">{filter.name}</h2>
