@@ -18,7 +18,7 @@ const FILTER_COLUMNS: ColDef<FilterRow>[] = [
     { field: "name", headerName: "Description", flex: 1, minWidth: 200 },
     {
         field: "transactionCount",
-        headerName: "Txns",
+        headerName: "#",
         width: 80,
         cellClass: "text-slate-400",
     },
