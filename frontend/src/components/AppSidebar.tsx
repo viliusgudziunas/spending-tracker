@@ -1,20 +1,70 @@
 import { Link, useMatchRoute } from "@tanstack/react-router";
 import { useReportsQuery } from "../services/reports/queries";
 
-export default function AppSidebar(): JSX.Element {
+interface AppSidebarProps {
+    collapsed: boolean;
+    onToggle: () => void;
+}
+
+export default function AppSidebar({ collapsed, onToggle }: AppSidebarProps): JSX.Element {
     const { data: reports, isLoading, isError } = useReportsQuery();
     const matchRoute = useMatchRoute();
+
+    if (collapsed) {
+        return (
+            <aside className="sticky top-4 flex h-fit flex-col items-center rounded-xl border border-slate-200 bg-white py-3 shadow-sm">
+                <button
+                    type="button"
+                    onClick={onToggle}
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                >
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        <polyline points="6 3 11 8 6 13" />
+                    </svg>
+                </button>
+            </aside>
+        );
+    }
 
     return (
         <aside className="sticky top-4 flex h-fit flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
                 <h2 className="m-0 text-lg font-semibold text-slate-900">Reports</h2>
-                <Link
-                    to="/upload"
-                    className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white no-underline transition hover:bg-blue-700"
-                >
-                    New Upload
-                </Link>
+                <div className="flex items-center gap-1.5">
+                    <Link
+                        to="/upload"
+                        className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white no-underline transition hover:bg-blue-700"
+                    >
+                        New Upload
+                    </Link>
+                    <button
+                        type="button"
+                        onClick={onToggle}
+                        className="flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                    >
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        >
+                            <polyline points="10 3 5 8 10 13" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             {isLoading ? <p className="m-0 text-xs text-slate-400">Loading reports...</p> : null}
