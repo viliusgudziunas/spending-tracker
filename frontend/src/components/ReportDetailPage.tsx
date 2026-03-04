@@ -46,10 +46,6 @@ function buildFilterRows(filters: ReportFilter[]): FilterRow[] {
         }));
 }
 
-function buildCategoryTsv(category: ReportCategory): string {
-    return category.filters.map((filter) => `${filter.amount}\t${filter.name}\t${category.name}`).join("\n");
-}
-
 interface ReportDetailPageProps {
     reportId: string;
 }
@@ -193,6 +189,13 @@ interface CategorySectionProps {
     category: ReportCategory;
     onFilterClick: (filter: ReportFilter) => void;
     selectedFilterId: string | null;
+}
+
+function buildCategoryTsv(category: ReportCategory): string {
+    return category.filters
+        .filter((filter) => filter.transactions.length > 0)
+        .map((filter) => `${filter.amount}\t${filter.name}`)
+        .join("\n");
 }
 
 function CategorySection({ category, onFilterClick, selectedFilterId }: CategorySectionProps): JSX.Element {
