@@ -1,0 +1,10 @@
+Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
+Card Payment,Current,2026-01-02 10:00:00,2026-01-02 10:00:00,Supermarket A,-25.50,0.00,EUR,COMPLETED,5000.00
+Card Payment,Current,2026-01-03 11:00:00,2026-01-03 11:00:00,Supermarket A,-18.30,0.00,EUR,COMPLETED,4981.70
+Card Payment,Current,2026-01-04 09:00:00,2026-01-04 09:00:00,Restaurant X,-42.00,0.00,EUR,COMPLETED,4939.70
+Card Payment,Current,2026-01-05 20:00:00,2026-01-05 20:00:00,Restaurant X,-35.00,0.00,EUR,COMPLETED,4904.70
+Transfer,Savings,2026-01-06 08:00:00,2026-01-06 08:00:00,Monthly rent,-800.00,0.00,EUR,COMPLETED,4104.70
+Transfer,Savings,2026-01-07 08:00:00,2026-01-07 08:00:00,Monthly rent,-800.00,0.00,EUR,COMPLETED,3304.70
+Card Payment,Current,2026-01-08 15:00:00,2026-01-08 15:00:00,Electric bill,-95.00,0.00,EUR,COMPLETED,3209.70
+Card Payment,Current,2026-01-09 15:00:00,2026-01-09 15:00:00,Electric bill,-95.00,0.00,EUR,COMPLETED,3114.70
+Transfer,Savings,2026-01-10 12:00:00,2026-01-10 12:00:00,Unknown purchase,-15.00,0.00,EUR,COMPLETED,3099.70

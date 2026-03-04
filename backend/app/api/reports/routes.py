@@ -1,36 +1,30 @@
 import uuid
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, UploadFile, status
 from pydantic import BaseModel
+from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
 from app.api.reports.models import OverrideInput, OverrideResponse, ReportFullResponse, ReportResponse
 from app.bank_statement_parser import parse_statement, parse_upload_file
-from app.db.reports.models import Override, Report
+from app.db.reports.models import CURRENT_REPORT_SCHEMA_VERSION, Override, Report
 from app.db.reports.repository import (
     CreateOverrideDto,
     CreateReportDto,
     CreateReportTransactionDto,
-    GenerateReportDto,
     LinkTransactionToFilterDto,
-    apply_overrides,
     create_override,
     create_report,
     delete_override,
-    generate_report,
     get_filter,
     get_report,
     get_reports,
     get_transaction,
     link_transaction_to_filter,
-    reset_report,
 )
-from app.db.rules.repository import get_categories
-
-if TYPE_CHECKING:
-    from sqlalchemy.orm import Session
+from app.services import report_service
 
 router = APIRouter()
 
@@ -78,20 +72,17 @@ async def get_reports_(db: Annotated[Session, Depends(get_db)]) -> Iterable[Repo
 
 
 @router.get("/reports/{report_id}", response_model=ReportFullResponse)
-async def get_report_(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> Report:
-    return get_report(db=db, report_id=report_id)
+async def get_report_(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> ReportFullResponse | Report:
+    report = get_report(db=db, report_id=report_id)
+    if report.schema_version < CURRENT_REPORT_SCHEMA_VERSION:
+        return report
+    return ReportFullResponse.model_validate(report_service.build_report_full_dict(report))
 
 
 @router.post("/reports/{report_id}/generate", response_model=ReportFullResponse)
-async def generate_report_(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> Report:
-    report = get_report(db=db, report_id=report_id)
-    reset_report(db=db, report=report)
-
-    rule_categories = get_categories(db=db)
-    generate_report(db=db, generate_report_dto=GenerateReportDto(report=report, rule_categories=rule_categories))
-    apply_overrides(db=db, report=report)
-
-    return report
+async def generate_report_(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> ReportFullResponse:
+    report = report_service.generate_report(db=db, report_id=report_id)
+    return ReportFullResponse.model_validate(report_service.build_report_full_dict(report))
 
 
 @router.post("/overrides", response_model=OverrideResponse)
