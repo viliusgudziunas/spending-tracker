@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.dependencies import get_db
-from app.api.rules.models import (
+from app.api.legacy.rules.models import (
     CategoryFullResponse,
     CategoryInput,
     FilterFullResponse,

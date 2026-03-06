@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
-from app.api.reports.models import OverrideInput, OverrideResponse, ReportFullResponse, ReportResponse
+from app.api.legacy.reports.models import OverrideInput, OverrideResponse, ReportFullResponse, ReportResponse
 from app.bank_statement_parser import parse_statement, parse_upload_file
 from app.db.reports.models import CURRENT_REPORT_SCHEMA_VERSION, Override, Report
 from app.db.reports.repository import (
