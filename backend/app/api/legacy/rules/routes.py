@@ -13,15 +13,11 @@ from app.api.legacy.rules.models import (
 )
 from app.db.rules.models import Filter, Rule
 from app.db.rules.repository import (
-    CreateFilterDTO,
-    CreateRuleDTO,
-    CreateRuleGroupDTO,
     CreateSingleRuleDTO,
     FilterNotFoundError,
     UpdateFilterDTO,
     UpdateRuleDTO,
     UpdateRuleGroupDTO,
-    create_filter,
     create_rule,
     delete_filter,
     get_filter,
@@ -33,25 +29,6 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 router = APIRouter()
-
-
-@router.post("/filters", response_model=FilterFullResponse, status_code=status.HTTP_201_CREATED)
-def create_filter_(form_data: FilterInput, db: Annotated[Session, Depends(get_db)]) -> Filter:
-    return create_filter(
-        db=db,
-        filter_dto=CreateFilterDTO(
-            name=form_data.name,
-            position=form_data.position,
-            category_id=form_data.category_id,
-            rule_groups=[
-                CreateRuleGroupDTO(
-                    operator=g.operator,
-                    rules=[CreateRuleDTO(type=r.type, operator=r.operator, value=r.value) for r in g.rules],
-                )
-                for g in form_data.rule_groups
-            ],
-        ),
-    )
 
 
 @router.get("/filters", response_model=list[FilterFullResponse], status_code=status.HTTP_200_OK)

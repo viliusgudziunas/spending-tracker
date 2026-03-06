@@ -4,6 +4,12 @@ import uuid
 from pydantic import BaseModel
 
 
+class CreateRuleInput(BaseModel):
+    type: RuleType
+    operator: RuleOperator
+    value: str
+
+
 class RuleResponse(BaseModel):
     id: uuid.UUID
     type: RuleType

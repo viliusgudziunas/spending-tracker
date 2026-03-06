@@ -3,7 +3,12 @@ import uuid
 
 from pydantic import BaseModel
 
-from app.api.schemas.rule_schemas import RuleResponse
+from app.api.schemas.rule_schemas import CreateRuleInput, RuleResponse
+
+
+class CreateRuleGroupInput(BaseModel):
+    operator: RuleGroupOperator
+    rules: list[CreateRuleInput]
 
 
 class RuleGroupResponse(BaseModel):
