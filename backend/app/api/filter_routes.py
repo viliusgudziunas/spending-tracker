@@ -1,14 +1,12 @@
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
 from app.api.schemas.filter_schemas import CreateFilterInput, FilterResponse
 from app.db.rules.models import Filter
 from app.services import filter_service
-
-if TYPE_CHECKING:
-    from sqlalchemy.orm import Session
 
 router = APIRouter()
 

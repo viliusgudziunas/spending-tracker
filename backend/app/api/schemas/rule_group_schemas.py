@@ -1,14 +1,14 @@
 import enum
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.schemas.rule_schemas import CreateRuleInput, RuleResponse
 
 
 class CreateRuleGroupInput(BaseModel):
     operator: RuleGroupOperator
-    rules: list[CreateRuleInput]
+    rules: list[CreateRuleInput] = Field(min_length=1)
 
 
 class RuleGroupResponse(BaseModel):
