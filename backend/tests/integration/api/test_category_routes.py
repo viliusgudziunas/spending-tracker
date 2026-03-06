@@ -1,3 +1,4 @@
+import uuid
 from typing import TYPE_CHECKING
 
 import pytest
@@ -98,3 +99,111 @@ class TestGetCategoriesEndpoint:
         assert payload[0]["position"] == 1
         assert payload[1]["name"] == "Alpha"
         assert payload[1]["position"] == 2
+
+
+@pytest.mark.integration
+class TestUpdateCategoryEndpoint:
+    def test_updates_name(self, client: TestClient, category_factory: CategoryFactory) -> None:
+        category = category_factory(name="Groceries")
+
+        response = client.patch(f"/categories/{category.id}", json={"name": "Food"})
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "Food"
+        assert response.json()["position"] == 1
+
+    def test_moves_category_down(self, client: TestClient, category_factory: CategoryFactory) -> None:
+        category_factory(name="A")
+        b = category_factory(name="B")
+        category_factory(name="C")
+
+        response = client.patch(f"/categories/{b.id}", json={"position": 3})
+
+        assert response.status_code == 200
+        assert response.json()["position"] == 3
+
+        categories = client.get("/categories").json()
+        assert [c["name"] for c in categories] == ["A", "C", "B"]
+        assert [c["position"] for c in categories] == [1, 2, 3]
+
+    def test_moves_category_up(self, client: TestClient, category_factory: CategoryFactory) -> None:
+        category_factory(name="A")
+        category_factory(name="B")
+        c = category_factory(name="C")
+
+        response = client.patch(f"/categories/{c.id}", json={"position": 1})
+
+        assert response.status_code == 200
+        assert response.json()["position"] == 1
+
+        categories = client.get("/categories").json()
+        assert [c["name"] for c in categories] == ["C", "A", "B"]
+        assert [c["position"] for c in categories] == [1, 2, 3]
+
+    def test_no_op_when_position_unchanged(self, client: TestClient, category_factory: CategoryFactory) -> None:
+        a = category_factory(name="A")
+        category_factory(name="B")
+
+        response = client.patch(f"/categories/{a.id}", json={"position": 1})
+
+        assert response.status_code == 200
+        categories = client.get("/categories").json()
+        assert [c["name"] for c in categories] == ["A", "B"]
+        assert [c["position"] for c in categories] == [1, 2]
+
+    def test_updates_name_and_position_together(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+    ) -> None:
+        a = category_factory(name="A")
+        category_factory(name="B")
+        category_factory(name="C")
+
+        response = client.patch(f"/categories/{a.id}", json={"name": "Z", "position": 3})
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "Z"
+        assert response.json()["position"] == 3
+
+        categories = client.get("/categories").json()
+        assert [c["name"] for c in categories] == ["B", "C", "Z"]
+
+    def test_rejects_duplicate_name(self, client: TestClient, category_factory: CategoryFactory) -> None:
+        category_factory(name="Groceries")
+        transport = category_factory(name="Transport")
+
+        response = client.patch(f"/categories/{transport.id}", json={"name": "Groceries"})
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Category already exists"
+
+    def test_rejects_empty_update(self, client: TestClient, category_factory: CategoryFactory) -> None:
+        category = category_factory(name="Groceries")
+
+        response = client.patch(f"/categories/{category.id}", json={})
+
+        assert response.status_code == 422
+
+    def test_returns_404_for_nonexistent_category(self, client: TestClient) -> None:
+        response = client.patch(f"/categories/{uuid.uuid4()}", json={"name": "New"})
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Category not found"
+
+    def test_persists_position_change(
+        self,
+        client: TestClient,
+        db: Session,
+        category_factory: CategoryFactory,
+    ) -> None:
+        a = category_factory(name="A")
+        b = category_factory(name="B")
+        c = category_factory(name="C")
+
+        client.patch(f"/categories/{c.id}", json={"position": 1})
+
+        db.expire_all()
+        assert db.get(Category, c.id).position == 1  # ty:ignore[unresolved-attribute]
+        assert db.get(Category, a.id).position == 2  # ty:ignore[unresolved-attribute]
+        assert db.get(Category, b.id).position == 3  # ty:ignore[unresolved-attribute]

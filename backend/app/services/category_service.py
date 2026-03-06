@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -14,3 +15,17 @@ def create_category(db: Session, name: str) -> Category:
 
 def get_categories(db: Session) -> Sequence[Category]:
     return category_repository.get_categories(db=db)
+
+
+def update_category(
+    db: Session,
+    category_id: uuid.UUID,
+    name: str | None,
+    position: int | None,
+) -> Category:
+    return category_repository.update_category(
+        db=db,
+        category_id=category_id,
+        name=name,
+        position=position,
+    )
