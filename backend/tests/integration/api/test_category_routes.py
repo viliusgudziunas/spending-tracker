@@ -8,6 +8,8 @@ if TYPE_CHECKING:
     from fastapi.testclient import TestClient
     from sqlalchemy.orm import Session
 
+    from tests.integration.api.conftest import CategoryFactory
+
 
 @pytest.mark.integration
 class TestCreateCategoryEndpoint:
@@ -30,7 +32,13 @@ class TestCreateCategoryEndpoint:
         assert persisted is not None
         assert persisted.name == "Transport"
 
-    def test_rejects_duplicate_name(self, client: TestClient, category: Category) -> None:
+    def test_rejects_duplicate_name(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+    ) -> None:
+        category = category_factory(name="Groceries")
+
         response = client.post("/categories", json={"name": category.name})
 
         assert response.status_code == 400
@@ -40,3 +48,28 @@ class TestCreateCategoryEndpoint:
         response = client.post("/categories", json={})
 
         assert response.status_code == 422
+
+
+@pytest.mark.integration
+class TestGetCategoriesEndpoint:
+    def test_returns_empty_list_when_no_categories(self, client: TestClient) -> None:
+        response = client.get("/categories")
+
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_returns_all_categories(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+    ) -> None:
+        groceries = category_factory(name="Groceries")
+        transport = category_factory(name="Transport")
+
+        response = client.get("/categories")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert len(payload) == 2
+        returned_names = {item["name"] for item in payload}
+        assert returned_names == {groceries.name, transport.name}

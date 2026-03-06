@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 import pytest
 
@@ -9,6 +9,13 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 
+class CategoryFactory(Protocol):
+    def __call__(self, name: str = ...) -> Category: ...
+
+
 @pytest.fixture
-def category(db: Session) -> Category:
-    return create_category(db=db, name="Groceries")
+def category_factory(db: Session) -> CategoryFactory:
+    def _create(name: str = "Groceries") -> Category:
+        return create_category(db=db, name=name)
+
+    return _create
