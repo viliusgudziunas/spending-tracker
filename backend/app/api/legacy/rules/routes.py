@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.api.dependencies import get_db
 from app.api.legacy.rules.models import (
     CategoryFullResponse,
-    CategoryInput,
     FilterFullResponse,
     FilterInput,
     RuleInput,
@@ -31,23 +30,11 @@ from app.db.rules.repository import (
     get_filters,
     update_filter,
 )
-from app.repositories import category_repository
-from app.repositories.exceptions import DuplicateCategoryError
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 router = APIRouter()
-
-
-@router.post("/categories", response_model=CategoryFullResponse, status_code=status.HTTP_201_CREATED)
-def create_category_(form_data: CategoryInput, db: Annotated[Session, Depends(get_db)]) -> Category:
-    try:
-        category = category_repository.create_category(db=db, name=form_data.name)
-    except DuplicateCategoryError as exc:
-        raise HTTPException(status_code=400, detail="Category already exists") from exc
-
-    return category
 
 
 @router.get("/categories", response_model=list[CategoryFullResponse], status_code=status.HTTP_200_OK)
