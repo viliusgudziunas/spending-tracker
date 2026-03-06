@@ -19,8 +19,16 @@ class TestCreateCategoryEndpoint:
         assert response.status_code == 201
         payload = response.json()
         assert payload["name"] == "Groceries"
+        assert payload["position"] == 1
         assert "id" in payload
         assert payload["filters"] == []
+
+    def test_auto_assigns_incrementing_positions(self, client: TestClient) -> None:
+        first = client.post("/categories", json={"name": "Groceries"})
+        second = client.post("/categories", json={"name": "Transport"})
+
+        assert first.json()["position"] == 1
+        assert second.json()["position"] == 2
 
     def test_persists_category_to_database(self, client: TestClient, db: Session) -> None:
         response = client.post("/categories", json={"name": "Transport"})
@@ -31,6 +39,7 @@ class TestCreateCategoryEndpoint:
         persisted = db.get(Category, category_id)
         assert persisted is not None
         assert persisted.name == "Transport"
+        assert persisted.position == 1
 
     def test_rejects_duplicate_name(
         self,
@@ -73,3 +82,19 @@ class TestGetCategoriesEndpoint:
         assert len(payload) == 2
         returned_names = {item["name"] for item in payload}
         assert returned_names == {groceries.name, transport.name}
+
+    def test_returns_categories_ordered_by_position(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+    ) -> None:
+        category_factory(name="Zebra")
+        category_factory(name="Alpha")
+
+        response = client.get("/categories")
+
+        payload = response.json()
+        assert payload[0]["name"] == "Zebra"
+        assert payload[0]["position"] == 1
+        assert payload[1]["name"] == "Alpha"
+        assert payload[1]["position"] == 2

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from psycopg2.errors import UniqueViolation
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app.db.rules.models import Category
@@ -13,7 +13,10 @@ if TYPE_CHECKING:
 
 
 def create_category(db: Session, name: str) -> Category:
-    category = Category(name=name)
+    max_position: int | None = db.scalar(select(func.max(Category.position)))
+    next_position = (max_position or 0) + 1
+
+    category = Category(name=name, position=next_position)
     db.add(category)
 
     try:
@@ -30,4 +33,4 @@ def create_category(db: Session, name: str) -> Category:
 
 
 def get_categories(db: Session) -> Sequence[Category]:
-    return db.scalars(select(Category)).all()
+    return db.scalars(select(Category).order_by(Category.position)).all()

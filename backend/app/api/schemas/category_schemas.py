@@ -12,4 +12,5 @@ class CreateCategoryInput(BaseModel):
 class CategoryResponse(BaseModel):
     id: uuid.UUID
     name: str
+    position: int
     filters: list[FilterResponse]

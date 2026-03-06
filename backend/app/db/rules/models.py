@@ -14,6 +14,7 @@ class Category(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
 
     filters: Mapped[list[Filter]] = relationship("Filter", back_populates="category", order_by="Filter.position")
 
