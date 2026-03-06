@@ -1,0 +1,2 @@
+class DuplicateCategoryError(Exception):
+    pass

@@ -19,12 +19,10 @@ from app.db.rules.repository import (
     CreateRuleDTO,
     CreateRuleGroupDTO,
     CreateSingleRuleDTO,
-    DuplicateCategoryError,
     FilterNotFoundError,
     UpdateFilterDTO,
     UpdateRuleDTO,
     UpdateRuleGroupDTO,
-    create_category,
     create_filter,
     create_rule,
     delete_filter,
@@ -33,6 +31,8 @@ from app.db.rules.repository import (
     get_filters,
     update_filter,
 )
+from app.repositories import category_repository
+from app.repositories.exceptions import DuplicateCategoryError
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -43,7 +43,7 @@ router = APIRouter()
 @router.post("/categories", response_model=CategoryFullResponse, status_code=status.HTTP_201_CREATED)
 def create_category_(form_data: CategoryInput, db: Annotated[Session, Depends(get_db)]) -> Category:
     try:
-        category = create_category(db=db, name=form_data.name)
+        category = category_repository.create_category(db=db, name=form_data.name)
     except DuplicateCategoryError as exc:
         raise HTTPException(status_code=400, detail="Category already exists") from exc
 

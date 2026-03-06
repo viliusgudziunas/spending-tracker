@@ -9,9 +9,9 @@ from app.db.rules.repository import (
     CreateFilterDTO,
     CreateRuleDTO,
     CreateRuleGroupDTO,
-    create_category,
     create_filter,
 )
+from app.repositories.category_repository import create_category
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
