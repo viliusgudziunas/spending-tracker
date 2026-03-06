@@ -1,15 +1,13 @@
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
 from app.api.schemas.category_schemas import CategoryResponse, CreateCategoryInput
 from app.db.rules.models import Category
 from app.repositories import category_repository
 from app.repositories.exceptions import DuplicateCategoryError
-
-if TYPE_CHECKING:
-    from sqlalchemy.orm import Session
 
 router = APIRouter()
 
