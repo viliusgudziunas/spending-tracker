@@ -1,0 +1,23 @@
+import { UseMutationResult, UseQueryResult, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import rulesApi, { CreateCategoryPayload } from "../rules/apiService";
+import { Category } from "../rules/api.types.parsed";
+
+export const CATEGORIES_QUERY_KEY = ["categories"] as const;
+
+export function useCategoriesQuery(): UseQueryResult<Category[]> {
+    return useQuery({
+        queryKey: CATEGORIES_QUERY_KEY,
+        queryFn: rulesApi.fetchCategories,
+    });
+}
+
+export function useCreateCategoryMutation(): UseMutationResult<Category, Error, CreateCategoryPayload> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (payload: CreateCategoryPayload) => await rulesApi.createCategory(payload),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
+        },
+    });
+}

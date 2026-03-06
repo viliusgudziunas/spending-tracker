@@ -3,6 +3,7 @@ import { AgGridReact } from "ag-grid-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ReportCategory, ReportFull, ReportFilter, Transaction } from "../services/reports/api.types.parsed";
 import { useGenerateReportMutation, useReportQuery } from "../services/reports/queries";
+import CategoriesPanel from "./CategoriesPanel";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -54,19 +55,27 @@ const MIN_PANEL_WIDTH = 300;
 const MAX_PANEL_WIDTH = 800;
 const DEFAULT_PANEL_WIDTH = 420;
 
+type RightPanel = { kind: "filter"; filter: ReportFilter } | { kind: "categories" };
+
 export default function ReportDetailPage({ reportId }: ReportDetailPageProps): JSX.Element {
     const { data: report, isLoading, isError } = useReportQuery(reportId);
     const generateMutation = useGenerateReportMutation();
-    const [selectedFilter, setSelectedFilter] = useState<ReportFilter | null>(null);
+    const [rightPanel, setRightPanel] = useState<RightPanel | null>(null);
     const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
     const isDragging = useRef(false);
 
     const handleFilterClick = useCallback((filter: ReportFilter): void => {
-        setSelectedFilter((prev) => (prev?.id === filter.id ? null : filter));
+        setRightPanel((prev) =>
+            prev?.kind === "filter" && prev.filter.id === filter.id ? null : { kind: "filter", filter },
+        );
+    }, []);
+
+    const handleToggleCategories = useCallback((): void => {
+        setRightPanel((prev) => (prev?.kind === "categories" ? null : { kind: "categories" }));
     }, []);
 
     const handleClosePanel = useCallback((): void => {
-        setSelectedFilter(null);
+        setRightPanel(null);
     }, []);
 
     const handleMouseDown = useCallback((e: React.MouseEvent): void => {
@@ -119,24 +128,37 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
             <div className="flex min-w-0 flex-1 flex-col gap-3">
                 <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <h1 className="m-0 text-2xl font-semibold text-slate-900">{report.name}</h1>
-                    <button
-                        type="button"
-                        onClick={(): void => void generateMutation.mutateAsync(reportId)}
-                        disabled={generateMutation.isPending}
-                        className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        {generateMutation.isPending ? "Generating..." : "Generate"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handleToggleCategories}
+                            className={`rounded-md border px-3 py-1.5 text-sm font-medium transition ${
+                                rightPanel?.kind === "categories"
+                                    ? "border-blue-300 bg-blue-50 text-blue-700"
+                                    : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                        >
+                            Categories
+                        </button>
+                        <button
+                            type="button"
+                            onClick={(): void => void generateMutation.mutateAsync(reportId)}
+                            disabled={generateMutation.isPending}
+                            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {generateMutation.isPending ? "Generating..." : "Generate"}
+                        </button>
+                    </div>
                 </div>
 
                 <ReportSections
                     report={report}
                     onFilterClick={handleFilterClick}
-                    selectedFilterId={selectedFilter?.id ?? null}
+                    selectedFilterId={rightPanel?.kind === "filter" ? rightPanel.filter.id : null}
                 />
             </div>
 
-            {selectedFilter !== null ? (
+            {rightPanel !== null ? (
                 <>
                     <div
                         onMouseDown={handleMouseDown}
@@ -144,7 +166,11 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
                     >
                         <div className="w-px bg-slate-200 transition-colors group-hover:w-0.5 group-hover:bg-slate-400" />
                     </div>
-                    <TransactionPanel filter={selectedFilter} onClose={handleClosePanel} width={panelWidth} />
+                    {rightPanel.kind === "filter" ? (
+                        <TransactionPanel filter={rightPanel.filter} onClose={handleClosePanel} width={panelWidth} />
+                    ) : (
+                        <CategoriesPanel onClose={handleClosePanel} width={panelWidth} />
+                    )}
                 </>
             ) : null}
         </div>
