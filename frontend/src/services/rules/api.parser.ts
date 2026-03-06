@@ -15,6 +15,7 @@ export const parseApiCategories = (apiCategories: ApiCategory[]): Category[] =>
 export const parseApiCategory = (category: ApiCategory): Category => ({
     id: category.id,
     name: category.name,
+    position: category.position,
     filters: category.filters.map((filter) => parseApiFilter(filter)),
 });
 

@@ -1,6 +1,30 @@
-import { useCallback, useState } from "react";
+import {
+    closestCenter,
+    DndContext,
+    type DragEndEvent,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from "@dnd-kit/core";
+import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
+import {
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { arrayMove } from "@dnd-kit/sortable";
 import { Category, Filter, RuleGroup } from "../services/rules/api.types.parsed";
-import { useCategoriesQuery, useCreateCategoryMutation } from "../services/categories/queries";
+import {
+    CATEGORIES_QUERY_KEY,
+    useCategoriesQuery,
+    useCreateCategoryMutation,
+    useUpdateCategoryMutation,
+} from "../services/categories/queries";
 
 interface CategoriesPanelProps {
     onClose: () => void;
@@ -9,6 +33,39 @@ interface CategoriesPanelProps {
 
 export default function CategoriesPanel({ onClose, width }: CategoriesPanelProps): JSX.Element {
     const { data: categories, isLoading, isError } = useCategoriesQuery();
+    const updateMutation = useUpdateCategoryMutation();
+    const queryClient = useQueryClient();
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
+
+    const categoryIds = useMemo(() => categories?.map((c) => c.id) ?? [], [categories]);
+
+    const handleDragEnd = useCallback(
+        (event: DragEndEvent): void => {
+            const { active, over } = event;
+            if (over === null || active.id === over.id || categories === undefined) return;
+
+            const oldIndex = categories.findIndex((c) => c.id === active.id);
+            const newIndex = categories.findIndex((c) => c.id === over.id);
+            if (oldIndex === -1 || newIndex === -1) return;
+
+            const reordered = arrayMove(categories, oldIndex, newIndex).map((c, i) => ({
+                ...c,
+                position: i + 1,
+            }));
+            queryClient.setQueryData(CATEGORIES_QUERY_KEY, reordered);
+
+            const newPosition = categories[newIndex].position;
+            void updateMutation.mutateAsync({
+                categoryId: active.id as string,
+                payload: { position: newPosition },
+            });
+        },
+        [categories, updateMutation, queryClient],
+    );
 
     return (
         <div className="sticky top-4 flex shrink-0 flex-col gap-3 self-start" style={{ width }}>
@@ -42,9 +99,20 @@ export default function CategoriesPanel({ onClose, width }: CategoriesPanelProps
                     </div>
                 ) : null}
 
-                {categories !== undefined
-                    ? categories.map((category) => <CategoryCard key={category.id} category={category} />)
-                    : null}
+                {categories !== undefined && categories.length > 0 ? (
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <SortableContext items={categoryIds} strategy={verticalListSortingStrategy}>
+                            {categories.map((category) => (
+                                <SortableCategoryCard key={category.id} category={category} />
+                            ))}
+                        </SortableContext>
+                    </DndContext>
+                ) : null}
 
                 <CreateCategoryForm />
             </div>
@@ -52,40 +120,72 @@ export default function CategoriesPanel({ onClose, width }: CategoriesPanelProps
     );
 }
 
-interface CategoryCardProps {
+interface SortableCategoryCardProps {
     category: Category;
 }
 
-function CategoryCard({ category }: CategoryCardProps): JSX.Element {
+function SortableCategoryCard({ category }: SortableCategoryCardProps): JSX.Element {
+    const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+        id: category.id,
+    });
     const [expanded, setExpanded] = useState(false);
 
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : undefined,
+    };
+
     return (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <button
-                type="button"
-                onClick={(): void => setExpanded((prev) => !prev)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-slate-50"
-            >
-                <div className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-slate-800">{category.name}</span>
-                    <span className="text-xs text-slate-400">
-                        {category.filters.length} filter{category.filters.length !== 1 ? "s" : ""}
-                    </span>
-                </div>
-                <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className={`shrink-0 text-slate-400 transition-transform ${expanded ? "rotate-90" : ""}`}
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`rounded-xl border bg-white shadow-sm ${isDragging ? "border-blue-300 shadow-md" : "border-slate-200"}`}
+        >
+            <div className="flex items-center gap-1 px-2 py-3">
+                <button
+                    type="button"
+                    ref={setActivatorNodeRef}
+                    {...attributes}
+                    {...listeners}
+                    className="flex h-8 w-6 shrink-0 cursor-grab items-center justify-center rounded text-slate-300 transition hover:text-slate-500 active:cursor-grabbing"
                 >
-                    <polyline points="6 3 11 8 6 13" />
-                </svg>
-            </button>
+                    <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                        <circle cx="3" cy="3" r="1.5" />
+                        <circle cx="7" cy="3" r="1.5" />
+                        <circle cx="3" cy="8" r="1.5" />
+                        <circle cx="7" cy="8" r="1.5" />
+                        <circle cx="3" cy="13" r="1.5" />
+                        <circle cx="7" cy="13" r="1.5" />
+                    </svg>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={(): void => setExpanded((prev) => !prev)}
+                    className="flex min-w-0 flex-1 items-center justify-between rounded-md px-2 py-0.5 text-left transition hover:bg-slate-50"
+                >
+                    <div className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-slate-800">{category.name}</span>
+                        <span className="text-xs text-slate-400">
+                            {category.filters.length} filter{category.filters.length !== 1 ? "s" : ""}
+                        </span>
+                    </div>
+                    <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`shrink-0 text-slate-400 transition-transform ${expanded ? "rotate-90" : ""}`}
+                    >
+                        <polyline points="6 3 11 8 6 13" />
+                    </svg>
+                </button>
+            </div>
 
             {expanded ? (
                 <div className="border-t border-slate-100 px-4 py-2">

@@ -36,6 +36,7 @@ export interface ApiTransaction {
 export interface ApiCategory {
     id: string;
     name: string;
+    position: number;
     filters: ApiFilter[];
 }
 

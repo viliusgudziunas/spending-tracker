@@ -3,6 +3,7 @@ import { RULE_GROUP_OPERATORS, RULE_OPERATORS, RULE_TYPES } from "../api.types";
 export interface Category {
     id: string;
     name: string;
+    position: number;
     filters: Filter[];
 }
 

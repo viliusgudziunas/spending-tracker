@@ -8,6 +8,11 @@ export interface CreateCategoryPayload {
     name: string;
 }
 
+export interface UpdateCategoryPayload {
+    name?: string;
+    position?: number;
+}
+
 export interface CreateFilterPayload {
     name: string;
     categoryId: string;
@@ -49,6 +54,16 @@ const createCategory = async (payload: CreateCategoryPayload): Promise<Category>
         return parseApiCategory(response.data);
     } catch (error) {
         console.error("Error creating category:", error);
+        throw error;
+    }
+};
+
+const updateCategory = async (categoryId: string, payload: UpdateCategoryPayload): Promise<Category> => {
+    try {
+        const response = await axios.patch(`${API_URL}/categories/${categoryId}`, payload);
+        return parseApiCategory(response.data);
+    } catch (error) {
+        console.error("Error updating category:", error);
         throw error;
     }
 };
@@ -98,6 +113,7 @@ export default {
     createCategory,
     createFilter,
     fetchCategories,
+    updateCategory,
     updateFilter,
     deleteFilter,
 };
