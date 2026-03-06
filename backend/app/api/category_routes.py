@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -20,3 +21,8 @@ def create_category_(form_data: CreateCategoryInput, db: Annotated[Session, Depe
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Category already exists") from exc
 
     return category
+
+
+@router.get("/categories", response_model=list[CategoryResponse], status_code=status.HTTP_200_OK)
+def get_categories_(db: Annotated[Session, Depends(get_db)]) -> Sequence[Category]:
+    return category_service.get_categories(db=db)

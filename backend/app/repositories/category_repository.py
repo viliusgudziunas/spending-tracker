@@ -1,6 +1,8 @@
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from psycopg2.errors import UniqueViolation
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from app.db.rules.models import Category
@@ -25,3 +27,7 @@ def create_category(db: Session, name: str) -> Category:
 
     db.refresh(category)
     return category
+
+
+def get_categories(db: Session) -> Sequence[Category]:
+    return db.scalars(select(Category)).all()
