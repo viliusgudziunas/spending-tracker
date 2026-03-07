@@ -1,11 +1,18 @@
 import uuid
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
+
+from sqlalchemy.sql import select
 
 from app.db.reports.models import Override, Report
 from app.repositories.exceptions import ReportNotFoundError
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
+
+
+def get_reports(db: Session) -> Sequence[Report]:
+    return db.scalars(select(Report).order_by(Report.created_at.desc())).all()
 
 
 def get_report(db: Session, report_id: uuid.UUID) -> Report:

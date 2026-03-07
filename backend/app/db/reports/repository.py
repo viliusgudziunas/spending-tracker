@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, TypedDict
 
 from pydantic import BaseModel
@@ -58,10 +58,6 @@ def create_report(db: Session, report_dto: CreateReportDto) -> Report:
     db.refresh(report)
 
     return report
-
-
-def get_reports(db: Session) -> Sequence[Report]:
-    return db.scalars(select(Report).order_by(Report.created_at.desc())).all()
 
 
 def reset_report(db: Session, report: Report) -> None:

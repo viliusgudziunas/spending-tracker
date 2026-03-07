@@ -7,10 +7,9 @@ from app.db.reports.repository import (
     CreateReportDto,
     CreateReportTransactionDto,
     create_report,
-    get_reports,
 )
 from app.repositories.exceptions import ReportNotFoundError
-from app.repositories.report_repository import get_report
+from app.repositories.report_repository import get_report, get_reports
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
