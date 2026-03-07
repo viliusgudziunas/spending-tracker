@@ -6,12 +6,6 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field
 
 
-class ReportResponse(BaseModel):
-    id: uuid.UUID
-    name: str
-    schema_version: int
-
-
 class TransactionV1Response(BaseModel):
     schema_version: Literal[1] = 1
     id: uuid.UUID

@@ -1,5 +1,4 @@
 import uuid
-from collections.abc import Iterable
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, UploadFile, status
@@ -7,7 +6,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
-from app.api.legacy.reports.models import OverrideInput, OverrideResponse, ReportFullResponse, ReportResponse
+from app.api.legacy.reports.models import OverrideInput, OverrideResponse, ReportFullResponse
+from app.api.schemas.report_schemas import ReportResponse
 from app.bank_statement_parser import parse_statement, parse_upload_file
 from app.db.reports.models import CURRENT_REPORT_SCHEMA_VERSION, Override, Report
 from app.db.reports.repository import (
@@ -22,7 +22,7 @@ from app.db.reports.repository import (
     get_transaction,
     link_transaction_to_filter,
 )
-from app.repositories.report_repository import get_report, get_reports
+from app.repositories.report_repository import get_report
 from app.services import report_service
 
 router = APIRouter()
@@ -63,11 +63,6 @@ async def create_report_(
             ],
         ),
     )
-
-
-@router.get("/reports", response_model=list[ReportResponse], status_code=status.HTTP_200_OK)
-async def get_reports_(db: Annotated[Session, Depends(get_db)]) -> Iterable[Report]:
-    return get_reports(db=db)
 
 
 @router.get("/reports/{report_id}", response_model=ReportFullResponse)

@@ -7,7 +7,6 @@ from app.db.reports.models import Override, Report, Transaction
 from app.db.rules.models import Category as RuleCategory
 from app.db.rules.repository import get_categories
 from app.repositories import report_repository
-from app.repositories.report_repository import get_report
 from app.transactions_service import get_transactions_matching_rule
 
 if TYPE_CHECKING:
@@ -16,8 +15,12 @@ if TYPE_CHECKING:
 EXTENDED_TRANSACTION_SCHEMA_VERSION: Final[int] = 2
 
 
+def list_reports(db: Session) -> Sequence[Report]:
+    return report_repository.get_reports(db=db)
+
+
 def generate_report(db: Session, report_id: uuid.UUID) -> Report:
-    report = get_report(db=db, report_id=report_id)
+    report = report_repository.get_report(db=db, report_id=report_id)
     report_repository.reset_report(db=db, report=report)
 
     rule_categories = get_categories(db=db)
