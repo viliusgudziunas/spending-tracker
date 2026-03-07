@@ -2,7 +2,6 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, UploadFile, status
-from pydantic import BaseModel
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
@@ -26,10 +25,6 @@ from app.repositories.report_repository import get_report
 from app.services import report_service
 
 router = APIRouter()
-
-
-class ReportInput(BaseModel):
-    name: str
 
 
 @router.post("/reports", response_model=ReportResponse)
