@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from fastapi.testclient import TestClient
     from sqlalchemy.orm import Session
 
-    from tests.integration.api.conftest import CategoryFactory
+    from tests.integration.api.routes.conftest import CategoryFactory
 
 
 def _valid_filter_payload(category_id: str) -> dict:

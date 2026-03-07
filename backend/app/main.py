@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.category_routes import router as category_router
-from app.api.filter_routes import router as filter_router
 from app.api.legacy.reports import routes as reports
 from app.api.legacy.rules import routes as rules
+from app.api.routes.category_routes import router as category_router
+from app.api.routes.filter_routes import router as filter_router
 from app.config import get_settings
 
 settings = get_settings()
