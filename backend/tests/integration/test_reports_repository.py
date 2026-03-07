@@ -6,11 +6,11 @@ import pytest
 from app.db.reports.repository import (
     CreateReportDto,
     CreateReportTransactionDto,
-    ReportNotFoundError,
     create_report,
-    get_report,
     get_reports,
 )
+from app.repositories.exceptions import ReportNotFoundError
+from app.repositories.report_repository import get_report
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session

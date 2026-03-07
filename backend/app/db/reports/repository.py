@@ -64,19 +64,6 @@ def get_reports(db: Session) -> Sequence[Report]:
     return db.scalars(select(Report).order_by(Report.created_at.desc())).all()
 
 
-class ReportNotFoundError(Exception):
-    pass
-
-
-def get_report(db: Session, report_id: uuid.UUID) -> Report:
-    report = db.get(Report, report_id)
-
-    if report is None:
-        raise ReportNotFoundError
-
-    return report
-
-
 def reset_report(db: Session, report: Report) -> None:
     for category in report.categories:
         for filter_ in category.filters:

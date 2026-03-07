@@ -4,3 +4,7 @@ class DuplicateCategoryError(Exception):
 
 class CategoryNotFoundError(Exception):
     pass
+
+
+class ReportNotFoundError(Exception):
+    pass

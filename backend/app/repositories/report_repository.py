@@ -1,9 +1,20 @@
+import uuid
 from typing import TYPE_CHECKING, Any
 
 from app.db.reports.models import Override, Report
+from app.repositories.exceptions import ReportNotFoundError
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
+
+
+def get_report(db: Session, report_id: uuid.UUID) -> Report:
+    report = db.get(Report, report_id)
+
+    if report is None:
+        raise ReportNotFoundError
+
+    return report
 
 
 def reset_report(db: Session, report: Report) -> None:

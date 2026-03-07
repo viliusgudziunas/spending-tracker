@@ -19,11 +19,11 @@ from app.db.reports.repository import (
     create_report,
     delete_override,
     get_filter,
-    get_report,
     get_reports,
     get_transaction,
     link_transaction_to_filter,
 )
+from app.repositories.report_repository import get_report
 from app.services import report_service
 
 router = APIRouter()

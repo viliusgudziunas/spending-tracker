@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from app.db.reports.repository import ReportNotFoundError, get_report
 from app.db.rules.repository import (
     CreateFilterDTO,
     CreateRuleDTO,
@@ -12,6 +11,8 @@ from app.db.rules.repository import (
     create_filter,
 )
 from app.repositories.category_repository import create_category
+from app.repositories.exceptions import ReportNotFoundError
+from app.repositories.report_repository import get_report
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient

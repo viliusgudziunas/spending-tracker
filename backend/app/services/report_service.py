@@ -4,10 +4,10 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Final
 
 from app.db.reports.models import Override, Report, Transaction
-from app.db.reports.repository import get_report
 from app.db.rules.models import Category as RuleCategory
 from app.db.rules.repository import get_categories
 from app.repositories import report_repository
+from app.repositories.report_repository import get_report
 from app.transactions_service import get_transactions_matching_rule
 
 if TYPE_CHECKING:
