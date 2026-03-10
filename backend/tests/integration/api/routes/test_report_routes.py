@@ -1,9 +1,11 @@
+import uuid
 from typing import TYPE_CHECKING
 
 import pytest
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
+    from sqlalchemy.orm import Session
 
     from tests.integration.api.routes.conftest import ReportFactory
 
@@ -53,3 +55,165 @@ class TestListReportsEndpoint:
         payload = response.json()
         assert payload[0]["name"] == "Second"
         assert payload[1]["name"] == "First"
+
+
+@pytest.mark.integration
+class TestGetReportEndpoint:
+    def test_returns_report_by_id(self, client: TestClient, report_factory: ReportFactory) -> None:
+        report = report_factory(name="January 2025")
+
+        response = client.get(f"/reports/{report.id}")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["id"] == str(report.id)
+        assert payload["name"] == "January 2025"
+        assert payload["schema_version"] == report.schema_version
+
+    def test_returns_empty_categories_for_ungenerated_report(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory()
+
+        response = client.get(f"/reports/{report.id}")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["categories"] == []
+
+    def test_returns_unidentified_transactions_for_ungenerated_report(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory()
+
+        response = client.get(f"/reports/{report.id}")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert len(payload["unidentified_transactions"]) == 1
+        assert payload["unidentified_transactions"][0]["description"] == "Sample transaction"
+
+    def test_returns_404_for_nonexistent_report(self, client: TestClient) -> None:
+        response = client.get(f"/reports/{uuid.uuid4()}")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Report not found"
+
+    def test_returns_422_for_invalid_report_id(self, client: TestClient) -> None:
+        response = client.get("/reports/not-a-uuid")
+
+        assert response.status_code == 422
+
+    def test_returns_all_v2_transaction_fields(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory()
+
+        response = client.get(f"/reports/{report.id}")
+
+        assert response.status_code == 200
+        tx = response.json()["unidentified_transactions"][0]
+        assert tx["schema_version"] == 2
+        assert tx["type"] == "Card Payment"
+        assert tx["product"] == "Current"
+        assert tx["currency"] == "EUR"
+        assert tx["state"] == "COMPLETED"
+        assert tx["balance"] == 100.0
+        assert tx["raw_data"] == {"Description": "Sample transaction"}
+        assert tx["source"] == "generated"
+
+    def test_returns_generated_report_with_categories(
+        self,
+        client: TestClient,
+        db: Session,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory()
+        tx_id = str(report.transactions[0].id)
+        report.data = {
+            "categories": [
+                {
+                    "id": str(uuid.uuid4()),
+                    "name": "Food",
+                    "filters": [
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Groceries",
+                            "position": 0,
+                            "transaction_ids": [tx_id],
+                        },
+                    ],
+                },
+            ],
+        }
+        db.add(report)
+        db.commit()
+
+        response = client.get(f"/reports/{report.id}")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert len(payload["categories"]) == 1
+        category = payload["categories"][0]
+        assert category["name"] == "Food"
+        assert len(category["filters"]) == 1
+        assert category["filters"][0]["name"] == "Groceries"
+        assert category["filters"][0]["position"] == 0
+        assert float(category["filters"][0]["amount"]) == 10.0
+        assert len(category["filters"][0]["transactions"]) == 1
+        assert payload["unidentified_transactions"] == []
+
+    def test_does_not_include_other_reports_transactions(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report_factory(name="Other Report")
+        report = report_factory(name="Target Report")
+
+        response = client.get(f"/reports/{report.id}")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["name"] == "Target Report"
+        assert len(payload["unidentified_transactions"]) == 1
+
+    def test_ignores_missing_transaction_ids_in_report_data(
+        self,
+        client: TestClient,
+        db: Session,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory()
+        report.data = {
+            "categories": [
+                {
+                    "id": str(uuid.uuid4()),
+                    "name": "Food",
+                    "filters": [
+                        {
+                            "id": str(uuid.uuid4()),
+                            "name": "Groceries",
+                            "position": 0,
+                            "transaction_ids": [str(uuid.uuid4())],
+                        },
+                    ],
+                },
+            ],
+        }
+        db.add(report)
+        db.commit()
+
+        response = client.get(f"/reports/{report.id}")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["categories"][0]["filters"][0]["transactions"] == []
+        assert float(payload["categories"][0]["filters"][0]["amount"]) == 0
+        assert len(payload["unidentified_transactions"]) == 1

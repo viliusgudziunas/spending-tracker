@@ -3,6 +3,16 @@ from collections.abc import Sequence
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Final
 
+from pydantic import BaseModel
+
+from app.api.schemas.report_schemas import (
+    ReportDetailCategoryResponse,
+    ReportDetailFilterResponse,
+    ReportDetailResponse,
+    ReportDetailTransactionResponse,
+    ReportDetailTransactionV1Response,
+    ReportDetailTransactionV2Response,
+)
 from app.db.reports.models import Override, Report, Transaction
 from app.db.rules.models import Category as RuleCategory
 from app.db.rules.repository import get_categories
@@ -17,6 +27,11 @@ EXTENDED_TRANSACTION_SCHEMA_VERSION: Final[int] = 2
 
 def list_reports(db: Session) -> Sequence[Report]:
     return report_repository.get_reports(db=db)
+
+
+def get_report_detail(db: Session, report_id: uuid.UUID) -> ReportDetailResponse:
+    report = report_repository.get_report(db=db, report_id=report_id)
+    return build_report_full_response(report)
 
 
 def generate_report(db: Session, report_id: uuid.UUID) -> Report:
@@ -104,10 +119,26 @@ def _find_override_filter(
     return None
 
 
-def _build_transaction_dict(transaction: Transaction) -> dict[str, Any]:
-    data: dict[str, Any] = {
-        "schema_version": transaction.schema_version,
-        "id": str(transaction.id),
+class ReportData(BaseModel):
+    categories: list[ReportDataCategory]
+
+
+class ReportDataCategory(BaseModel):
+    id: str
+    name: str
+    filters: list[ReportDataFilter]
+
+
+class ReportDataFilter(BaseModel):
+    id: str
+    name: str
+    position: int
+    transaction_ids: list[str]
+
+
+def _build_transaction_response(transaction: Transaction) -> ReportDetailTransactionResponse:
+    base = {
+        "id": transaction.id,
         "started_date": transaction.started_date,
         "completed_date": transaction.completed_date,
         "description": transaction.description,
@@ -116,57 +147,61 @@ def _build_transaction_dict(transaction: Transaction) -> dict[str, Any]:
         "source": transaction.source,
     }
     if transaction.schema_version >= EXTENDED_TRANSACTION_SCHEMA_VERSION:
-        data.update(
-            type=transaction.type,
-            product=transaction.product,
-            currency=transaction.currency,
-            state=transaction.state,
-            balance=transaction.balance,
-            raw_data=transaction.raw_data,
+        return ReportDetailTransactionV2Response.model_validate(
+            {
+                **base,
+                "type": transaction.type,
+                "product": transaction.product,
+                "currency": transaction.currency,
+                "state": transaction.state,
+                "balance": transaction.balance,
+                "raw_data": transaction.raw_data,
+            },
         )
-    return data
+    return ReportDetailTransactionV1Response.model_validate(base)
 
 
-def build_report_full_dict(report: Report) -> dict[str, Any]:
+def build_report_full_response(report: Report) -> ReportDetailResponse:
     tx_lookup: dict[str, Transaction] = {str(tx.id): tx for tx in report.transactions}
     assigned_tx_ids: set[str] = set()
-    categories: list[dict[str, Any]] = []
+    categories: list[ReportDetailCategoryResponse] = []
 
     if report.data is not None:
-        for cat_data in report.data.get("categories", []):
-            filters: list[dict[str, Any]] = []
+        report_data = ReportData.model_validate(report.data)
 
-            for f_data in cat_data.get("filters", []):
-                tx_ids: list[str] = f_data.get("transaction_ids", [])
-                filter_txs = [tx_lookup[tid] for tid in tx_ids if tid in tx_lookup]
-                assigned_tx_ids.update(tx_ids)
+        for category in report_data.categories:
+            filters: list[ReportDetailFilterResponse] = []
+
+            for filter_ in category.filters:
+                filter_txs = [tx_lookup[tid] for tid in filter_.transaction_ids if tid in tx_lookup]
+                assigned_tx_ids.update(filter_.transaction_ids)
 
                 amount = sum((Decimal(str(tx.amount)) for tx in filter_txs), Decimal(0))
 
                 filters.append(
-                    {
-                        "id": f_data["id"],
-                        "name": f_data["name"],
-                        "position": f_data["position"],
-                        "amount": amount,
-                        "transactions": [_build_transaction_dict(tx) for tx in filter_txs],
-                    },
+                    ReportDetailFilterResponse(
+                        id=uuid.UUID(filter_.id),
+                        name=filter_.name,
+                        position=filter_.position,
+                        amount=amount,
+                        transactions=[_build_transaction_response(tx) for tx in filter_txs],
+                    ),
                 )
 
             categories.append(
-                {
-                    "id": cat_data["id"],
-                    "name": cat_data["name"],
-                    "filters": filters,
-                },
+                ReportDetailCategoryResponse(
+                    id=uuid.UUID(category.id),
+                    name=category.name,
+                    filters=filters,
+                ),
             )
 
-    unidentified = [_build_transaction_dict(tx) for tx_id, tx in tx_lookup.items() if tx_id not in assigned_tx_ids]
+    unidentified = [_build_transaction_response(tx) for tx_id, tx in tx_lookup.items() if tx_id not in assigned_tx_ids]
 
-    return {
-        "id": str(report.id),
-        "name": report.name,
-        "schema_version": report.schema_version,
-        "categories": categories,
-        "unidentified_transactions": unidentified,
-    }
+    return ReportDetailResponse(
+        id=report.id,
+        name=report.name,
+        schema_version=report.schema_version,
+        categories=categories,
+        unidentified_transactions=unidentified,
+    )

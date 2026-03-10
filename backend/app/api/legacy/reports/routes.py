@@ -5,10 +5,10 @@ from fastapi import APIRouter, Body, Depends, UploadFile, status
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
-from app.api.legacy.reports.models import OverrideInput, OverrideResponse, ReportFullResponse
-from app.api.schemas.report_schemas import ReportResponse
+from app.api.legacy.reports.models import OverrideInput, OverrideResponse
+from app.api.schemas.report_schemas import ReportDetailResponse, ReportResponse
 from app.bank_statement_parser import parse_statement, parse_upload_file
-from app.db.reports.models import CURRENT_REPORT_SCHEMA_VERSION, Override, Report
+from app.db.reports.models import Override, Report
 from app.db.reports.repository import (
     CreateOverrideDto,
     CreateReportDto,
@@ -21,7 +21,6 @@ from app.db.reports.repository import (
     get_transaction,
     link_transaction_to_filter,
 )
-from app.repositories.report_repository import get_report
 from app.services import report_service
 
 router = APIRouter()
@@ -60,18 +59,10 @@ async def create_report_(
     )
 
 
-@router.get("/reports/{report_id}", response_model=ReportFullResponse)
-async def get_report_(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> ReportFullResponse | Report:
-    report = get_report(db=db, report_id=report_id)
-    if report.schema_version < CURRENT_REPORT_SCHEMA_VERSION:
-        return report
-    return ReportFullResponse.model_validate(report_service.build_report_full_dict(report))
-
-
-@router.post("/reports/{report_id}/generate", response_model=ReportFullResponse)
-async def generate_report_(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> ReportFullResponse:
+@router.post("/reports/{report_id}/generate", response_model=ReportDetailResponse)
+async def generate_report_(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> ReportDetailResponse:
     report = report_service.generate_report(db=db, report_id=report_id)
-    return ReportFullResponse.model_validate(report_service.build_report_full_dict(report))
+    return report_service.build_report_full_response(report)
 
 
 @router.post("/overrides", response_model=OverrideResponse)
