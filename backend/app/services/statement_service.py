@@ -1,16 +1,12 @@
 from collections.abc import Hashable
 from io import BytesIO
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pandas as pd
 
-if TYPE_CHECKING:
-    from fastapi import UploadFile
 
-
-async def parse_upload_file(file: UploadFile) -> pd.DataFrame:
-    contents = await file.read()
-    io = BytesIO(contents)
+def parse_file_content(content: bytes) -> pd.DataFrame:
+    io = BytesIO(content)
     return pd.read_csv(io, encoding="utf-8")
 
 

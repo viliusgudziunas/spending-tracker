@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.sql import select
 
-from app.db.reports.models import Override, Report
+from app.db.reports.models import Override, Report, Transaction
+from app.repositories.dtos import CreateTransactionDto
 from app.repositories.exceptions import ReportNotFoundError
 
 if TYPE_CHECKING:
@@ -13,6 +14,32 @@ if TYPE_CHECKING:
 
 def get_reports(db: Session) -> Sequence[Report]:
     return db.scalars(select(Report).order_by(Report.created_at.desc())).all()
+
+
+def create_report(db: Session, name: str, transactions: list[CreateTransactionDto]) -> Report:
+    report = Report(name=name)
+    db.add(report)
+
+    for tx_dto in transactions:
+        transaction = Transaction(
+            description=tx_dto.description,
+            amount=tx_dto.amount,
+            fee=tx_dto.fee,
+            started_date=tx_dto.started_date,
+            completed_date=tx_dto.completed_date,
+            type=tx_dto.type,
+            product=tx_dto.product,
+            currency=tx_dto.currency,
+            state=tx_dto.state,
+            balance=tx_dto.balance,
+            raw_data=tx_dto.raw_data,
+            report=report,
+        )
+        db.add(transaction)
+
+    db.commit()
+    db.refresh(report)
+    return report
 
 
 def get_report(db: Session, report_id: uuid.UUID) -> Report:

@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from app.bank_statement_parser import parse_statement
+from app.services import statement_service
 
 
 @pytest.mark.unit
@@ -15,7 +15,7 @@ class TestParseStatement:
             },
         )
 
-        result = parse_statement(statement)
+        result = statement_service.parse_statement(statement)
 
         assert len(result) == 3
         assert any(row["description"] == "Savings" for row in result)
@@ -30,7 +30,7 @@ class TestParseStatement:
             },
         )
 
-        result = parse_statement(statement)
+        result = statement_service.parse_statement(statement)
 
         assert "started_date" in result[0]
         assert "completed_date" in result[0]
@@ -46,7 +46,7 @@ class TestParseStatement:
             },
         )
 
-        result = parse_statement(statement)
+        result = statement_service.parse_statement(statement)
 
         assert all(key == str(key).lower() for key in result[0])
 
@@ -59,7 +59,7 @@ class TestParseStatement:
             },
         )
 
-        result = parse_statement(statement)
+        result = statement_service.parse_statement(statement)
 
         assert isinstance(result, list)
         assert isinstance(result[0], dict)
@@ -73,7 +73,7 @@ class TestParseStatement:
             },
         )
 
-        result = parse_statement(statement)
+        result = statement_service.parse_statement(statement)
 
         assert result[0]["description"] == "Coffee Shop"
         assert result[0]["amount"] == 4.50
@@ -87,7 +87,7 @@ class TestParseStatement:
             },
         )
 
-        result = parse_statement(statement)
+        result = statement_service.parse_statement(statement)
 
         assert len(result) == 2
         assert result[0]["product"] == "Deposit"
@@ -103,7 +103,7 @@ class TestParseStatement:
             },
         )
 
-        result = parse_statement(statement)
+        result = statement_service.parse_statement(statement)
 
         assert "raw_data" in result[0]
         assert result[0]["raw_data"] == {

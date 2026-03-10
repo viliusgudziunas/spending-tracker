@@ -1,21 +1,17 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, UploadFile, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
 from app.api.legacy.reports.models import OverrideInput, OverrideResponse
-from app.api.schemas.report_schemas import ReportDetailResponse, ReportResponse
-from app.bank_statement_parser import parse_statement, parse_upload_file
-from app.db.reports.models import Override, Report
+from app.api.schemas.report_schemas import ReportDetailResponse
+from app.db.reports.models import Override
 from app.db.reports.repository import (
     CreateOverrideDto,
-    CreateReportDto,
-    CreateReportTransactionDto,
     LinkTransactionToFilterDto,
     create_override,
-    create_report,
     delete_override,
     get_filter,
     get_transaction,
@@ -24,39 +20,6 @@ from app.db.reports.repository import (
 from app.services import report_service
 
 router = APIRouter()
-
-
-@router.post("/reports", response_model=ReportResponse)
-async def create_report_(
-    file: UploadFile,
-    name: Annotated[str, Body(...)],
-    db: Annotated[Session, Depends(get_db)],
-) -> Report:
-    statement = await parse_upload_file(file=file)
-    records = parse_statement(statement=statement)
-
-    return create_report(
-        db=db,
-        report_dto=CreateReportDto(
-            name=name,
-            transactions=[
-                CreateReportTransactionDto(
-                    description=r["description"],
-                    amount=r["amount"],
-                    fee=r["fee"],
-                    started_date=r["started_date"],
-                    completed_date=r["completed_date"],
-                    type=r.get("type"),
-                    product=r.get("product"),
-                    currency=r.get("currency"),
-                    state=r.get("state"),
-                    balance=r.get("balance"),
-                    raw_data=r.get("raw_data"),
-                )
-                for r in records
-            ],
-        ),
-    )
 
 
 @router.post("/reports/{report_id}/generate", response_model=ReportDetailResponse)

@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -8,6 +9,90 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
     from tests.integration.api.routes.conftest import ReportFactory
+
+FIXTURES_DIR = Path(__file__).parents[2] / "fixtures"
+
+
+def _csv_bytes(filename: str = "report_upload.csv") -> bytes:
+    return (FIXTURES_DIR / filename).read_bytes()
+
+
+@pytest.mark.integration
+class TestCreateReportEndpoint:
+    def test_creates_report_and_returns_201(self, client: TestClient) -> None:
+        response = client.post(
+            "/reports",
+            data={"name": "January 2025"},
+            files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
+        )
+
+        assert response.status_code == 201
+        payload = response.json()
+        assert payload["name"] == "January 2025"
+        assert "id" in payload
+        assert "schema_version" in payload
+
+    def test_created_report_appears_in_list(self, client: TestClient) -> None:
+        client.post(
+            "/reports",
+            data={"name": "February 2025"},
+            files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
+        )
+
+        response = client.get("/reports")
+
+        assert response.status_code == 200
+        names = {r["name"] for r in response.json()}
+        assert "February 2025" in names
+
+    def test_created_report_has_parsed_transactions(self, client: TestClient) -> None:
+        create_response = client.post(
+            "/reports",
+            data={"name": "March 2025"},
+            files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
+        )
+        report_id = create_response.json()["id"]
+
+        response = client.get(f"/reports/{report_id}")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert len(payload["unidentified_transactions"]) == 2
+        descriptions = {tx["description"] for tx in payload["unidentified_transactions"]}
+        assert descriptions == {"Dummy grocery store", "Dummy transfer description"}
+
+    def test_persists_all_transaction_fields(self, client: TestClient) -> None:
+        create_response = client.post(
+            "/reports",
+            data={"name": "April 2025"},
+            files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
+        )
+        report_id = create_response.json()["id"]
+
+        response = client.get(f"/reports/{report_id}")
+
+        txs = response.json()["unidentified_transactions"]
+        amounts = {tx["amount"] for tx in txs}
+        types = {tx["type"] for tx in txs}
+        products = {tx["product"] for tx in txs}
+        currencies = {tx["currency"] for tx in txs}
+        states = {tx["state"] for tx in txs}
+        balances = {tx["balance"] for tx in txs}
+        assert amounts == {-36.73, 118.13}
+        assert types == {"Card Payment", "Transfer"}
+        assert products == {"Current", "Savings"}
+        assert currencies == {"EUR"}
+        assert states == {"COMPLETED"}
+        assert balances == {2062.7, 7564.76}
+        assert all(tx["raw_data"] is not None for tx in txs)
+
+    def test_returns_422_when_name_is_missing(self, client: TestClient) -> None:
+        response = client.post(
+            "/reports",
+            files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
+        )
+
+        assert response.status_code == 422
 
 
 @pytest.mark.integration

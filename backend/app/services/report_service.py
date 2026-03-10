@@ -17,6 +17,8 @@ from app.db.reports.models import Override, Report, Transaction
 from app.db.rules.models import Category as RuleCategory
 from app.db.rules.repository import get_categories
 from app.repositories import report_repository
+from app.repositories.dtos import CreateTransactionDto
+from app.services import statement_service
 from app.transactions_service import get_transactions_matching_rule
 
 if TYPE_CHECKING:
@@ -27,6 +29,30 @@ EXTENDED_TRANSACTION_SCHEMA_VERSION: Final[int] = 2
 
 def list_reports(db: Session) -> Sequence[Report]:
     return report_repository.get_reports(db=db)
+
+
+def create_report(db: Session, name: str, file_content: bytes) -> Report:
+    statement = statement_service.parse_file_content(content=file_content)
+    records = statement_service.parse_statement(statement=statement)
+
+    transactions = [
+        CreateTransactionDto(
+            type=r["type"],
+            product=r["product"],
+            started_date=r["started_date"],
+            completed_date=r["completed_date"],
+            description=r["description"],
+            amount=r["amount"],
+            fee=r["fee"],
+            currency=r["currency"],
+            state=r["state"],
+            balance=r["balance"],
+            raw_data=r["raw_data"],
+        )
+        for r in records
+    ]
+
+    return report_repository.create_report(db=db, name=name, transactions=transactions)
 
 
 def get_report_detail(db: Session, report_id: uuid.UUID) -> ReportDetailResponse:

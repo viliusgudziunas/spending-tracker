@@ -21,3 +21,18 @@ class CreateRuleDto:
     type: str
     operator: str
     value: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class CreateTransactionDto:
+    description: str
+    amount: float
+    fee: float
+    started_date: str
+    completed_date: str
+    type: str | None = None
+    product: str | None = None
+    currency: str | None = None
+    state: str | None = None
+    balance: float | None = None
+    raw_data: dict | None = None
