@@ -23,8 +23,7 @@ from app.db.reports.models import (
 from app.db.rules.models import Category as RuleCategory
 from app.repositories import category_repository, filter_repository, report_repository
 from app.repositories.dtos import CreateTransactionDto
-from app.services import statement_service
-from app.transactions_service import get_transactions_matching_rule
+from app.services import statement_service, transactions_service
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -117,7 +116,7 @@ def _build_report_data(
             for group in rule_filter.rule_groups:
                 matching = set(remaining)
                 for rule in group.rules:
-                    matching &= get_transactions_matching_rule(rule=rule, transactions=remaining)
+                    matching &= transactions_service.get_transactions_matching_rule(rule=rule, transactions=remaining)
 
                 for tx in matching:
                     remaining.remove(tx)

@@ -1,14 +1,10 @@
 import uuid
-from collections.abc import Iterable
 from typing import TYPE_CHECKING, TypedDict
 
 from pydantic import BaseModel
 from sqlalchemy import update
-from sqlalchemy.sql import select
 
-from app.db.reports.models import Category, Filter, Override, Report, Transaction, TransactionSource
-from app.db.rules.models import Category as RuleCategory
-from app.transactions_service import get_transactions_matching_rule
+from app.db.reports.models import Filter, Override, Report, Transaction, TransactionSource
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -60,66 +56,6 @@ def create_report(db: Session, report_dto: CreateReportDto) -> Report:
     return report
 
 
-def reset_report(db: Session, report: Report) -> None:
-    for category in report.categories:
-        for filter_ in category.filters:
-            for transaction in filter_.transactions:
-                transaction.reset()
-                db.add(transaction)
-
-            db.delete(filter_)
-        db.delete(category)
-    db.commit()
-
-
-class GenerateReportDto(TypedDict):
-    report: Report
-    rule_categories: Iterable[RuleCategory]
-
-
-def generate_report(db: Session, generate_report_dto: GenerateReportDto) -> None:
-    transactions = list(generate_report_dto["report"].transactions)
-
-    for rule_category in generate_report_dto["rule_categories"]:
-        report_category = Category(name=rule_category.name, report=generate_report_dto["report"])
-
-        for rule_filter in rule_category.filters:
-            report_filter = Filter(name=rule_filter.name, category=report_category, position=rule_filter.position)
-
-            for group in rule_filter.rule_groups:
-                matching_group = set(transactions)
-
-                for rule in group.rules:
-                    matching_rule = get_transactions_matching_rule(rule=rule, transactions=transactions)
-                    matching_group = matching_group & matching_rule
-
-                for transaction in matching_group:
-                    transactions.remove(transaction)
-                    report_filter.transactions.append(transaction)
-
-            db.add(report_filter)
-        db.add(report_category)
-    db.commit()
-
-
-def apply_overrides(db: Session, report: Report) -> None:
-    for override in report.overrides:
-        try:
-            filter_ = find_override_filter(db=db, override=override)
-        except FilterNotFoundError:
-            db.delete(override)
-            db.commit()
-            continue
-
-        link_transaction_to_filter(
-            db=db,
-            link_dto=LinkTransactionToFilterDto(
-                filter_id=filter_.id,
-                transaction_id=override.transaction_id,
-            ),
-        )
-
-
 class LinkTransactionToFilterDto(TypedDict):
     filter_id: uuid.UUID
     transaction_id: uuid.UUID
@@ -143,23 +79,6 @@ class FilterNotFoundError(Exception):
 def get_filter(db: Session, filter_id: uuid.UUID) -> Filter:
     filter_ = db.get(Filter, filter_id)
 
-    if filter_ is None:
-        raise FilterNotFoundError
-
-    return filter_
-
-
-def find_override_filter(db: Session, override: Override) -> Filter:
-    statement = (
-        select(Filter)
-        .join(Filter.category)
-        .join(Category.report)
-        .where(Report.id == override.report_id)
-        .where(Category.name == override.category_name)
-        .where(Filter.name == override.filter_name)
-    )
-
-    filter_ = db.scalar(statement)
     if filter_ is None:
         raise FilterNotFoundError
 

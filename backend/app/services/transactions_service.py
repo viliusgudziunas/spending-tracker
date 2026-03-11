@@ -10,6 +10,14 @@ def _get_transactions_matching_description_rule(rule: Rule, transactions: Iterab
     return {transaction for transaction in transactions if rule.value.lower() == transaction.description.lower()}
 
 
+def _get_transactions_matching_product_rule(rule: Rule, transactions: Iterable[Transaction]) -> set[Transaction]:
+    return {
+        transaction
+        for transaction in transactions
+        if transaction.product is not None and rule.value.lower() == transaction.product.lower()
+    }
+
+
 RULE_OPERATOR_MAP: dict[RuleOperator, Callable[[Decimal, Decimal], bool]] = {
     RuleOperator.EQUAL: operator.eq,
     RuleOperator.NOT_EQUAL: operator.ne,
@@ -32,6 +40,7 @@ def _get_transactions_matching_amount_rule(rule: Rule, transactions: Iterable[Tr
 MATCHING_MAP: dict[RuleType, Callable[[Rule, Iterable[Transaction]], set[Transaction]]] = {
     RuleType.DESCRIPTION: _get_transactions_matching_description_rule,
     RuleType.AMOUNT: _get_transactions_matching_amount_rule,
+    RuleType.PRODUCT: _get_transactions_matching_product_rule,
 }
 
 

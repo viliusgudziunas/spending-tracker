@@ -4,11 +4,16 @@ import pytest
 
 from app.db.reports.models import Transaction
 from app.db.rules.models import Rule, RuleOperator, RuleType
-from app.transactions_service import get_transactions_matching_rule
+from app.services.transactions_service import get_transactions_matching_rule
 
 
-def _make_transaction(*, description: str = "Coffee", amount: float = 5.0) -> Transaction:
-    return Transaction(id=uuid.uuid4(), description=description, amount=amount)
+def _make_transaction(
+    *,
+    description: str = "Coffee",
+    amount: float = 5.0,
+    product: str | None = "Current",
+) -> Transaction:
+    return Transaction(id=uuid.uuid4(), description=description, amount=amount, product=product)
 
 
 def _make_rule(
@@ -126,5 +131,40 @@ class TestAmountRuleMatching:
         rule = _make_rule(rule_type=RuleType.AMOUNT, operator=RuleOperator.EQUAL, value="10.0")
 
         result = get_transactions_matching_rule(rule, [])
+
+        assert result == set()
+
+
+@pytest.mark.unit
+class TestProductRuleMatching:
+    def test_exact_match(self) -> None:
+        txn = _make_transaction(product="Current")
+        rule = _make_rule(rule_type=RuleType.PRODUCT, value="Current")
+
+        result = get_transactions_matching_rule(rule, [txn])
+
+        assert result == {txn}
+
+    def test_case_insensitive_match(self) -> None:
+        txn = _make_transaction(product="CURRENT")
+        rule = _make_rule(rule_type=RuleType.PRODUCT, value="current")
+
+        result = get_transactions_matching_rule(rule, [txn])
+
+        assert result == {txn}
+
+    def test_no_match(self) -> None:
+        txn = _make_transaction(product="Savings")
+        rule = _make_rule(rule_type=RuleType.PRODUCT, value="Current")
+
+        result = get_transactions_matching_rule(rule, [txn])
+
+        assert result == set()
+
+    def test_ignores_transactions_without_product(self) -> None:
+        txn = _make_transaction(product=None)
+        rule = _make_rule(rule_type=RuleType.PRODUCT, value="Current")
+
+        result = get_transactions_matching_rule(rule, [txn])
 
         assert result == set()

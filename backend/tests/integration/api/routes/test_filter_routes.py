@@ -135,6 +135,32 @@ class TestCreateFilterEndpoint:
         assert len(body["rule_groups"][0]["rules"]) == 1
         assert len(body["rule_groups"][1]["rules"]) == 2
 
+    def test_creates_filter_with_product_rule(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+    ) -> None:
+        category = category_factory()
+        payload = {
+            "name": "Current product filter",
+            "category_id": str(category.id),
+            "rule_groups": [
+                {
+                    "operator": "AND",
+                    "rules": [{"type": "PRODUCT", "operator": "EQUAL", "value": "Current"}],
+                },
+            ],
+        }
+
+        response = client.post("/filters", json=payload)
+
+        assert response.status_code == 201
+        body = response.json()
+        assert len(body["rule_groups"]) == 1
+        assert len(body["rule_groups"][0]["rules"]) == 1
+        assert body["rule_groups"][0]["rules"][0]["type"] == "PRODUCT"
+        assert body["rule_groups"][0]["rules"][0]["value"] == "Current"
+
     def test_rejects_missing_required_fields(self, client: TestClient) -> None:
         response = client.post("/filters", json={})
 

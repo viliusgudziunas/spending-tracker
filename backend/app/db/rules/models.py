@@ -69,6 +69,7 @@ class RuleGroup(Base):
 class RuleType(enum.StrEnum):
     DESCRIPTION = "DESCRIPTION"
     AMOUNT = "AMOUNT"
+    PRODUCT = "PRODUCT"
 
 
 class RuleOperator(enum.StrEnum):
