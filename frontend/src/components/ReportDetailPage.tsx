@@ -56,6 +56,8 @@ const OPERATOR_LABELS: Record<RuleOperator, string> = {
     LESS_THAN_EQUAL: "≤",
 };
 
+const UNIDENTIFIED_HIDDEN_COLUMNS_STORAGE_KEY = "report-detail:unidentified:hidden-columns";
+
 function buildFilterRows(filters: ReportFilter[]): FilterRow[] {
     return filters
         .filter((filter) => filter.transactions.length > 0)
@@ -343,9 +345,65 @@ interface UnidentifiedSectionProps {
 }
 
 function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSectionProps): JSX.Element {
+    const [isColumnsMenuOpen, setIsColumnsMenuOpen] = useState(false);
+    const [hiddenFields, setHiddenFields] = useState<Set<string>>(() => {
+        if (typeof window === "undefined") return new Set();
+        try {
+            const raw = window.localStorage.getItem(UNIDENTIFIED_HIDDEN_COLUMNS_STORAGE_KEY);
+            if (raw === null) return new Set();
+            const parsed: unknown = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return new Set();
+            const parsedFields = parsed.filter((value): value is string => typeof value === "string");
+            return new Set(parsedFields);
+        } catch {
+            return new Set();
+        }
+    });
+    const columnsMenuRef = useRef<HTMLDivElement | null>(null);
+
+    const toggleableColumns = useMemo(
+        () =>
+            TRANSACTION_COLUMNS.filter((column) => typeof column.field === "string").map((column) => ({
+                field: column.field as string,
+                headerName: column.headerName ?? (column.field as string),
+            })),
+        [],
+    );
+
+    useEffect(() => {
+        if (!isColumnsMenuOpen) return;
+        const handleOutsideClick = (event: MouseEvent): void => {
+            const target = event.target as Node;
+            if (columnsMenuRef.current?.contains(target)) return;
+            setIsColumnsMenuOpen(false);
+        };
+        window.addEventListener("mousedown", handleOutsideClick);
+        return (): void => window.removeEventListener("mousedown", handleOutsideClick);
+    }, [isColumnsMenuOpen]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        window.localStorage.setItem(UNIDENTIFIED_HIDDEN_COLUMNS_STORAGE_KEY, JSON.stringify(Array.from(hiddenFields)));
+    }, [hiddenFields]);
+
+    const toggleColumnVisibility = useCallback((field: string): void => {
+        setHiddenFields((currentHidden) => {
+            const nextHidden = new Set(currentHidden);
+            if (nextHidden.has(field)) {
+                nextHidden.delete(field);
+            } else {
+                nextHidden.add(field);
+            }
+            return nextHidden;
+        });
+    }, []);
+
     const unidentifiedColumns = useMemo<ColDef<Transaction>[]>(
         () => [
-            ...TRANSACTION_COLUMNS,
+            ...TRANSACTION_COLUMNS.map((column) => ({
+                ...column,
+                hide: typeof column.field === "string" ? hiddenFields.has(column.field) : false,
+            })),
             {
                 colId: "actions",
                 headerName: "Actions",
@@ -367,7 +425,7 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
                 },
             },
         ],
-        [onCreateFilter],
+        [hiddenFields, onCreateFilter],
     );
 
     const defaultColDef = useMemo<ColDef<Transaction>>(
@@ -381,9 +439,43 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
 
     return (
         <div className="flex flex-col gap-2">
-            <h2 className="m-0 text-base font-semibold text-slate-700">
-                Unidentified Transactions ({transactions.length})
-            </h2>
+            <div className="flex items-center justify-between">
+                <h2 className="m-0 text-base font-semibold text-slate-700">
+                    Unidentified Transactions ({transactions.length})
+                </h2>
+                <div ref={columnsMenuRef} className="relative">
+                    <button
+                        type="button"
+                        onClick={(): void => setIsColumnsMenuOpen((currentOpen) => !currentOpen)}
+                        className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                    >
+                        Columns
+                    </button>
+                    {isColumnsMenuOpen ? (
+                        <div className="absolute right-0 z-20 mt-1.5 min-w-[180px] rounded-md border border-slate-200 bg-white p-2 shadow-lg">
+                            <div className="mb-1 text-[11px] font-semibold text-slate-500">Toggle columns</div>
+                            <div className="flex max-h-56 flex-col gap-1 overflow-auto">
+                                {toggleableColumns.map((column) => {
+                                    const checked = !hiddenFields.has(column.field);
+                                    return (
+                                        <label
+                                            key={column.field}
+                                            className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs text-slate-700 transition hover:bg-slate-50"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={(): void => toggleColumnVisibility(column.field)}
+                                            />
+                                            <span>{column.headerName}</span>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
+            </div>
 
             <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
                 <AgGridReact<Transaction>
