@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -13,7 +13,13 @@ from app.api.schemas.report_schemas import (
     ReportDetailTransactionV1Response,
     ReportDetailTransactionV2Response,
 )
-from app.db.reports.models import Override, Report, Transaction
+from app.db.reports.models import (
+    CURRENT_REPORT_SCHEMA_VERSION,
+    CURRENT_TRANSACTION_SCHEMA_VERSION,
+    Override,
+    Report,
+    Transaction,
+)
 from app.db.rules.models import Category as RuleCategory
 from app.repositories import category_repository, report_repository
 from app.repositories.dtos import CreateTransactionDto
@@ -22,8 +28,6 @@ from app.transactions_service import get_transactions_matching_rule
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
-
-EXTENDED_TRANSACTION_SCHEMA_VERSION: Final[int] = 2
 
 
 def list_reports(db: Session) -> Sequence[Report]:
@@ -176,7 +180,7 @@ def _build_transaction_response(transaction: Transaction) -> ReportDetailTransac
         "fee": transaction.fee,
         "source": transaction.source,
     }
-    if transaction.schema_version >= EXTENDED_TRANSACTION_SCHEMA_VERSION:
+    if transaction.schema_version >= CURRENT_TRANSACTION_SCHEMA_VERSION:
         return ReportDetailTransactionV2Response.model_validate(
             {
                 **base,
@@ -193,38 +197,10 @@ def _build_transaction_response(transaction: Transaction) -> ReportDetailTransac
 
 def build_report_full_response(report: Report) -> ReportDetailResponse:
     tx_lookup: dict[str, Transaction] = {str(tx.id): tx for tx in report.transactions}
-    assigned_tx_ids: set[str] = set()
-    categories: list[ReportDetailCategoryResponse] = []
-
-    if report.data is not None:
-        report_data = ReportData.model_validate(report.data)
-
-        for category in report_data.categories:
-            filters: list[ReportDetailFilterResponse] = []
-
-            for filter_ in category.filters:
-                filter_txs = [tx_lookup[tid] for tid in filter_.transaction_ids if tid in tx_lookup]
-                assigned_tx_ids.update(filter_.transaction_ids)
-
-                amount = sum((Decimal(str(tx.amount)) for tx in filter_txs), Decimal(0))
-
-                filters.append(
-                    ReportDetailFilterResponse(
-                        id=uuid.UUID(filter_.id),
-                        name=filter_.name,
-                        position=filter_.position,
-                        amount=amount,
-                        transactions=[_build_transaction_response(tx) for tx in filter_txs],
-                    ),
-                )
-
-            categories.append(
-                ReportDetailCategoryResponse(
-                    id=uuid.UUID(category.id),
-                    name=category.name,
-                    filters=filters,
-                ),
-            )
+    if report.schema_version >= CURRENT_REPORT_SCHEMA_VERSION:
+        categories, assigned_tx_ids = _build_categories_from_data(report=report, tx_lookup=tx_lookup)
+    else:
+        categories, assigned_tx_ids = _build_categories_from_legacy_links(report=report)
 
     unidentified = [_build_transaction_response(tx) for tx_id, tx in tx_lookup.items() if tx_id not in assigned_tx_ids]
 
@@ -235,3 +211,78 @@ def build_report_full_response(report: Report) -> ReportDetailResponse:
         categories=categories,
         unidentified_transactions=unidentified,
     )
+
+
+def _build_categories_from_data(
+    report: Report,
+    tx_lookup: dict[str, Transaction],
+) -> tuple[list[ReportDetailCategoryResponse], set[str]]:
+    assigned_tx_ids: set[str] = set()
+    categories: list[ReportDetailCategoryResponse] = []
+
+    if report.data is None:
+        return categories, assigned_tx_ids
+
+    report_data = ReportData.model_validate(report.data)
+    for category in report_data.categories:
+        filters: list[ReportDetailFilterResponse] = []
+
+        for filter_ in category.filters:
+            filter_txs = [tx_lookup[tid] for tid in filter_.transaction_ids if tid in tx_lookup]
+            assigned_tx_ids.update(str(tx.id) for tx in filter_txs)
+
+            amount = sum((Decimal(str(tx.amount)) for tx in filter_txs), Decimal(0))
+
+            filters.append(
+                ReportDetailFilterResponse(
+                    id=uuid.UUID(filter_.id),
+                    name=filter_.name,
+                    position=filter_.position,
+                    amount=amount,
+                    transactions=[_build_transaction_response(tx) for tx in filter_txs],
+                ),
+            )
+
+        categories.append(
+            ReportDetailCategoryResponse(
+                id=uuid.UUID(category.id),
+                name=category.name,
+                filters=filters,
+            ),
+        )
+
+    return categories, assigned_tx_ids
+
+
+def _build_categories_from_legacy_links(report: Report) -> tuple[list[ReportDetailCategoryResponse], set[str]]:
+    assigned_tx_ids: set[str] = set()
+    categories: list[ReportDetailCategoryResponse] = []
+
+    for category in report.categories:
+        filters: list[ReportDetailFilterResponse] = []
+
+        for filter_ in category.filters:
+            filter_txs = list(filter_.transactions)
+            assigned_tx_ids.update(str(tx.id) for tx in filter_txs)
+
+            amount = sum((Decimal(str(tx.amount)) for tx in filter_txs), Decimal(0))
+
+            filters.append(
+                ReportDetailFilterResponse(
+                    id=filter_.id,
+                    name=filter_.name,
+                    position=filter_.position,
+                    amount=amount,
+                    transactions=[_build_transaction_response(tx) for tx in filter_txs],
+                ),
+            )
+
+        categories.append(
+            ReportDetailCategoryResponse(
+                id=category.id,
+                name=category.name,
+                filters=filters,
+            ),
+        )
+
+    return categories, assigned_tx_ids
