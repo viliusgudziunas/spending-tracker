@@ -24,6 +24,21 @@ class CreateRuleDto:
 
 
 @dataclass(frozen=True, kw_only=True)
+class PutRuleDto:
+    id: uuid.UUID | None
+    type: str
+    operator: str
+    value: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class PutRuleGroupDto:
+    id: uuid.UUID | None
+    operator: str
+    rules: list[PutRuleDto]
+
+
+@dataclass(frozen=True, kw_only=True)
 class CreateTransactionDto:
     description: str
     amount: float

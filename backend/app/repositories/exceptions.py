@@ -18,5 +18,9 @@ class DuplicateFilterError(Exception):
     pass
 
 
+class InvalidFilterRulesPayloadError(Exception):
+    pass
+
+
 class TransactionNotFoundError(Exception):
     pass

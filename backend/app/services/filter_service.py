@@ -2,10 +2,16 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from app.api.schemas.filter_schemas import CreateFilterInput
+from app.api.schemas.filter_schemas import CreateFilterInput, PutFilterRuleGroupsInput
 from app.db.rules.models import Filter
 from app.repositories import filter_repository
-from app.repositories.dtos import CreateFilterDto, CreateRuleDto, CreateRuleGroupDto
+from app.repositories.dtos import (
+    CreateFilterDto,
+    CreateRuleDto,
+    CreateRuleGroupDto,
+    PutRuleDto,
+    PutRuleGroupDto,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -53,3 +59,26 @@ def update_filter(
 
 def delete_filter(db: Session, filter_id: UUID) -> None:
     filter_repository.delete_filter(db=db, filter_id=filter_id)
+
+
+def put_filter_rule_groups(db: Session, filter_id: UUID, form_data: PutFilterRuleGroupsInput) -> Filter:
+    return filter_repository.put_filter_rule_groups(
+        db=db,
+        filter_id=filter_id,
+        rule_groups=[
+            PutRuleGroupDto(
+                id=g.id,
+                operator=g.operator,
+                rules=[
+                    PutRuleDto(
+                        id=r.id,
+                        type=r.type,
+                        operator=r.operator,
+                        value=r.value,
+                    )
+                    for r in g.rules
+                ],
+            )
+            for g in form_data.rule_groups
+        ],
+    )

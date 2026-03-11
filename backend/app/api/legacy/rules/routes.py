@@ -1,65 +1,17 @@
 import uuid
 from typing import TYPE_CHECKING, Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from app.api.dependencies import get_db
-from app.api.legacy.rules.models import (
-    FilterFullResponse,
-    FilterInput,
-    RuleInput,
-    RuleResponse,
-)
-from app.db.rules.models import Filter, Rule
-from app.db.rules.repository import (
-    CreateSingleRuleDTO,
-    FilterNotFoundError,
-    UpdateFilterDTO,
-    UpdateRuleDTO,
-    UpdateRuleGroupDTO,
-    create_rule,
-    delete_filter,
-    get_filter,
-    update_filter,
-)
+from app.api.legacy.rules.models import RuleInput, RuleResponse
+from app.db.rules.models import Rule
+from app.db.rules.repository import CreateSingleRuleDTO, create_rule
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 router = APIRouter()
-
-
-@router.put("/filters/{filter_id}", response_model=FilterFullResponse, status_code=status.HTTP_200_OK)
-def update_filter_(form_data: FilterInput, filter_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> Filter:
-    try:
-        filter_ = get_filter(db=db, filter_id=filter_id)
-    except FilterNotFoundError as exc:
-        raise HTTPException(status_code=404, detail="Filter not found") from exc
-
-    return update_filter(
-        db=db,
-        filter_=filter_,
-        filter_dto=UpdateFilterDTO(
-            name=form_data.name,
-            position=form_data.position,
-            category_id=form_data.category_id,
-            rule_groups=[
-                UpdateRuleGroupDTO(
-                    operator=g.operator,
-                    rules=[UpdateRuleDTO(type=r.type, operator=r.operator, value=r.value) for r in g.rules],
-                )
-                for g in form_data.rule_groups
-            ],
-        ),
-    )
-
-
-@router.delete("/filters/{filter_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_filter_(filter_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> None:
-    try:
-        delete_filter(db=db, filter_id=filter_id)
-    except FilterNotFoundError as exc:
-        raise HTTPException(status_code=404, detail="Filter not found") from exc
 
 
 @router.post("/filters/{filter_id}/rules", response_model=RuleResponse, status_code=status.HTTP_201_CREATED)

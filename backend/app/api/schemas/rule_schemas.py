@@ -10,6 +10,13 @@ class CreateRuleInput(BaseModel):
     value: str
 
 
+class PutRuleInput(BaseModel):
+    id: uuid.UUID | None = None
+    type: RuleType
+    operator: RuleOperator
+    value: str
+
+
 class RuleResponse(BaseModel):
     id: uuid.UUID
     type: RuleType

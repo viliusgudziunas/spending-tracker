@@ -322,6 +322,127 @@ class TestUpdateFilterEndpoint:
 
 
 @pytest.mark.integration
+class TestPutFilterRuleGroupsEndpoint:
+    def test_put_syncs_filter_rule_groups(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+    ) -> None:
+        category = category_factory()
+        create_payload = {
+            "name": f"Sync-{uuid.uuid4()}",
+            "category_id": str(category.id),
+            "rule_groups": [
+                {
+                    "operator": "AND",
+                    "rules": [{"type": "DESCRIPTION", "operator": "EQUAL", "value": "rent"}],
+                },
+                {
+                    "operator": "OR",
+                    "rules": [{"type": "AMOUNT", "operator": "GREATER_THAN", "value": "100"}],
+                },
+            ],
+        }
+        created = client.post("/filters", json=create_payload)
+        created_body = created.json()
+        first_group = created_body["rule_groups"][0]
+        first_rule = first_group["rules"][0]
+
+        put_payload = {
+            "rule_groups": [
+                {
+                    "id": first_group["id"],
+                    "operator": "OR",
+                    "rules": [
+                        {
+                            "id": first_rule["id"],
+                            "type": "DESCRIPTION",
+                            "operator": "NOT_EQUAL",
+                            "value": "utilities",
+                        },
+                        {
+                            "type": "PRODUCT",
+                            "operator": "EQUAL",
+                            "value": "Current",
+                        },
+                    ],
+                },
+                {
+                    "operator": "AND",
+                    "rules": [{"type": "AMOUNT", "operator": "LESS_THAN", "value": "50"}],
+                },
+            ],
+        }
+
+        response = client.put(f"/filters/{created_body['id']}/rule-groups", json=put_payload)
+
+        assert response.status_code == 200
+        body = response.json()
+        assert len(body["rule_groups"]) == 2
+
+        updated_group = next(group for group in body["rule_groups"] if group["id"] == first_group["id"])
+        assert updated_group["operator"] == "OR"
+        assert len(updated_group["rules"]) == 2
+        updated_rule = next(rule for rule in updated_group["rules"] if rule["id"] == first_rule["id"])
+        assert updated_rule["operator"] == "NOT_EQUAL"
+        assert updated_rule["value"] == "utilities"
+
+    def test_put_returns_404_for_unknown_filter(self, client: TestClient) -> None:
+        response = client.put(
+            f"/filters/{uuid.uuid4()}/rule-groups",
+            json={
+                "rule_groups": [
+                    {
+                        "operator": "AND",
+                        "rules": [{"type": "DESCRIPTION", "operator": "EQUAL", "value": "rent"}],
+                    },
+                ],
+            },
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Filter not found"
+
+    def test_put_rejects_foreign_rule_group_id(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+    ) -> None:
+        category = category_factory()
+        first = client.post(
+            "/filters",
+            json=_valid_filter_payload(str(category.id), name=f"First-{uuid.uuid4()}"),
+        ).json()
+        second = client.post(
+            "/filters",
+            json=_valid_filter_payload(str(category.id), name=f"Second-{uuid.uuid4()}"),
+        ).json()
+        foreign_group_id = second["rule_groups"][0]["id"]
+
+        response = client.put(
+            f"/filters/{first['id']}/rule-groups",
+            json={
+                "rule_groups": [
+                    {
+                        "id": foreign_group_id,
+                        "operator": "AND",
+                        "rules": [
+                            {
+                                "type": "DESCRIPTION",
+                                "operator": "EQUAL",
+                                "value": "updated",
+                            },
+                        ],
+                    },
+                ],
+            },
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Rule group id does not belong to filter"
+
+
+@pytest.mark.integration
 class TestDeleteFilterEndpoint:
     def test_deletes_filter(
         self,

@@ -2,7 +2,7 @@ import uuid
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.api.schemas.rule_group_schemas import CreateRuleGroupInput, RuleGroupResponse
+from app.api.schemas.rule_group_schemas import CreateRuleGroupInput, PutRuleGroupInput, RuleGroupResponse
 
 
 class CreateFilterInput(BaseModel):
@@ -22,6 +22,10 @@ class UpdateFilterInput(BaseModel):
             msg = "At least one of 'name' or 'position' must be provided"
             raise ValueError(msg)
         return self
+
+
+class PutFilterRuleGroupsInput(BaseModel):
+    rule_groups: list[PutRuleGroupInput] = Field(min_length=1)
 
 
 class FilterResponse(BaseModel):
