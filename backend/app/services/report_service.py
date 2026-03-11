@@ -189,7 +189,6 @@ def _build_transaction_response(transaction: Transaction) -> ReportDetailTransac
                 "currency": transaction.currency,
                 "state": transaction.state,
                 "balance": transaction.balance,
-                "raw_data": transaction.raw_data,
             },
         )
     return ReportDetailTransactionV1Response.model_validate(base)

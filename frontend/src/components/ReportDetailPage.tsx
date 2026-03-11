@@ -3,6 +3,7 @@ import {
     ModuleRegistry,
     themeQuartz,
     type ColDef,
+    type IHeaderParams,
     type ICellRendererParams,
     type RowClickedEvent,
 } from "ag-grid-community";
@@ -37,11 +38,14 @@ const FILTER_COLUMNS: ColDef<FilterRow>[] = [
 ];
 
 const TRANSACTION_COLUMNS: ColDef<Transaction>[] = [
+    { field: "type", headerName: "Type", width: 140 },
+    { field: "product", headerName: "Product", width: 140 },
     { field: "description", headerName: "Description", flex: 2, minWidth: 200 },
     { field: "amount", headerName: "Amount", width: 110 },
     { field: "fee", headerName: "Fee", width: 90 },
     { field: "currency", headerName: "Currency", width: 100 },
     { field: "state", headerName: "State", width: 110 },
+    { field: "source", headerName: "Source", width: 120 },
     { field: "balance", headerName: "Balance", width: 110 },
     { field: "startedDate", headerName: "Started", width: 160 },
     { field: "completedDate", headerName: "Completed", width: 160 },
@@ -55,8 +59,6 @@ const OPERATOR_LABELS: Record<RuleOperator, string> = {
     GREATER_THAN_EQUAL: "≥",
     LESS_THAN_EQUAL: "≤",
 };
-
-const UNIDENTIFIED_HIDDEN_COLUMNS_STORAGE_KEY = "report-detail:unidentified:hidden-columns";
 
 function buildFilterRows(filters: ReportFilter[]): FilterRow[] {
     return filters
@@ -344,22 +346,34 @@ interface UnidentifiedSectionProps {
     onCreateFilter: (transaction: Transaction) => void;
 }
 
+interface UnidentifiedInnerHeaderParams extends IHeaderParams<Transaction> {
+    onOpenColumnsMenu?: () => void;
+}
+
+function UnidentifiedInnerHeader({ displayName, onOpenColumnsMenu }: UnidentifiedInnerHeaderParams): JSX.Element {
+    return (
+        <div className="flex w-full items-center gap-1">
+            <span className="min-w-0 flex-1 truncate">{displayName}</span>
+            <button
+                type="button"
+                aria-label="Open columns menu"
+                className="h-5 w-5 shrink-0 rounded text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+                onClick={(event): void => {
+                    event.stopPropagation();
+                    onOpenColumnsMenu?.();
+                }}
+            >
+                ⋮
+            </button>
+        </div>
+    );
+}
+
 function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSectionProps): JSX.Element {
-    const [isColumnsMenuOpen, setIsColumnsMenuOpen] = useState(false);
-    const [hiddenFields, setHiddenFields] = useState<Set<string>>(() => {
-        if (typeof window === "undefined") return new Set();
-        try {
-            const raw = window.localStorage.getItem(UNIDENTIFIED_HIDDEN_COLUMNS_STORAGE_KEY);
-            if (raw === null) return new Set();
-            const parsed: unknown = JSON.parse(raw);
-            if (!Array.isArray(parsed)) return new Set();
-            const parsedFields = parsed.filter((value): value is string => typeof value === "string");
-            return new Set(parsedFields);
-        } catch {
-            return new Set();
-        }
-    });
+    const gridRef = useRef<AgGridReact<Transaction>>(null);
     const columnsMenuRef = useRef<HTMLDivElement | null>(null);
+    const [isColumnsMenuOpen, setIsColumnsMenuOpen] = useState(false);
+    const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
 
     const toggleableColumns = useMemo(
         () =>
@@ -368,6 +382,36 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
                 headerName: column.headerName ?? (column.field as string),
             })),
         [],
+    );
+
+    const syncColumnVisibility = useCallback((): void => {
+        const api = gridRef.current?.api;
+        if (api === undefined) return;
+
+        const nextVisibility: Record<string, boolean> = {};
+        toggleableColumns.forEach((column) => {
+            const gridColumn = api.getColumn(column.field);
+            nextVisibility[column.field] = gridColumn?.isVisible() ?? true;
+        });
+        setColumnVisibility(nextVisibility);
+    }, [toggleableColumns]);
+
+    const handleOpenColumnsMenu = useCallback((): void => {
+        syncColumnVisibility();
+        setIsColumnsMenuOpen((open) => !open);
+    }, [syncColumnVisibility]);
+
+    const toggleColumnVisibility = useCallback(
+        (field: string): void => {
+            const api = gridRef.current?.api;
+            if (api === undefined) return;
+            const gridColumn = api.getColumn(field);
+            if (gridColumn === null) return;
+
+            api.setColumnsVisible([field], !gridColumn.isVisible());
+            syncColumnVisibility();
+        },
+        [syncColumnVisibility],
     );
 
     useEffect(() => {
@@ -381,28 +425,17 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
         return (): void => window.removeEventListener("mousedown", handleOutsideClick);
     }, [isColumnsMenuOpen]);
 
-    useEffect(() => {
-        if (typeof window === "undefined") return;
-        window.localStorage.setItem(UNIDENTIFIED_HIDDEN_COLUMNS_STORAGE_KEY, JSON.stringify(Array.from(hiddenFields)));
-    }, [hiddenFields]);
-
-    const toggleColumnVisibility = useCallback((field: string): void => {
-        setHiddenFields((currentHidden) => {
-            const nextHidden = new Set(currentHidden);
-            if (nextHidden.has(field)) {
-                nextHidden.delete(field);
-            } else {
-                nextHidden.add(field);
-            }
-            return nextHidden;
-        });
-    }, []);
-
     const unidentifiedColumns = useMemo<ColDef<Transaction>[]>(
         () => [
             ...TRANSACTION_COLUMNS.map((column) => ({
                 ...column,
-                hide: typeof column.field === "string" ? hiddenFields.has(column.field) : false,
+                headerComponentParams: {
+                    ...(column.headerComponentParams ?? {}),
+                    innerHeaderComponent: UnidentifiedInnerHeader,
+                    innerHeaderComponentParams: {
+                        onOpenColumnsMenu: handleOpenColumnsMenu,
+                    },
+                },
             })),
             {
                 colId: "actions",
@@ -425,7 +458,7 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
                 },
             },
         ],
-        [hiddenFields, onCreateFilter],
+        [handleOpenColumnsMenu, onCreateFilter],
     );
 
     const defaultColDef = useMemo<ColDef<Transaction>>(
@@ -446,7 +479,7 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
                 <div ref={columnsMenuRef} className="relative">
                     <button
                         type="button"
-                        onClick={(): void => setIsColumnsMenuOpen((currentOpen) => !currentOpen)}
+                        onClick={handleOpenColumnsMenu}
                         className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
                     >
                         Columns
@@ -456,7 +489,7 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
                             <div className="mb-1 text-[11px] font-semibold text-slate-500">Toggle columns</div>
                             <div className="flex max-h-56 flex-col gap-1 overflow-auto">
                                 {toggleableColumns.map((column) => {
-                                    const checked = !hiddenFields.has(column.field);
+                                    const checked = columnVisibility[column.field] ?? true;
                                     return (
                                         <label
                                             key={column.field}
@@ -479,10 +512,13 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
 
             <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
                 <AgGridReact<Transaction>
+                    ref={gridRef}
                     theme={themeQuartz}
                     columnDefs={unidentifiedColumns}
                     rowData={transactions}
                     defaultColDef={defaultColDef}
+                    onGridReady={syncColumnVisibility}
+                    onColumnVisible={syncColumnVisibility}
                     domLayout="autoHeight"
                     enableCellTextSelection={true}
                     ensureDomOrder={true}

@@ -97,7 +97,7 @@ class TestCreateReportEndpoint:
         assert currencies == {"EUR"}
         assert states == {"COMPLETED"}
         assert balances == {2062.7, 7564.76}
-        assert all(tx["raw_data"] is not None for tx in txs)
+        assert all("raw_data" not in tx for tx in txs)
 
     def test_returns_422_when_name_is_missing(self, client: TestClient) -> None:
         response = client.post(
@@ -223,7 +223,7 @@ class TestGetReportEndpoint:
         assert tx["currency"] == "EUR"
         assert tx["state"] == "COMPLETED"
         assert tx["balance"] == 100.0
-        assert tx["raw_data"] == {"Description": "Sample transaction"}
+        assert "raw_data" not in tx
         assert tx["source"] == "generated"
 
     def test_returns_generated_report_with_categories(

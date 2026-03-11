@@ -62,4 +62,3 @@ class ReportDetailTransactionV2Response(BaseModel):
     state: str
     balance: float
     source: str | None
-    raw_data: dict
