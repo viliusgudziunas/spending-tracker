@@ -60,6 +60,8 @@ const OPERATOR_LABELS: Record<RuleOperator, string> = {
     LESS_THAN_EQUAL: "≤",
 };
 
+const UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY = "report-detail:unidentified:columns-state";
+
 function buildFilterRows(filters: ReportFilter[]): FilterRow[] {
     return filters
         .filter((filter) => filter.transactions.length > 0)
@@ -396,6 +398,53 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
         setColumnVisibility(nextVisibility);
     }, [toggleableColumns]);
 
+    const persistColumnsState = useCallback((): void => {
+        if (typeof window === "undefined") return;
+        const api = gridRef.current?.api;
+        if (api === undefined) return;
+
+        const allowedColIds = new Set(toggleableColumns.map((column) => column.field));
+        const stateToPersist = api
+            .getColumnState()
+            .filter((columnState) => allowedColIds.has(columnState.colId))
+            .map((columnState) => ({
+                colId: columnState.colId,
+                hide: columnState.hide ?? false,
+            }));
+
+        window.localStorage.setItem(UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY, JSON.stringify(stateToPersist));
+    }, [toggleableColumns]);
+
+    const restoreColumnsState = useCallback((): void => {
+        if (typeof window === "undefined") return;
+        const api = gridRef.current?.api;
+        if (api === undefined) return;
+
+        const rawState = window.localStorage.getItem(UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY);
+        if (rawState === null) return;
+
+        try {
+            const parsedState: unknown = JSON.parse(rawState);
+            if (!Array.isArray(parsedState)) return;
+
+            const validState = parsedState
+                .filter(
+                    (item): item is { colId: string; hide?: boolean } =>
+                        typeof item === "object" &&
+                        item !== null &&
+                        "colId" in item &&
+                        typeof (item as { colId: unknown }).colId === "string" &&
+                        (!("hide" in item) || typeof (item as { hide: unknown }).hide === "boolean"),
+                )
+                .map((item) => ({ colId: item.colId, hide: item.hide ?? false }));
+
+            if (validState.length === 0) return;
+            api.applyColumnState({ state: validState, applyOrder: true });
+        } catch {
+            // Ignore malformed local storage state and fallback to default order.
+        }
+    }, []);
+
     const handleOpenColumnsMenu = useCallback((): void => {
         syncColumnVisibility();
         setIsColumnsMenuOpen((open) => !open);
@@ -424,6 +473,11 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
         window.addEventListener("mousedown", handleOutsideClick);
         return (): void => window.removeEventListener("mousedown", handleOutsideClick);
     }, [isColumnsMenuOpen]);
+
+    const handleGridReady = useCallback((): void => {
+        restoreColumnsState();
+        syncColumnVisibility();
+    }, [restoreColumnsState, syncColumnVisibility]);
 
     const unidentifiedColumns = useMemo<ColDef<Transaction>[]>(
         () => [
@@ -517,8 +571,12 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
                     columnDefs={unidentifiedColumns}
                     rowData={transactions}
                     defaultColDef={defaultColDef}
-                    onGridReady={syncColumnVisibility}
-                    onColumnVisible={syncColumnVisibility}
+                    onGridReady={handleGridReady}
+                    onColumnVisible={(): void => {
+                        syncColumnVisibility();
+                        persistColumnsState();
+                    }}
+                    onColumnMoved={persistColumnsState}
                     domLayout="autoHeight"
                     enableCellTextSelection={true}
                     ensureDomOrder={true}
