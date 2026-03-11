@@ -72,7 +72,7 @@ export interface ApiOverride {
 
 export const TRANSACTION_SOURCES = ["generated", "override", null] as const;
 export const RULE_GROUP_OPERATORS = ["AND"] as const;
-export const RULE_TYPES = ["DESCRIPTION", "AMOUNT"] as const;
+export const RULE_TYPES = ["DESCRIPTION", "AMOUNT", "PRODUCT"] as const;
 export const RULE_OPERATORS = [
     "EQUAL",
     "NOT_EQUAL",

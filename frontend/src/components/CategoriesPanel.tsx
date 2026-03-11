@@ -18,6 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { arrayMove } from "@dnd-kit/sortable";
+import { RULE_TYPES } from "../services/api.types";
 import { Category, Filter, RuleGroup, RuleOperator, RuleType } from "../services/rules/api.types.parsed";
 import {
     CATEGORIES_QUERY_KEY,
@@ -493,6 +494,12 @@ interface CreateFilterRuleGroupDraft {
     rules: CreateFilterRuleDraft[];
 }
 
+const RULE_TYPE_LABELS: Record<RuleType, string> = {
+    DESCRIPTION: "Description",
+    AMOUNT: "Amount",
+    PRODUCT: "Product",
+};
+
 const DEFAULT_FILTER_RULE: CreateFilterRuleDraft = {
     type: "DESCRIPTION",
     operator: "EQUAL",
@@ -616,8 +623,11 @@ function CreateFilterForm({ categoryId }: CreateFilterFormProps): JSX.Element {
                                     }
                                     className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                                 >
-                                    <option value="DESCRIPTION">Description</option>
-                                    <option value="AMOUNT">Amount</option>
+                                    {RULE_TYPES.map((type) => (
+                                        <option key={type} value={type}>
+                                            {RULE_TYPE_LABELS[type]}
+                                        </option>
+                                    ))}
                                 </select>
                                 <select
                                     value={rule.operator}
@@ -675,7 +685,9 @@ function CreateFilterForm({ categoryId }: CreateFilterFormProps): JSX.Element {
                                     placeholder={
                                         rule.type === "AMOUNT"
                                             ? "Amount value (e.g. 12.50)"
-                                            : 'Description value (e.g. "Netflix")'
+                                            : rule.type === "PRODUCT"
+                                              ? 'Product value (e.g. "Credit Card")'
+                                              : 'Description value (e.g. "Netflix")'
                                     }
                                     className="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                                 />

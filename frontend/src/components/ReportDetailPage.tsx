@@ -52,12 +52,18 @@ const TRANSACTION_COLUMNS: ColDef<Transaction>[] = [
 ];
 
 const OPERATOR_LABELS: Record<RuleOperator, string> = {
-    EQUAL: "=",
-    NOT_EQUAL: "≠",
-    GREATER_THAN: ">",
-    LESS_THAN: "<",
-    GREATER_THAN_EQUAL: "≥",
-    LESS_THAN_EQUAL: "≤",
+    EQUAL: "= Equal",
+    NOT_EQUAL: "≠ Not equal",
+    GREATER_THAN: "> Greater than",
+    LESS_THAN: "< Less than",
+    GREATER_THAN_EQUAL: ">= Greater/equal",
+    LESS_THAN_EQUAL: "<= Less/equal",
+};
+
+const RULE_TYPE_LABELS: Record<RuleType, string> = {
+    DESCRIPTION: "Description",
+    AMOUNT: "Amount",
+    PRODUCT: "Product",
 };
 
 const UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY = "report-detail:unidentified:columns-state";
@@ -770,7 +776,7 @@ function CreateTransactionFilterPanel({
                                     >
                                         {RULE_TYPES.map((type) => (
                                             <option key={`${rule.id}-${type}`} value={type}>
-                                                {type}
+                                                {RULE_TYPE_LABELS[type]}
                                             </option>
                                         ))}
                                     </select>
@@ -807,7 +813,13 @@ function CreateTransactionFilterPanel({
                                             )
                                         }
                                         className="w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-800 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-                                        placeholder={rule.type === "AMOUNT" ? "Amount value" : "Description value"}
+                                        placeholder={
+                                            rule.type === "AMOUNT"
+                                                ? "Amount value"
+                                                : rule.type === "PRODUCT"
+                                                  ? "Product value"
+                                                  : "Description value"
+                                        }
                                     />
                                     <button
                                         type="button"
