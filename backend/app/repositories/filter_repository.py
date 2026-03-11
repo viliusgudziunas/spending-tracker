@@ -121,3 +121,21 @@ def _shift_positions(
             )
             .values(position=Filter.position + 1),
         )
+
+
+def delete_filter(db: Session, filter_id: uuid.UUID) -> None:
+    filter_ = get_filter(db=db, filter_id=filter_id)
+    deleted_position = filter_.position
+    deleted_category_id = filter_.category_id
+
+    db.delete(filter_)
+    db.flush()
+    db.execute(
+        update(Filter)
+        .where(
+            Filter.category_id == deleted_category_id,
+            Filter.position > deleted_position,
+        )
+        .values(position=Filter.position - 1),
+    )
+    db.commit()

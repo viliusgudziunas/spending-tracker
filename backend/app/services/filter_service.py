@@ -49,3 +49,7 @@ def update_filter(
         name=name,
         position=position,
     )
+
+
+def delete_filter(db: Session, filter_id: UUID) -> None:
+    filter_repository.delete_filter(db=db, filter_id=filter_id)

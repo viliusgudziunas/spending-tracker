@@ -49,3 +49,11 @@ def update_filter(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Filter not found") from exc
     except DuplicateFilterError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Filter already exists") from exc
+
+
+@router.delete("/filters/{filter_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_filter(filter_id: UUID, db: Annotated[Session, Depends(get_db)]) -> None:
+    try:
+        filter_service.delete_filter(db=db, filter_id=filter_id)
+    except FilterNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Filter not found") from exc

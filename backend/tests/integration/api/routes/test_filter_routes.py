@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from app.db.rules.models import Filter
+from app.db.rules.models import Filter, Rule, RuleGroup
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -293,3 +293,64 @@ class TestUpdateFilterEndpoint:
 
         assert response.status_code == 404
         assert response.json()["detail"] == "Filter not found"
+
+
+@pytest.mark.integration
+class TestDeleteFilterEndpoint:
+    def test_deletes_filter(
+        self,
+        client: TestClient,
+        db: Session,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory()
+        filter_ = filter_factory(category_id=category.id, name=f"To-delete-{uuid.uuid4()}")
+
+        response = client.delete(f"/filters/{filter_.id}")
+
+        assert response.status_code == 204
+        assert db.get(Filter, filter_.id) is None
+
+    def test_returns_404_for_unknown_filter(self, client: TestClient) -> None:
+        response = client.delete(f"/filters/{uuid.uuid4()}")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Filter not found"
+
+    def test_cascades_and_deletes_rule_groups_and_rules(
+        self,
+        client: TestClient,
+        db: Session,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory()
+        filter_ = filter_factory(category_id=category.id, name=f"Cascade-{uuid.uuid4()}")
+        rule_group_id = filter_.rule_groups[0].id
+        rule_id = filter_.rule_groups[0].rules[0].id
+
+        response = client.delete(f"/filters/{filter_.id}")
+
+        assert response.status_code == 204
+        assert db.get(Filter, filter_.id) is None
+        assert db.get(RuleGroup, rule_group_id) is None
+        assert db.get(Rule, rule_id) is None
+
+    def test_shifts_positions_after_delete(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory()
+        first = filter_factory(category_id=category.id, name=f"One-{uuid.uuid4()}")
+        second = filter_factory(category_id=category.id, name=f"Two-{uuid.uuid4()}")
+        third = filter_factory(category_id=category.id, name=f"Three-{uuid.uuid4()}")
+
+        delete_response = client.delete(f"/filters/{second.id}")
+
+        assert delete_response.status_code == 204
+        first_after = client.get(f"/filters/{first.id}").json()
+        third_after = client.get(f"/filters/{third.id}").json()
+        assert [first_after["position"], third_after["position"]] == [1, 2]

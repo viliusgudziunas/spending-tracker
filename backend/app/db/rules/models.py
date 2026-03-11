@@ -53,7 +53,11 @@ class RuleGroup(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     operator: Mapped[RuleGroupOperator] = mapped_column(Enum(RuleGroupOperator), nullable=False)
 
-    filter_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("filter.id"), nullable=False)
+    filter_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("filter.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     filter: Mapped[Filter] = relationship(back_populates="rule_groups")
 
     rules: Mapped[list[Rule]] = relationship("Rule", back_populates="group", cascade="all, delete-orphan")
@@ -84,7 +88,11 @@ class Rule(Base):
     operator: Mapped[RuleOperator] = mapped_column(Enum(RuleOperator), nullable=False)
     value: Mapped[str] = mapped_column(String, nullable=False)
 
-    group_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("rule_group.id"), nullable=False)
+    group_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("rule_group.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     group: Mapped[RuleGroup] = relationship(back_populates="rules")
 
     def __repr__(self) -> str:
