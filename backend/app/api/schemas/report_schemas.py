@@ -6,6 +6,10 @@ from typing import Literal
 from pydantic import BaseModel
 
 
+class PutReportAssignmentInput(BaseModel):
+    target_rule_filter_id: uuid.UUID
+
+
 class ReportResponse(BaseModel):
     id: uuid.UUID
     name: str

@@ -6,9 +6,13 @@ from fastapi import APIRouter, Body, Depends, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
-from app.api.schemas.report_schemas import ReportDetailResponse, ReportResponse
+from app.api.schemas.report_schemas import (
+    PutReportAssignmentInput,
+    ReportDetailResponse,
+    ReportResponse,
+)
 from app.db.reports.models import Report
-from app.repositories.exceptions import ReportNotFoundError
+from app.repositories.exceptions import FilterNotFoundError, ReportNotFoundError, TransactionNotFoundError
 from app.services import report_service
 
 router = APIRouter()
@@ -43,3 +47,25 @@ def generate_report(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)
         return report_service.generate_report_detail(db=db, report_id=report_id)
     except ReportNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc
+
+
+@router.put("/reports/{report_id}/transactions/{transaction_id}/assignment", response_model=ReportDetailResponse)
+def upsert_transaction_assignment(
+    report_id: uuid.UUID,
+    transaction_id: uuid.UUID,
+    form_data: PutReportAssignmentInput,
+    db: Annotated[Session, Depends(get_db)],
+) -> ReportDetailResponse:
+    try:
+        return report_service.upsert_transaction_assignment(
+            db=db,
+            report_id=report_id,
+            transaction_id=transaction_id,
+            target_rule_filter_id=form_data.target_rule_filter_id,
+        )
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc
+    except TransactionNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found") from exc
+    except FilterNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Filter not found") from exc

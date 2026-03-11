@@ -417,6 +417,167 @@ class TestGetReportEndpoint:
 
 
 @pytest.mark.integration
+class TestPutReportAssignmentEndpoint:
+    def test_sets_manual_assignment_for_report_transaction(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+        report_fetcher: ReportFetcher,
+    ) -> None:
+        report = report_factory()
+        transaction_id = report.transactions[0].id
+        category = category_factory(name="Transfers")
+        filter_ = filter_factory(category_id=category.id, name="To Simona", description="Transfer to SIMONA BAGUZYTE")
+
+        response = client.put(
+            f"/reports/{report.id}/transactions/{transaction_id}/assignment",
+            json={"target_rule_filter_id": str(filter_.id)},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["id"] == str(report.id)
+        assert "categories" in payload
+        assert "unidentified_transactions" in payload
+
+        refreshed_report = report_fetcher(report_id=report.id)
+        assert refreshed_report.data is not None
+        assert refreshed_report.data["manual_assignments"][str(transaction_id)]["target_rule_filter_id"] == str(
+            filter_.id,
+        )
+        assert len(refreshed_report.data["categories"]) == 1
+        assert refreshed_report.data["categories"][0]["name"] == "Transfers"
+
+    def test_replaces_existing_assignment_for_same_transaction(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+        report_fetcher: ReportFetcher,
+    ) -> None:
+        report = report_factory()
+        transaction_id = report.transactions[0].id
+        category = category_factory(name="Transfers")
+        first_filter = filter_factory(category_id=category.id, name="First", description="Sample transaction")
+        second_filter = filter_factory(category_id=category.id, name="Second", description="Sample transaction 2")
+
+        report.data = {
+            "categories": [],
+            "manual_assignments": {
+                str(transaction_id): {"target_rule_filter_id": str(first_filter.id)},
+            },
+        }
+
+        response = client.put(
+            f"/reports/{report.id}/transactions/{transaction_id}/assignment",
+            json={"target_rule_filter_id": str(second_filter.id)},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["id"] == str(report.id)
+        refreshed_report = report_fetcher(report_id=report.id)
+        assert refreshed_report.data is not None
+        assert refreshed_report.data["manual_assignments"][str(transaction_id)]["target_rule_filter_id"] == str(
+            second_filter.id,
+        )
+
+    def test_returns_404_when_report_not_found(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        report = report_factory()
+        category = category_factory(name="Transfers")
+        filter_ = filter_factory(category_id=category.id, name="To Simona", description="Transfer to SIMONA BAGUZYTE")
+        transaction_id = report.transactions[0].id
+
+        response = client.put(
+            f"/reports/{uuid.uuid4()}/transactions/{transaction_id}/assignment",
+            json={"target_rule_filter_id": str(filter_.id)},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Report not found"
+
+    def test_returns_404_when_transaction_is_not_in_report(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        report = report_factory(name="First report")
+        other_report = report_factory(name="Second report")
+        transaction_id = other_report.transactions[0].id
+        category = category_factory(name="Transfers")
+        filter_ = filter_factory(category_id=category.id, name="To Simona", description="Transfer to SIMONA BAGUZYTE")
+
+        response = client.put(
+            f"/reports/{report.id}/transactions/{transaction_id}/assignment",
+            json={"target_rule_filter_id": str(filter_.id)},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Transaction not found"
+
+    def test_returns_404_when_filter_not_found(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory()
+        transaction_id = report.transactions[0].id
+
+        response = client.put(
+            f"/reports/{report.id}/transactions/{transaction_id}/assignment",
+            json={"target_rule_filter_id": str(uuid.uuid4())},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Filter not found"
+
+    def test_manual_assignment_is_reflected_in_regenerated_report(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        report = report_factory()
+        transaction_id = str(report.transactions[0].id)
+        category_name = f"Manual Assignment {uuid.uuid4()}"
+        filter_name = f"Target Filter {uuid.uuid4()}"
+        category = category_factory(name=category_name)
+        filter_ = filter_factory(
+            category_id=category.id,
+            name=filter_name,
+            description="does-not-match-auto-generated-transaction",
+        )
+
+        response = client.put(
+            f"/reports/{report.id}/transactions/{transaction_id}/assignment",
+            json={"target_rule_filter_id": str(filter_.id)},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+
+        category_payload = next(category for category in payload["categories"] if category["name"] == category_name)
+        filter_payload = next(filter_ for filter_ in category_payload["filters"] if filter_["name"] == filter_name)
+
+        assert len(filter_payload["transactions"]) == 1
+        assert filter_payload["transactions"][0]["id"] == transaction_id
+        assert float(filter_payload["amount"]) == 10.0
+        assert all(tx["id"] != transaction_id for tx in payload["unidentified_transactions"])
+
+
+@pytest.mark.integration
 class TestGenerateReportEndpoint:
     def test_returns_all_unidentified_when_no_rules(self, client: TestClient) -> None:
         report_id = _create_report(client)

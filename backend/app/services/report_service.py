@@ -21,7 +21,7 @@ from app.db.reports.models import (
     Transaction,
 )
 from app.db.rules.models import Category as RuleCategory
-from app.repositories import category_repository, report_repository
+from app.repositories import category_repository, filter_repository, report_repository
 from app.repositories.dtos import CreateTransactionDto
 from app.services import statement_service
 from app.transactions_service import get_transactions_matching_rule
@@ -70,6 +70,7 @@ def generate_report_detail(db: Session, report_id: uuid.UUID) -> ReportDetailRes
 
 def _generate_report(db: Session, report_id: uuid.UUID) -> Report:
     report = report_repository.get_report(db=db, report_id=report_id)
+    manual_assignments = _extract_manual_assignments(report=report)
     report_repository.reset_report(db=db, report=report)
 
     rule_categories = category_repository.get_categories(db=db)
@@ -77,6 +78,13 @@ def _generate_report(db: Session, report_id: uuid.UUID) -> Report:
     overrides = list(report.overrides)
 
     data = _build_report_data(transactions=transactions, rule_categories=rule_categories)
+    if len(manual_assignments) > 0:
+        _apply_manual_assignments(
+            categories=data["categories"],
+            manual_assignments=manual_assignments,
+            transactions=transactions,
+        )
+        data["manual_assignments"] = manual_assignments
     _apply_overrides(categories=data["categories"], overrides=overrides, db=db)
 
     report_repository.save_report_data(db=db, report=report, data=data)
@@ -100,6 +108,7 @@ def _build_report_data(
         for rule_filter in rule_category.filters:
             filter_data: dict[str, Any] = {
                 "id": str(uuid.uuid4()),
+                "rule_filter_id": str(rule_filter.id),
                 "name": rule_filter.name,
                 "position": rule_filter.position,
                 "transaction_ids": [],
@@ -151,6 +160,63 @@ def _find_override_filter(
                 if f["name"] == override.filter_name:
                     return f
     return None
+
+
+def _extract_manual_assignments(report: Report) -> dict[str, dict[str, str]]:
+    if not isinstance(report.data, dict):
+        return {}
+
+    raw_assignments = report.data.get("manual_assignments")
+    if not isinstance(raw_assignments, dict):
+        return {}
+
+    manual_assignments: dict[str, dict[str, str]] = {}
+    for transaction_id, assignment in raw_assignments.items():
+        if not isinstance(transaction_id, str) or not isinstance(assignment, dict):
+            continue
+
+        target_rule_filter_id = assignment.get("target_rule_filter_id")
+        if isinstance(target_rule_filter_id, str):
+            manual_assignments[transaction_id] = {"target_rule_filter_id": target_rule_filter_id}
+
+    return manual_assignments
+
+
+def _apply_manual_assignments(
+    categories: list[dict[str, Any]],
+    manual_assignments: dict[str, dict[str, str]],
+    transactions: list[Transaction],
+) -> None:
+    report_transaction_ids = {str(transaction.id) for transaction in transactions}
+    filters_by_rule_filter_id = _build_filter_lookup(categories=categories)
+
+    for transaction_id, assignment in manual_assignments.items():
+        if transaction_id not in report_transaction_ids:
+            continue
+
+        target_rule_filter_id = assignment["target_rule_filter_id"]
+        target_filter = filters_by_rule_filter_id.get(target_rule_filter_id)
+        if target_filter is None:
+            continue
+
+        for category in categories:
+            for filter_ in category["filters"]:
+                if transaction_id in filter_["transaction_ids"]:
+                    filter_["transaction_ids"].remove(transaction_id)
+
+        if transaction_id not in target_filter["transaction_ids"]:
+            target_filter["transaction_ids"].append(transaction_id)
+
+
+def _build_filter_lookup(categories: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    filters_by_rule_filter_id: dict[str, dict[str, Any]] = {}
+    for category in categories:
+        for filter_ in category["filters"]:
+            rule_filter_id = filter_.get("rule_filter_id")
+            if isinstance(rule_filter_id, str):
+                filters_by_rule_filter_id[rule_filter_id] = filter_
+
+    return filters_by_rule_filter_id
 
 
 class ReportData(BaseModel):
@@ -285,3 +351,24 @@ def _build_categories_from_legacy_links(report: Report) -> tuple[list[ReportDeta
         )
 
     return categories, assigned_tx_ids
+
+
+def upsert_transaction_assignment(
+    db: Session,
+    report_id: uuid.UUID,
+    transaction_id: uuid.UUID,
+    target_rule_filter_id: uuid.UUID,
+) -> ReportDetailResponse:
+    report = report_repository.get_report(db=db, report_id=report_id)
+    report_repository.get_report_transaction(db=db, report_id=report_id, transaction_id=transaction_id)
+    filter_repository.get_filter(db=db, filter_id=target_rule_filter_id)
+
+    report_repository.save_manual_assignment(
+        db=db,
+        report=report,
+        transaction_id=transaction_id,
+        target_rule_filter_id=target_rule_filter_id,
+    )
+
+    updated_report = _generate_report(db=db, report_id=report.id)
+    return build_report_full_response(updated_report)

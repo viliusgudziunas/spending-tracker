@@ -16,3 +16,7 @@ class FilterNotFoundError(Exception):
 
 class DuplicateFilterError(Exception):
     pass
+
+
+class TransactionNotFoundError(Exception):
+    pass
