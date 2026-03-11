@@ -23,6 +23,7 @@ import {
     CATEGORIES_QUERY_KEY,
     useCategoriesQuery,
     useCreateCategoryMutation,
+    useDeleteFilterMutation,
     useCreateFilterMutation,
     useUpdateCategoryMutation,
     useUpdateFilterPositionMutation,
@@ -37,6 +38,7 @@ export default function CategoriesPanel({ onClose, width }: CategoriesPanelProps
     const { data: categories, isLoading, isError } = useCategoriesQuery();
     const updateMutation = useUpdateCategoryMutation();
     const updateFilterPositionMutation = useUpdateFilterPositionMutation();
+    const deleteFilterMutation = useDeleteFilterMutation();
     const queryClient = useQueryClient();
 
     const sensors = useSensors(
@@ -125,6 +127,16 @@ export default function CategoriesPanel({ onClose, width }: CategoriesPanelProps
         [categories, queryClient, updateFilterPositionMutation],
     );
 
+    const handleDeleteFilter = useCallback(
+        async (filter: Filter): Promise<void> => {
+            const shouldDelete = window.confirm(`Delete filter "${filter.name}"?`);
+            if (!shouldDelete) return;
+
+            await deleteFilterMutation.mutateAsync(filter.id);
+        },
+        [deleteFilterMutation],
+    );
+
     return (
         <div className="sticky top-4 flex shrink-0 flex-col gap-3 self-start" style={{ width }}>
             <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -170,6 +182,8 @@ export default function CategoriesPanel({ onClose, width }: CategoriesPanelProps
                                     key={category.id}
                                     category={category}
                                     onFilterDragEnd={handleFilterDragEnd}
+                                    onDeleteFilter={handleDeleteFilter}
+                                    isDeletePending={deleteFilterMutation.isPending}
                                 />
                             ))}
                         </SortableContext>
@@ -185,9 +199,16 @@ export default function CategoriesPanel({ onClose, width }: CategoriesPanelProps
 interface SortableCategoryCardProps {
     category: Category;
     onFilterDragEnd: (categoryId: string, event: DragEndEvent) => void;
+    onDeleteFilter: (filter: Filter) => Promise<void>;
+    isDeletePending: boolean;
 }
 
-function SortableCategoryCard({ category, onFilterDragEnd }: SortableCategoryCardProps): JSX.Element {
+function SortableCategoryCard({
+    category,
+    onFilterDragEnd,
+    onDeleteFilter,
+    isDeletePending,
+}: SortableCategoryCardProps): JSX.Element {
     const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
         id: category.id,
     });
@@ -269,7 +290,12 @@ function SortableCategoryCard({ category, onFilterDragEnd }: SortableCategoryCar
                             <SortableContext items={filterIds} strategy={verticalListSortingStrategy}>
                                 <ul className="m-0 flex list-none flex-col gap-1 p-0">
                                     {category.filters.map((filter) => (
-                                        <SortableFilterItem key={filter.id} filter={filter} />
+                                        <SortableFilterItem
+                                            key={filter.id}
+                                            filter={filter}
+                                            onDelete={onDeleteFilter}
+                                            isDeletePending={isDeletePending}
+                                        />
                                     ))}
                                 </ul>
                             </SortableContext>
@@ -286,9 +312,11 @@ function SortableCategoryCard({ category, onFilterDragEnd }: SortableCategoryCar
 
 interface SortableFilterItemProps {
     filter: Filter;
+    onDelete: (filter: Filter) => Promise<void>;
+    isDeletePending: boolean;
 }
 
-function SortableFilterItem({ filter }: SortableFilterItemProps): JSX.Element {
+function SortableFilterItem({ filter, onDelete, isDeletePending }: SortableFilterItemProps): JSX.Element {
     const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
         id: filter.id,
     });
@@ -321,7 +349,7 @@ function SortableFilterItem({ filter }: SortableFilterItemProps): JSX.Element {
                 <button
                     type="button"
                     onClick={(): void => setExpanded((prev) => !prev)}
-                    className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-slate-50"
+                    className="flex min-w-0 flex-1 items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-slate-50"
                 >
                     <span className="truncate text-xs font-medium text-slate-700">{filter.name}</span>
                     {filter.ruleGroups.length > 0 ? (
@@ -339,6 +367,16 @@ function SortableFilterItem({ filter }: SortableFilterItemProps): JSX.Element {
                             <polyline points="6 3 11 8 6 13" />
                         </svg>
                     ) : null}
+                </button>
+                <button
+                    type="button"
+                    onClick={(): void => void onDelete(filter)}
+                    disabled={isDeletePending}
+                    className="rounded-md px-2 py-1 text-[10px] font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label={`Delete filter ${filter.name}`}
+                    title="Delete filter"
+                >
+                    Delete
                 </button>
             </div>
 

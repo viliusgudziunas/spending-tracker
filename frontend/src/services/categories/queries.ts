@@ -71,3 +71,14 @@ export function useUpdateFilterPositionMutation(): UseMutationResult<Filter, Err
         },
     });
 }
+
+export function useDeleteFilterMutation(): UseMutationResult<void, Error, string> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (filterId: string) => await rulesApi.deleteFilter(filterId),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
+        },
+    });
+}
