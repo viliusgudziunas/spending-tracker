@@ -349,24 +349,21 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
             {
                 colId: "actions",
                 headerName: "Actions",
-                width: 140,
+                width: 130,
+                minWidth: 130,
+                pinned: "right",
+                suppressMovable: true,
                 sortable: false,
                 filter: false,
                 resizable: false,
+                cellStyle: {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                },
                 cellRenderer: (params: ICellRendererParams<Transaction>): JSX.Element | null => {
                     if (params.data === undefined) return null;
-                    return (
-                        <button
-                            type="button"
-                            className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
-                            onClick={(event): void => {
-                                event.stopPropagation();
-                                onCreateFilter(params.data);
-                            }}
-                        >
-                            Create filter
-                        </button>
-                    );
+                    return <UnidentifiedActionsCell transaction={params.data} onCreateFilter={onCreateFilter} />;
                 },
             },
         ],
@@ -399,6 +396,28 @@ function UnidentifiedSection({ transactions, onCreateFilter }: UnidentifiedSecti
                     ensureDomOrder={true}
                 />
             </div>
+        </div>
+    );
+}
+
+interface UnidentifiedActionsCellProps {
+    transaction: Transaction;
+    onCreateFilter: (transaction: Transaction) => void;
+}
+
+function UnidentifiedActionsCell({ transaction, onCreateFilter }: UnidentifiedActionsCellProps): JSX.Element {
+    return (
+        <div className="flex h-full w-full items-center justify-center">
+            <button
+                type="button"
+                className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                onClick={(event): void => {
+                    event.stopPropagation();
+                    onCreateFilter(transaction);
+                }}
+            >
+                Create filter
+            </button>
         </div>
     );
 }
