@@ -31,6 +31,7 @@ export interface UseFilterForm {
         changeFilter: ChangeFilter;
         addRuleGroup: (rule?: string) => void;
         addRule: (groupId: string) => void;
+        removeRule: (groupId: string, ruleId: string) => void;
         changeRule: ChangeRule;
         removeRuleGroup: (groupId: string) => void;
         resetFilter: () => void;
@@ -90,6 +91,19 @@ const useFilterForm = (): UseFilterForm => {
         setFilter((currentFilter) => ({ ...currentFilter, ruleGroups: newRuleGroups }));
     };
 
+    const removeRule = (groupId: string, ruleId: string): void => {
+        const changingRuleGroup = filter.ruleGroups.find((group) => group.id === groupId);
+        if (!changingRuleGroup || changingRuleGroup.rules.length <= 1) return;
+
+        const changingRuleGroupIndex = filter.ruleGroups.indexOf(changingRuleGroup);
+        const newRuleGroups = [...filter.ruleGroups];
+        newRuleGroups[changingRuleGroupIndex] = {
+            ...changingRuleGroup,
+            rules: changingRuleGroup.rules.filter((rule) => rule.id !== ruleId),
+        };
+        setFilter((currentFilter) => ({ ...currentFilter, ruleGroups: newRuleGroups }));
+    };
+
     const changeRule: ChangeRule = (
         groupId: string,
         ruleId: string,
@@ -130,6 +144,7 @@ const useFilterForm = (): UseFilterForm => {
             changeFilter,
             addRuleGroup,
             addRule,
+            removeRule,
             changeRule,
             removeRuleGroup,
             resetFilter,
