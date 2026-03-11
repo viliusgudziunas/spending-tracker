@@ -219,3 +219,77 @@ class TestGetFilterEndpoint:
 
         assert response.status_code == 404
         assert response.json() == {"detail": "Filter not found"}
+
+
+@pytest.mark.integration
+class TestUpdateFilterEndpoint:
+    def test_updates_name(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory()
+        filter_ = filter_factory(category_id=category.id, name=f"Old-{uuid.uuid4()}")
+
+        response = client.patch(f"/filters/{filter_.id}", json={"name": "New name"})
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "New name"
+        assert response.json()["position"] == 1
+
+    def test_moves_filter_position_within_category(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory()
+        first = filter_factory(category_id=category.id, name=f"A-{uuid.uuid4()}")
+        second = filter_factory(category_id=category.id, name=f"B-{uuid.uuid4()}")
+        third = filter_factory(category_id=category.id, name=f"C-{uuid.uuid4()}")
+
+        response = client.patch(f"/filters/{third.id}", json={"position": 1})
+
+        assert response.status_code == 200
+        assert response.json()["position"] == 1
+
+        first_after = client.get(f"/filters/{first.id}").json()
+        second_after = client.get(f"/filters/{second.id}").json()
+        third_after = client.get(f"/filters/{third.id}").json()
+        assert [third_after["position"], first_after["position"], second_after["position"]] == [1, 2, 3]
+
+    def test_rejects_duplicate_name(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory()
+        duplicate_name = f"Duplicate-{uuid.uuid4()}"
+        filter_factory(category_id=category.id, name=duplicate_name)
+        filter_to_update = filter_factory(category_id=category.id, name=f"Other-{uuid.uuid4()}")
+
+        response = client.patch(f"/filters/{filter_to_update.id}", json={"name": duplicate_name})
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Filter already exists"
+
+    def test_rejects_empty_update(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory()
+        filter_ = filter_factory(category_id=category.id, name=f"To-update-{uuid.uuid4()}")
+
+        response = client.patch(f"/filters/{filter_.id}", json={})
+
+        assert response.status_code == 422
+
+    def test_returns_404_for_unknown_filter(self, client: TestClient) -> None:
+        response = client.patch(f"/filters/{uuid.uuid4()}", json={"name": "New name"})
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Filter not found"

@@ -2,11 +2,13 @@ import uuid
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
-from sqlalchemy import func, select
+from psycopg2.errors import UniqueViolation
+from sqlalchemy import func, select, update
+from sqlalchemy.exc import IntegrityError
 
 from app.db.rules.models import Filter, Rule, RuleGroup
 from app.repositories.dtos import CreateFilterDto
-from app.repositories.exceptions import FilterNotFoundError
+from app.repositories.exceptions import DuplicateFilterError, FilterNotFoundError
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -54,3 +56,68 @@ def get_filter(db: Session, filter_id: uuid.UUID) -> Filter:
         raise FilterNotFoundError
 
     return filter_
+
+
+def update_filter(
+    db: Session,
+    filter_id: uuid.UUID,
+    name: str | None,
+    position: int | None,
+) -> Filter:
+    filter_ = get_filter(db=db, filter_id=filter_id)
+
+    if name is not None:
+        filter_.name = name
+
+    if position is not None and position != filter_.position:
+        _shift_positions(
+            db=db,
+            filter_id=filter_id,
+            category_id=filter_.category_id,
+            old_position=filter_.position,
+            new_position=position,
+        )
+        filter_.position = position
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        if isinstance(exc.orig, UniqueViolation):
+            raise DuplicateFilterError from exc
+
+        raise
+
+    db.refresh(filter_)
+    return filter_
+
+
+def _shift_positions(
+    db: Session,
+    filter_id: uuid.UUID,
+    category_id: uuid.UUID,
+    old_position: int,
+    new_position: int,
+) -> None:
+    if old_position < new_position:
+        db.execute(
+            update(Filter)
+            .where(
+                Filter.id != filter_id,
+                Filter.category_id == category_id,
+                Filter.position > old_position,
+                Filter.position <= new_position,
+            )
+            .values(position=Filter.position - 1),
+        )
+    else:
+        db.execute(
+            update(Filter)
+            .where(
+                Filter.id != filter_id,
+                Filter.category_id == category_id,
+                Filter.position >= new_position,
+                Filter.position < old_position,
+            )
+            .values(position=Filter.position + 1),
+        )

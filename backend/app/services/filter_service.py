@@ -35,3 +35,17 @@ def create_filter(db: Session, form_data: CreateFilterInput) -> Filter:
 
 def get_filter(db: Session, filter_id: UUID) -> Filter:
     return filter_repository.get_filter(db=db, filter_id=filter_id)
+
+
+def update_filter(
+    db: Session,
+    filter_id: UUID,
+    name: str | None,
+    position: int | None,
+) -> Filter:
+    return filter_repository.update_filter(
+        db=db,
+        filter_id=filter_id,
+        name=name,
+        position=position,
+    )

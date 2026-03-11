@@ -12,3 +12,7 @@ class ReportNotFoundError(Exception):
 
 class FilterNotFoundError(Exception):
     pass
+
+
+class DuplicateFilterError(Exception):
+    pass
