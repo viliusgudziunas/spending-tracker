@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 from app.api.schemas.filter_schemas import CreateFilterInput
 from app.db.rules.models import Filter
@@ -30,3 +31,7 @@ def create_filter(db: Session, form_data: CreateFilterInput) -> Filter:
             ],
         ),
     )
+
+
+def get_filter(db: Session, filter_id: UUID) -> Filter:
+    return filter_repository.get_filter(db=db, filter_id=filter_id)

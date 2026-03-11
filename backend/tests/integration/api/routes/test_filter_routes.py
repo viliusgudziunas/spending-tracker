@@ -191,3 +191,31 @@ class TestGetFiltersEndpoint:
 
         assert response.status_code == 200
         assert isinstance(response.json(), list)
+
+
+@pytest.mark.integration
+class TestGetFilterEndpoint:
+    def test_returns_filter_by_id(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory()
+        filter_ = filter_factory(category_id=category.id, name=f"Single-{uuid.uuid4()}")
+
+        response = client.get(f"/filters/{filter_.id}")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["id"] == str(filter_.id)
+        assert body["name"] == filter_.name
+        assert body["category_id"] == str(category.id)
+        assert isinstance(body["rule_groups"], list)
+        assert len(body["rule_groups"]) == 1
+
+    def test_returns_not_found_for_unknown_id(self, client: TestClient) -> None:
+        response = client.get(f"/filters/{uuid.uuid4()}")
+
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Filter not found"}

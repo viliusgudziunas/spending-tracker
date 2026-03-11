@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 
 from app.db.rules.models import Filter, Rule, RuleGroup
 from app.repositories.dtos import CreateFilterDto
+from app.repositories.exceptions import FilterNotFoundError
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -44,3 +45,12 @@ def create_filter(db: Session, filter_dto: CreateFilterDto) -> Filter:
 
 def _get_max_position(db: Session, category_id: uuid.UUID) -> int:
     return db.scalar(select(func.max(Filter.position)).where(Filter.category_id == category_id)) or 0
+
+
+def get_filter(db: Session, filter_id: uuid.UUID) -> Filter:
+    filter_ = db.get(Filter, filter_id)
+
+    if filter_ is None:
+        raise FilterNotFoundError
+
+    return filter_

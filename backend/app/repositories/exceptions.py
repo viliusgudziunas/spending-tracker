@@ -8,3 +8,7 @@ class CategoryNotFoundError(Exception):
 
 class ReportNotFoundError(Exception):
     pass
+
+
+class FilterNotFoundError(Exception):
+    pass
