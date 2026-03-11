@@ -1,6 +1,6 @@
 import axios from "axios";
 import { API_URL } from "../../config";
-import { parseApiCategories, parseApiCategory } from "./api.parser";
+import { parseApiCategories, parseApiCategory, parseApiFilter } from "./api.parser";
 import { Category, Filter } from "./api.types.parsed";
 import { parseIntoCreateApiFilterPayload, parseIntoUpdateApiFilterPayload } from "./apiService.parser";
 
@@ -46,6 +46,10 @@ export interface UpdateRulePayload {
     type: string;
     operator: string;
     value: string;
+}
+
+export interface UpdateFilterPositionPayload {
+    position: number;
 }
 
 const createCategory = async (payload: CreateCategoryPayload): Promise<Category> => {
@@ -100,6 +104,16 @@ const updateFilter = async (filterId: string, payload: UpdateFilterPayload): Pro
     }
 };
 
+const updateFilterPosition = async (filterId: string, payload: UpdateFilterPositionPayload): Promise<Filter> => {
+    try {
+        const response = await axios.patch(`${API_URL}/filters/${filterId}`, payload);
+        return parseApiFilter(response.data);
+    } catch (error) {
+        console.error("Error updating filter position:", error);
+        throw error;
+    }
+};
+
 const deleteFilter = async (filterId: string): Promise<void> => {
     try {
         await axios.delete(`${API_URL}/filters/${filterId}`);
@@ -115,5 +129,6 @@ export default {
     fetchCategories,
     updateCategory,
     updateFilter,
+    updateFilterPosition,
     deleteFilter,
 };

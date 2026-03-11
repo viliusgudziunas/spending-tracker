@@ -25,6 +25,7 @@ import {
     useCreateCategoryMutation,
     useCreateFilterMutation,
     useUpdateCategoryMutation,
+    useUpdateFilterPositionMutation,
 } from "../services/categories/queries";
 
 interface CategoriesPanelProps {
@@ -35,6 +36,7 @@ interface CategoriesPanelProps {
 export default function CategoriesPanel({ onClose, width }: CategoriesPanelProps): JSX.Element {
     const { data: categories, isLoading, isError } = useCategoriesQuery();
     const updateMutation = useUpdateCategoryMutation();
+    const updateFilterPositionMutation = useUpdateFilterPositionMutation();
     const queryClient = useQueryClient();
 
     const sensors = useSensors(
@@ -66,6 +68,61 @@ export default function CategoriesPanel({ onClose, width }: CategoriesPanelProps
             });
         },
         [categories, updateMutation, queryClient],
+    );
+
+    const handleFilterDragEnd = useCallback(
+        (categoryId: string, event: DragEndEvent): void => {
+            const { active, over } = event;
+            if (categories === undefined) return;
+
+            const category = categories.find((currentCategory) => currentCategory.id === categoryId);
+            if (category === undefined) return;
+
+            const oldIndex = category.filters.findIndex((filter) => filter.id === active.id);
+            if (oldIndex === -1) return;
+
+            let newIndex = -1;
+            if (over !== null) {
+                if (active.id === over.id) {
+                    // Near top/bottom edges, dnd-kit can still report active item as the collision target.
+                    // Use drag direction to resolve boundary moves instead of treating it as a no-op.
+                    if (event.delta.y < 0) {
+                        newIndex = 0;
+                    } else if (event.delta.y > 0) {
+                        newIndex = category.filters.length - 1;
+                    } else {
+                        return;
+                    }
+                } else {
+                    newIndex = category.filters.findIndex((filter) => filter.id === over.id);
+                }
+            } else {
+                // When dropping near list boundaries, dnd-kit can resolve no "over" target.
+                // Treat upward drags as move-to-top and downward drags as move-to-bottom.
+                newIndex = event.delta.y < 0 ? 0 : category.filters.length - 1;
+            }
+            if (newIndex === -1 || newIndex === oldIndex) return;
+
+            const reorderedFilters = arrayMove(category.filters, oldIndex, newIndex).map((filter, index) => ({
+                ...filter,
+                position: index,
+            }));
+            queryClient.setQueryData(
+                CATEGORIES_QUERY_KEY,
+                categories.map((currentCategory) =>
+                    currentCategory.id === categoryId
+                        ? { ...currentCategory, filters: reorderedFilters }
+                        : currentCategory,
+                ),
+            );
+
+            const newPosition = newIndex;
+            void updateFilterPositionMutation.mutateAsync({
+                filterId: active.id as string,
+                payload: { position: newPosition },
+            });
+        },
+        [categories, queryClient, updateFilterPositionMutation],
     );
 
     return (
@@ -109,7 +166,11 @@ export default function CategoriesPanel({ onClose, width }: CategoriesPanelProps
                     >
                         <SortableContext items={categoryIds} strategy={verticalListSortingStrategy}>
                             {categories.map((category) => (
-                                <SortableCategoryCard key={category.id} category={category} />
+                                <SortableCategoryCard
+                                    key={category.id}
+                                    category={category}
+                                    onFilterDragEnd={handleFilterDragEnd}
+                                />
                             ))}
                         </SortableContext>
                     </DndContext>
@@ -123,13 +184,19 @@ export default function CategoriesPanel({ onClose, width }: CategoriesPanelProps
 
 interface SortableCategoryCardProps {
     category: Category;
+    onFilterDragEnd: (categoryId: string, event: DragEndEvent) => void;
 }
 
-function SortableCategoryCard({ category }: SortableCategoryCardProps): JSX.Element {
+function SortableCategoryCard({ category, onFilterDragEnd }: SortableCategoryCardProps): JSX.Element {
     const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
         id: category.id,
     });
     const [expanded, setExpanded] = useState(false);
+    const filterSensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
+    const filterIds = useMemo(() => category.filters.map((filter) => filter.id), [category.filters]);
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -193,11 +260,20 @@ function SortableCategoryCard({ category }: SortableCategoryCardProps): JSX.Elem
                     {category.filters.length === 0 ? (
                         <p className="m-0 py-2 text-xs text-slate-400">No filters in this category.</p>
                     ) : (
-                        <ul className="m-0 flex list-none flex-col gap-1 p-0">
-                            {category.filters.map((filter) => (
-                                <FilterItem key={filter.id} filter={filter} />
-                            ))}
-                        </ul>
+                        <DndContext
+                            sensors={filterSensors}
+                            collisionDetection={closestCenter}
+                            modifiers={[restrictToVerticalAxis]}
+                            onDragEnd={(event): void => onFilterDragEnd(category.id, event)}
+                        >
+                            <SortableContext items={filterIds} strategy={verticalListSortingStrategy}>
+                                <ul className="m-0 flex list-none flex-col gap-1 p-0">
+                                    {category.filters.map((filter) => (
+                                        <SortableFilterItem key={filter.id} filter={filter} />
+                                    ))}
+                                </ul>
+                            </SortableContext>
+                        </DndContext>
                     )}
                     <div className="mt-2">
                         <CreateFilterForm categoryId={category.id} />
@@ -208,37 +284,63 @@ function SortableCategoryCard({ category }: SortableCategoryCardProps): JSX.Elem
     );
 }
 
-interface FilterItemProps {
+interface SortableFilterItemProps {
     filter: Filter;
 }
 
-function FilterItem({ filter }: FilterItemProps): JSX.Element {
+function SortableFilterItem({ filter }: SortableFilterItemProps): JSX.Element {
+    const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
+        id: filter.id,
+    });
     const [expanded, setExpanded] = useState(false);
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 11 : undefined,
+    };
 
     return (
-        <li>
-            <button
-                type="button"
-                onClick={(): void => setExpanded((prev) => !prev)}
-                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-slate-50"
-            >
-                <span className="truncate text-xs font-medium text-slate-700">{filter.name}</span>
-                {filter.ruleGroups.length > 0 ? (
-                    <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 16 16"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className={`shrink-0 text-slate-300 transition-transform ${expanded ? "rotate-90" : ""}`}
-                    >
-                        <polyline points="6 3 11 8 6 13" />
+        <li ref={setNodeRef} style={style} className={`rounded-md ${isDragging ? "bg-blue-50 shadow-sm" : ""}`}>
+            <div className="flex items-center gap-1">
+                <button
+                    type="button"
+                    ref={setActivatorNodeRef}
+                    {...attributes}
+                    {...listeners}
+                    className="flex h-6 w-4 shrink-0 cursor-grab items-center justify-center rounded text-slate-300 transition hover:text-slate-500 active:cursor-grabbing"
+                >
+                    <svg width="8" height="12" viewBox="0 0 10 16" fill="currentColor">
+                        <circle cx="3" cy="3" r="1.5" />
+                        <circle cx="7" cy="3" r="1.5" />
+                        <circle cx="3" cy="8" r="1.5" />
+                        <circle cx="7" cy="8" r="1.5" />
+                        <circle cx="3" cy="13" r="1.5" />
+                        <circle cx="7" cy="13" r="1.5" />
                     </svg>
-                ) : null}
-            </button>
+                </button>
+                <button
+                    type="button"
+                    onClick={(): void => setExpanded((prev) => !prev)}
+                    className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-slate-50"
+                >
+                    <span className="truncate text-xs font-medium text-slate-700">{filter.name}</span>
+                    {filter.ruleGroups.length > 0 ? (
+                        <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 16 16"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={`shrink-0 text-slate-300 transition-transform ${expanded ? "rotate-90" : ""}`}
+                        >
+                            <polyline points="6 3 11 8 6 13" />
+                        </svg>
+                    ) : null}
+                </button>
+            </div>
 
             {expanded && filter.ruleGroups.length > 0 ? (
                 <div className="ml-2 border-l border-slate-100 pl-2">
