@@ -15,8 +15,7 @@ from app.api.schemas.report_schemas import (
 )
 from app.db.reports.models import Override, Report, Transaction
 from app.db.rules.models import Category as RuleCategory
-from app.db.rules.repository import get_categories
-from app.repositories import report_repository
+from app.repositories import category_repository, report_repository
 from app.repositories.dtos import CreateTransactionDto
 from app.services import statement_service
 from app.transactions_service import get_transactions_matching_rule
@@ -60,11 +59,16 @@ def get_report_detail(db: Session, report_id: uuid.UUID) -> ReportDetailResponse
     return build_report_full_response(report)
 
 
-def generate_report(db: Session, report_id: uuid.UUID) -> Report:
+def generate_report_detail(db: Session, report_id: uuid.UUID) -> ReportDetailResponse:
+    report = _generate_report(db=db, report_id=report_id)
+    return build_report_full_response(report)
+
+
+def _generate_report(db: Session, report_id: uuid.UUID) -> Report:
     report = report_repository.get_report(db=db, report_id=report_id)
     report_repository.reset_report(db=db, report=report)
 
-    rule_categories = get_categories(db=db)
+    rule_categories = category_repository.get_categories(db=db)
     transactions = list(report.transactions)
     overrides = list(report.overrides)
 

@@ -35,3 +35,11 @@ def get_report(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) ->
         return report_service.get_report_detail(db=db, report_id=report_id)
     except ReportNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc
+
+
+@router.post("/reports/{report_id}/generate", response_model=ReportDetailResponse)
+def generate_report(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> ReportDetailResponse:
+    try:
+        return report_service.generate_report_detail(db=db, report_id=report_id)
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc

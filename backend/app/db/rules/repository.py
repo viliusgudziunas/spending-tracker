@@ -1,67 +1,16 @@
 import uuid
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import select
 
-from app.db.rules.models import Category, Filter, Rule, RuleGroup
+from app.db.rules.models import Filter, Rule, RuleGroup
+from app.repositories.dtos import CreateRuleDto
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
-
-
-def get_categories(db: Session) -> Sequence[Category]:
-    return db.scalars(select(Category)).all()
-
-
-class CreateRuleDTO(BaseModel):
-    type: str
-    operator: str
-    value: str
-
-
-class CreateRuleGroupDTO(BaseModel):
-    operator: str
-    rules: list[CreateRuleDTO]
-
-
-class CreateFilterDTO(BaseModel):
-    name: str
-    position: int | None
-    category_id: uuid.UUID
-    rule_groups: list[CreateRuleGroupDTO]
-
-
-def create_filter(db: Session, filter_dto: CreateFilterDTO) -> Filter:
-    position = (
-        filter_dto.position
-        if filter_dto.position is not None
-        else _get_max_position(db=db, category_id=filter_dto.category_id) + 1
-    )
-
-    filter_ = Filter(name=filter_dto.name, category_id=filter_dto.category_id, position=position)
-    db.add(filter_)
-
-    for rule_group_dto in filter_dto.rule_groups:
-        rule_group = RuleGroup(operator=rule_group_dto.operator)
-        db.add(rule_group)
-
-        for rule_dto in rule_group_dto.rules:
-            rule = Rule(type=rule_dto.type, operator=rule_dto.operator, value=rule_dto.value)
-            db.add(rule)
-            rule_group.rules.append(rule)
-
-        filter_.rule_groups.append(rule_group)
-
-    db.commit()
-    db.refresh(filter_)
-
-    return filter_
-
-
-def _get_max_position(db: Session, category_id: uuid.UUID) -> int:
-    return db.scalar(select(func.max(Filter.position)).where(Filter.category_id == category_id)) or 0
 
 
 def get_filters(db: Session) -> Sequence[Filter]:
@@ -135,7 +84,8 @@ def delete_filter(db: Session, filter_id: uuid.UUID) -> None:
     db.commit()
 
 
-class CreateSingleRuleDTO(CreateRuleDTO):
+@dataclass(frozen=True, kw_only=True)
+class CreateSingleRuleDTO(CreateRuleDto):
     filter_id: uuid.UUID
 
 

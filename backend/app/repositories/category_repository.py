@@ -13,6 +13,10 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 
+def get_categories(db: Session) -> Sequence[Category]:
+    return db.scalars(select(Category).order_by(Category.position)).all()
+
+
 def create_category(db: Session, name: str) -> Category:
     max_position: int | None = db.scalar(select(func.max(Category.position)))
     next_position = (max_position or 0) + 1
@@ -31,10 +35,6 @@ def create_category(db: Session, name: str) -> Category:
 
     db.refresh(category)
     return category
-
-
-def get_categories(db: Session) -> Sequence[Category]:
-    return db.scalars(select(Category).order_by(Category.position)).all()
 
 
 def update_category(

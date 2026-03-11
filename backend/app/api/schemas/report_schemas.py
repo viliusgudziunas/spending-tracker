@@ -17,7 +17,7 @@ class ReportDetailResponse(BaseModel):
     name: str
     schema_version: int
     categories: list[ReportDetailCategoryResponse]
-    unidentified_transactions: list[ReportDetailTransactionV1Response | ReportDetailTransactionV2Response]
+    unidentified_transactions: list[ReportDetailTransactionResponse]
 
 
 class ReportDetailCategoryResponse(BaseModel):

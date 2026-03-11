@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
 from app.api.legacy.reports.models import OverrideInput, OverrideResponse
-from app.api.schemas.report_schemas import ReportDetailResponse
 from app.db.reports.models import Override
 from app.db.reports.repository import (
     CreateOverrideDto,
@@ -17,15 +16,8 @@ from app.db.reports.repository import (
     get_transaction,
     link_transaction_to_filter,
 )
-from app.services import report_service
 
 router = APIRouter()
-
-
-@router.post("/reports/{report_id}/generate", response_model=ReportDetailResponse)
-async def generate_report_(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> ReportDetailResponse:
-    report = report_service.generate_report(db=db, report_id=report_id)
-    return report_service.build_report_full_response(report)
 
 
 @router.post("/overrides", response_model=OverrideResponse)
