@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from app.api.schemas.filter_schemas import CreateFilterInput
@@ -7,6 +8,10 @@ from app.repositories.dtos import CreateFilterDto, CreateRuleDto, CreateRuleGrou
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
+
+
+def get_filters(db: Session) -> Sequence[Filter]:
+    return filter_repository.get_filters(db=db)
 
 
 def create_filter(db: Session, form_data: CreateFilterInput) -> Filter:

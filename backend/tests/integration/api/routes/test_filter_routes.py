@@ -1,3 +1,4 @@
+import uuid
 from typing import TYPE_CHECKING
 
 import pytest
@@ -8,12 +9,12 @@ if TYPE_CHECKING:
     from fastapi.testclient import TestClient
     from sqlalchemy.orm import Session
 
-    from tests.integration.api.routes.conftest import CategoryFactory
+    from tests.integration.api.routes.conftest import CategoryFactory, FilterFactory
 
 
-def _valid_filter_payload(category_id: str) -> dict:
+def _valid_filter_payload(category_id: str, name: str | None = None) -> dict:
     return {
-        "name": "Rent",
+        "name": name or f"Rent-{uuid.uuid4()}",
         "category_id": category_id,
         "rule_groups": [
             {
@@ -36,7 +37,7 @@ class TestCreateFilterEndpoint:
 
         assert response.status_code == 201
         body = response.json()
-        assert body["name"] == "Rent"
+        assert body["name"] == payload["name"]
         assert body["category_id"] == str(category.id)
         assert body["position"] == 1
         assert "id" in body
@@ -73,7 +74,7 @@ class TestCreateFilterEndpoint:
         filter_id = response.json()["id"]
         persisted = db.get(Filter, filter_id)
         assert persisted is not None
-        assert persisted.name == "Rent"
+        assert persisted.name == payload["name"]
         assert len(persisted.rule_groups) == 1
         assert len(persisted.rule_groups[0].rules) == 1
 
@@ -85,9 +86,9 @@ class TestCreateFilterEndpoint:
         category = category_factory()
         category_id = str(category.id)
 
-        first = client.post("/filters", json=_valid_filter_payload(category_id))
+        first = client.post("/filters", json=_valid_filter_payload(category_id, name=f"Rent-{uuid.uuid4()}"))
         second_payload = _valid_filter_payload(category_id)
-        second_payload["name"] = "Utilities"
+        second_payload["name"] = f"Utilities-{uuid.uuid4()}"
         second = client.post("/filters", json=second_payload)
 
         assert first.json()["position"] == 1
@@ -162,3 +163,31 @@ class TestCreateFilterEndpoint:
         response = client.post("/filters", json=payload)
 
         assert response.status_code == 422
+
+
+@pytest.mark.integration
+class TestGetFiltersEndpoint:
+    def test_returns_all_filters(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        first_category = category_factory(name="Housing")
+        second_category = category_factory(name="Bills")
+        first_filter = filter_factory(category_id=first_category.id, name=f"Rent-{uuid.uuid4()}")
+        second_filter = filter_factory(category_id=second_category.id, name=f"Utilities-{uuid.uuid4()}")
+
+        response = client.get("/filters")
+
+        assert response.status_code == 200
+        body = response.json()
+        returned_ids = {item["id"] for item in body}
+        assert str(first_filter.id) in returned_ids
+        assert str(second_filter.id) in returned_ids
+
+    def test_returns_list_response(self, client: TestClient) -> None:
+        response = client.get("/filters")
+
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)

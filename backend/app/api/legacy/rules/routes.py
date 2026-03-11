@@ -1,5 +1,4 @@
 import uuid
-from collections.abc import Iterable
 from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -21,7 +20,6 @@ from app.db.rules.repository import (
     create_rule,
     delete_filter,
     get_filter,
-    get_filters,
     update_filter,
 )
 
@@ -29,11 +27,6 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 router = APIRouter()
-
-
-@router.get("/filters", response_model=list[FilterFullResponse], status_code=status.HTTP_200_OK)
-def get_filters_(db: Annotated[Session, Depends(get_db)]) -> Iterable[Filter]:
-    return get_filters(db=db)
 
 
 @router.get("/filters/{filter_id}", response_model=FilterFullResponse, status_code=status.HTTP_200_OK)

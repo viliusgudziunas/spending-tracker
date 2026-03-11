@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select
@@ -8,6 +9,10 @@ from app.repositories.dtos import CreateFilterDto
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
+
+
+def get_filters(db: Session) -> Sequence[Filter]:
+    return db.scalars(select(Filter).order_by(Filter.position)).all()
 
 
 def create_filter(db: Session, filter_dto: CreateFilterDto) -> Filter:

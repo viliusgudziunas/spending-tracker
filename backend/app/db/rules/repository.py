@@ -1,20 +1,14 @@
 import uuid
-from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
-from sqlalchemy import select
 
 from app.db.rules.models import Filter, Rule, RuleGroup
 from app.repositories.dtos import CreateRuleDto
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
-
-
-def get_filters(db: Session) -> Sequence[Filter]:
-    return db.scalars(select(Filter)).all()
 
 
 class FilterNotFoundError(Exception):
