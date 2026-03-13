@@ -1,8 +1,7 @@
 import axios from "axios";
 import { API_URL } from "../../config";
-import { parseApiOverride, parseApiReport } from "./api.parser";
-import { Override, Report, ReportFull } from "./api.types.parsed";
-import { parseIntoCreateOverridePayload } from "./apiService.parser";
+import { parseApiReport } from "./api.parser";
+import { Report, ReportFull } from "./api.types.parsed";
 
 const fetchReports = async (): Promise<Report[]> => {
     try {
@@ -69,41 +68,9 @@ const generateReport = async (reportId: string): Promise<ReportFull> => {
     }
 };
 
-interface AlterToReportLinePayload {
-    filterId: string;
-    transactionId: string;
-}
-
-export interface CreateOverridePayload {
-    filterId: string;
-    transactionId: string;
-}
-
-const createOverride = async (payload: AlterToReportLinePayload): Promise<Override> => {
-    try {
-        const parsedPayload = parseIntoCreateOverridePayload(payload);
-        const response = await axios.post(`${API_URL}/overrides`, parsedPayload);
-        return parseApiOverride(response.data);
-    } catch (error) {
-        console.error("Error generating report:", error);
-        throw error;
-    }
-};
-
-const deleteOverride = async (transactionId: string): Promise<void> => {
-    try {
-        await axios.delete(`${API_URL}/overrides/${transactionId}`);
-    } catch (error) {
-        console.error("Error deleting override:", error);
-        throw error;
-    }
-};
-
 export default {
-    createOverride,
     createReport,
     fetchReport,
     fetchReports,
     generateReport,
-    deleteOverride,
 };

@@ -41,10 +41,3 @@ export interface Transaction {
 }
 
 export type TransactionSource = (typeof TRANSACTION_SOURCES)[number] | null;
-
-export interface Override {
-    id: string;
-    categoryName: string;
-    filterName: string;
-    transactionId: string;
-}

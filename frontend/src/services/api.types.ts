@@ -63,13 +63,6 @@ export interface ApiRule {
     group_id: string;
 }
 
-export interface ApiOverride {
-    id: string;
-    category_name: string;
-    filter_name: string;
-    transaction_id: string;
-}
-
 export const TRANSACTION_SOURCES = ["generated", "override", null] as const;
 export const RULE_GROUP_OPERATORS = ["AND"] as const;
 export const RULE_TYPES = ["DESCRIPTION", "AMOUNT", "PRODUCT"] as const;
@@ -108,9 +101,4 @@ export type PutApiRuleGroupPayload = Omit<ApiRuleGroup, "id" | "filter_id" | "ru
 };
 export type PutApiRulePayload = Omit<ApiRule, "id" | "group_id"> & {
     id?: string;
-};
-
-export type CreateApiOverridePayload = {
-    filter_id: string;
-    transaction_id: string;
 };

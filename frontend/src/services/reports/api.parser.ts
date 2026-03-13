@@ -1,12 +1,5 @@
-import {
-    ApiOverride,
-    ApiReport,
-    ApiReportCategory,
-    ApiReportFilter,
-    ApiTransaction,
-    TRANSACTION_SOURCES,
-} from "../api.types";
-import { Override, ReportCategory, ReportFilter, ReportFull, Transaction, TransactionSource } from "./api.types.parsed";
+import { ApiReport, ApiReportCategory, ApiReportFilter, ApiTransaction, TRANSACTION_SOURCES } from "../api.types";
+import { ReportCategory, ReportFilter, ReportFull, Transaction, TransactionSource } from "./api.types.parsed";
 
 export const parseApiReport = (apiReport: ApiReport): ReportFull => ({
     id: apiReport.id,
@@ -23,7 +16,7 @@ const parseApiReportCategory = (category: ApiReportCategory): ReportCategory => 
     filters: category.filters.map((filter) => parseApiReportFilter(filter)),
 });
 
-export const parseApiReportFilter = (filter: ApiReportFilter): ReportFilter => ({
+const parseApiReportFilter = (filter: ApiReportFilter): ReportFilter => ({
     id: filter.id,
     name: filter.name,
     amount: String(-Number(filter.amount)),
@@ -52,10 +45,3 @@ const parseApiReportTransactionSource = (source: string | null): TransactionSour
 
     return source as TransactionSource;
 };
-
-export const parseApiOverride = (override: ApiOverride): Override => ({
-    id: override.id,
-    categoryName: override.category_name,
-    filterName: override.filter_name,
-    transactionId: override.transaction_id,
-});
