@@ -2,11 +2,22 @@ import {
     CreateApiFilterPayload,
     CreateApiRuleGroupPayload,
     CreateApiRulePayload,
+    PutApiFilterRuleGroupsPayload,
+    PutApiRuleGroupPayload,
+    PutApiRulePayload,
     UpdateApiFilterPayload,
     UpdateApiRuleGroupPayload,
     UpdateApiRulePayload,
 } from "../api.types";
-import { CreateFilterPayload, CreateRuleGroupPayload, CreateRulePayload, UpdateFilterPayload } from "./apiService";
+import {
+    CreateFilterPayload,
+    CreateRuleGroupPayload,
+    CreateRulePayload,
+    PutFilterRuleGroupsPayload,
+    PutRuleGroupPayload,
+    PutRulePayload,
+    UpdateFilterPayload,
+} from "./apiService";
 
 export const parseIntoCreateApiFilterPayload = (filter: CreateFilterPayload): CreateApiFilterPayload => ({
     name: filter.name,
@@ -38,6 +49,25 @@ const parseIntoUpdateApiRuleGroupPayload = (ruleGroup: CreateRuleGroupPayload): 
 });
 
 const parseIntoUpdateApiRulePayload = (rule: CreateRulePayload): UpdateApiRulePayload => ({
+    type: rule.type,
+    operator: rule.operator,
+    value: rule.value,
+});
+
+export const parseIntoPutApiFilterRuleGroupsPayload = (
+    payload: PutFilterRuleGroupsPayload,
+): PutApiFilterRuleGroupsPayload => ({
+    rule_groups: payload.ruleGroups.map((ruleGroup) => parseIntoPutApiRuleGroupPayload(ruleGroup)),
+});
+
+const parseIntoPutApiRuleGroupPayload = (ruleGroup: PutRuleGroupPayload): PutApiRuleGroupPayload => ({
+    id: ruleGroup.id,
+    operator: ruleGroup.operator,
+    rules: ruleGroup.rules.map((rule) => parseIntoPutApiRulePayload(rule)),
+});
+
+const parseIntoPutApiRulePayload = (rule: PutRulePayload): PutApiRulePayload => ({
+    id: rule.id,
     type: rule.type,
     operator: rule.operator,
     value: rule.value,

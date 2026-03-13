@@ -2,6 +2,7 @@ import { UseMutationResult, UseQueryResult, useMutation, useQuery, useQueryClien
 import rulesApi, {
     CreateCategoryPayload,
     CreateFilterPayload,
+    PutFilterRuleGroupsPayload,
     UpdateCategoryPayload,
     UpdateFilterPositionPayload,
 } from "../rules/apiService";
@@ -77,6 +78,23 @@ export function useDeleteFilterMutation(): UseMutationResult<void, Error, string
 
     return useMutation({
         mutationFn: async (filterId: string) => await rulesApi.deleteFilter(filterId),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
+        },
+    });
+}
+
+interface PutFilterRuleGroupsVariables {
+    filterId: string;
+    payload: PutFilterRuleGroupsPayload;
+}
+
+export function usePutFilterRuleGroupsMutation(): UseMutationResult<Filter, Error, PutFilterRuleGroupsVariables> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ filterId, payload }: PutFilterRuleGroupsVariables) =>
+            await rulesApi.putFilterRuleGroups(filterId, payload),
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
         },

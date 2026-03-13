@@ -2,7 +2,11 @@ import axios from "axios";
 import { API_URL } from "../../config";
 import { parseApiCategories, parseApiCategory, parseApiFilter } from "./api.parser";
 import { Category, Filter } from "./api.types.parsed";
-import { parseIntoCreateApiFilterPayload, parseIntoUpdateApiFilterPayload } from "./apiService.parser";
+import {
+    parseIntoCreateApiFilterPayload,
+    parseIntoPutApiFilterRuleGroupsPayload,
+    parseIntoUpdateApiFilterPayload,
+} from "./apiService.parser";
 
 export interface CreateCategoryPayload {
     name: string;
@@ -50,6 +54,23 @@ export interface UpdateRulePayload {
 
 export interface UpdateFilterPositionPayload {
     position: number;
+}
+
+export interface PutFilterRuleGroupsPayload {
+    ruleGroups: PutRuleGroupPayload[];
+}
+
+export interface PutRuleGroupPayload {
+    id?: string;
+    operator: string;
+    rules: PutRulePayload[];
+}
+
+export interface PutRulePayload {
+    id?: string;
+    type: string;
+    operator: string;
+    value: string;
 }
 
 const createCategory = async (payload: CreateCategoryPayload): Promise<Category> => {
@@ -123,6 +144,17 @@ const deleteFilter = async (filterId: string): Promise<void> => {
     }
 };
 
+const putFilterRuleGroups = async (filterId: string, payload: PutFilterRuleGroupsPayload): Promise<Filter> => {
+    try {
+        const parsedPayload = parseIntoPutApiFilterRuleGroupsPayload(payload);
+        const response = await axios.put(`${API_URL}/filters/${filterId}/rule-groups`, parsedPayload);
+        return parseApiFilter(response.data);
+    } catch (error) {
+        console.error("Error updating filter rule groups:", error);
+        throw error;
+    }
+};
+
 export default {
     createCategory,
     createFilter,
@@ -131,4 +163,5 @@ export default {
     updateFilter,
     updateFilterPosition,
     deleteFilter,
+    putFilterRuleGroups,
 };

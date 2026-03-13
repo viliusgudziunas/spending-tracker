@@ -99,6 +99,17 @@ export type UpdateApiRuleGroupPayload = Omit<ApiRuleGroup, "id" | "filter_id" | 
 };
 export type UpdateApiRulePayload = Omit<ApiRule, "id" | "group_id">;
 
+export type PutApiFilterRuleGroupsPayload = {
+    rule_groups: PutApiRuleGroupPayload[];
+};
+export type PutApiRuleGroupPayload = Omit<ApiRuleGroup, "id" | "filter_id" | "rules"> & {
+    id?: string;
+    rules: PutApiRulePayload[];
+};
+export type PutApiRulePayload = Omit<ApiRule, "id" | "group_id"> & {
+    id?: string;
+};
+
 export type CreateApiOverridePayload = {
     filter_id: string;
     transaction_id: string;
