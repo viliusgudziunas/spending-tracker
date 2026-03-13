@@ -750,7 +750,10 @@ function CreateTransactionFilterPanel({
     );
 
     return (
-        <div className="sticky top-4 flex shrink-0 flex-col gap-3 self-start" style={{ width }}>
+        <div
+            className="sticky top-4 flex max-h-[calc(100vh-2rem)] shrink-0 flex-col gap-3 self-start"
+            style={{ width }}
+        >
             <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="min-w-0">
                     <h2 className="m-0 truncate text-lg font-semibold text-slate-900">Create Filter</h2>
@@ -767,7 +770,7 @@ function CreateTransactionFilterPanel({
 
             <form
                 onSubmit={(event): void => void handleSubmit(event)}
-                className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                className="min-h-0 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
             >
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                     <div className="font-semibold text-slate-700">Transaction</div>
@@ -1058,7 +1061,10 @@ function AddToRuleGroupPanel({ reportId, transaction, onClose, width }: AddToRul
     );
 
     return (
-        <div className="sticky top-4 flex shrink-0 flex-col gap-3 self-start" style={{ width }}>
+        <div
+            className="sticky top-4 flex max-h-[calc(100vh-2rem)] shrink-0 flex-col gap-3 self-start"
+            style={{ width }}
+        >
             <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="min-w-0">
                     <h2 className="m-0 truncate text-lg font-semibold text-slate-900">Add to Rule Group</h2>
@@ -1075,7 +1081,7 @@ function AddToRuleGroupPanel({ reportId, transaction, onClose, width }: AddToRul
 
             <form
                 onSubmit={(event): void => void handleSubmit(event)}
-                className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                className="min-h-0 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
             >
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                     <div className="font-semibold text-slate-700">Transaction</div>
