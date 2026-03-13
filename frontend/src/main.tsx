@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import "./index.css";
+import "./shared/setup/agGrid";
 import { routeTree } from "./routeTree.gen";
 
 const router = createRouter({ routeTree });
