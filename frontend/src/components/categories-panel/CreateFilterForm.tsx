@@ -90,7 +90,9 @@ export default function CreateFilterForm({ categoryId }: CreateFilterFormProps):
             {filterFormStore.state.filter.ruleGroups.map((group, groupIndex) => (
                 <div key={group.id} className="flex flex-col gap-2 rounded-md border border-slate-200 bg-white p-2">
                     <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-slate-600">Rule Group {groupIndex + 1} (AND)</span>
+                        <span className="text-[11px] font-semibold text-slate-600">
+                            Rule Group {groupIndex + 1} (AND)
+                        </span>
                         <button
                             type="button"
                             disabled={filterFormStore.state.filter.ruleGroups.length === 1}
@@ -101,7 +103,10 @@ export default function CreateFilterForm({ categoryId }: CreateFilterFormProps):
                         </button>
                     </div>
                     {group.rules.map((rule) => (
-                        <div key={rule.id} className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                        <div
+                            key={rule.id}
+                            className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50 p-2"
+                        >
                             <div className="grid grid-cols-2 gap-2">
                                 <select
                                     value={rule.type}

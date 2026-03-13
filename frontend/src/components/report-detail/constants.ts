@@ -1,10 +1,5 @@
 import { type ColDef } from "ag-grid-community";
-import {
-    ReportFilter,
-    RuleOperator,
-    RuleType,
-    Transaction,
-} from "../../clients/backendClient/responseParsers";
+import { ReportFilter, RuleOperator, RuleType, Transaction } from "../../clients/backendClient/responseParsers";
 
 interface FilterRow {
     id: string;

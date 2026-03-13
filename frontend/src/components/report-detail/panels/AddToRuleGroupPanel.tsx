@@ -45,12 +45,12 @@ export default function AddToRuleGroupPanel({
         setSelectedCategoryId("");
         setSelectedFilterId("");
         setSubmitError(null);
-    }, [filterFormStore.actions, transaction]);
+    }, [transaction.id]);
 
     useEffect(() => {
         filterFormStore.actions.resetFilter();
         setSelectedFilterId("");
-    }, [filterFormStore.actions, selectedCategoryId]);
+    }, [selectedCategoryId]);
 
     useEffect(() => {
         if (selectedFilter === undefined) {
@@ -58,7 +58,7 @@ export default function AddToRuleGroupPanel({
             return;
         }
         filterFormStore.actions.initExistingFilter(selectedFilter);
-    }, [filterFormStore.actions, selectedFilter]);
+    }, [selectedFilter]);
 
     const handleSubmit = useCallback(
         async (event: React.FormEvent): Promise<void> => {

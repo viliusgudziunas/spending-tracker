@@ -34,7 +34,7 @@ export default function CreateTransactionFilterPanel({
         filterFormStore.actions.changeFilter("name", transaction.description);
         filterFormStore.actions.initNewFilter(transaction.description);
         setSubmitError(null);
-    }, [filterFormStore.actions, transaction]);
+    }, [transaction.description, transaction.id]);
 
     const handleSubmit = useCallback(
         async (event: React.FormEvent): Promise<void> => {

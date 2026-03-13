@@ -8,7 +8,12 @@ import {
     useSensors,
 } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
+import {
+    SortableContext,
+    verticalListSortingStrategy,
+    sortableKeyboardCoordinates,
+    useSortable,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import { Category, Filter } from "../../clients/backendClient/responseParsers";

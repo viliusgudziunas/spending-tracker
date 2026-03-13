@@ -10,7 +10,11 @@ interface SortableFilterItemProps {
     isDeletePending: boolean;
 }
 
-export default function SortableFilterItem({ filter, onDelete, isDeletePending }: SortableFilterItemProps): JSX.Element {
+export default function SortableFilterItem({
+    filter,
+    onDelete,
+    isDeletePending,
+}: SortableFilterItemProps): JSX.Element {
     const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
         id: filter.id,
     });

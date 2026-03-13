@@ -8,109 +8,111 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as AppRouteImport } from "./routes/_app";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as AppUploadRouteImport } from "./routes/_app/upload";
-import { Route as AppReportsReportIdRouteImport } from "./routes/_app/reports.$reportId";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppUploadRouteImport } from './routes/_app/upload'
+import { Route as AppReportsReportIdRouteImport } from './routes/_app/reports.$reportId'
 
 const AppRoute = AppRouteImport.update({
-    id: "/_app",
-    getParentRoute: () => rootRouteImport,
-} as any);
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
-    id: "/",
-    path: "/",
-    getParentRoute: () => rootRouteImport,
-} as any);
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppUploadRoute = AppUploadRouteImport.update({
-    id: "/upload",
-    path: "/upload",
-    getParentRoute: () => AppRoute,
-} as any);
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppReportsReportIdRoute = AppReportsReportIdRouteImport.update({
-    id: "/reports/$reportId",
-    path: "/reports/$reportId",
-    getParentRoute: () => AppRoute,
-} as any);
+  id: '/reports/$reportId',
+  path: '/reports/$reportId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
-    "/": typeof IndexRoute;
-    "/upload": typeof AppUploadRoute;
-    "/reports/$reportId": typeof AppReportsReportIdRoute;
+  '/': typeof IndexRoute
+  '/upload': typeof AppUploadRoute
+  '/reports/$reportId': typeof AppReportsReportIdRoute
 }
 export interface FileRoutesByTo {
-    "/": typeof IndexRoute;
-    "/upload": typeof AppUploadRoute;
-    "/reports/$reportId": typeof AppReportsReportIdRoute;
+  '/': typeof IndexRoute
+  '/upload': typeof AppUploadRoute
+  '/reports/$reportId': typeof AppReportsReportIdRoute
 }
 export interface FileRoutesById {
-    __root__: typeof rootRouteImport;
-    "/": typeof IndexRoute;
-    "/_app": typeof AppRouteWithChildren;
-    "/_app/upload": typeof AppUploadRoute;
-    "/_app/reports/$reportId": typeof AppReportsReportIdRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/upload': typeof AppUploadRoute
+  '/_app/reports/$reportId': typeof AppReportsReportIdRoute
 }
 export interface FileRouteTypes {
-    fileRoutesByFullPath: FileRoutesByFullPath;
-    fullPaths: "/" | "/upload" | "/reports/$reportId";
-    fileRoutesByTo: FileRoutesByTo;
-    to: "/" | "/upload" | "/reports/$reportId";
-    id: "__root__" | "/" | "/_app" | "/_app/upload" | "/_app/reports/$reportId";
-    fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/upload' | '/reports/$reportId'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/upload' | '/reports/$reportId'
+  id: '__root__' | '/' | '/_app' | '/_app/upload' | '/_app/reports/$reportId'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-    IndexRoute: typeof IndexRoute;
-    AppRoute: typeof AppRouteWithChildren;
+  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
-declare module "@tanstack/react-router" {
-    interface FileRoutesByPath {
-        "/_app": {
-            id: "/_app";
-            path: "";
-            fullPath: "/";
-            preLoaderRoute: typeof AppRouteImport;
-            parentRoute: typeof rootRouteImport;
-        };
-        "/": {
-            id: "/";
-            path: "/";
-            fullPath: "/";
-            preLoaderRoute: typeof IndexRouteImport;
-            parentRoute: typeof rootRouteImport;
-        };
-        "/_app/upload": {
-            id: "/_app/upload";
-            path: "/upload";
-            fullPath: "/upload";
-            preLoaderRoute: typeof AppUploadRouteImport;
-            parentRoute: typeof AppRoute;
-        };
-        "/_app/reports/$reportId": {
-            id: "/_app/reports/$reportId";
-            path: "/reports/$reportId";
-            fullPath: "/reports/$reportId";
-            preLoaderRoute: typeof AppReportsReportIdRouteImport;
-            parentRoute: typeof AppRoute;
-        };
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
     }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/upload': {
+      id: '/_app/upload'
+      path: '/upload'
+      fullPath: '/upload'
+      preLoaderRoute: typeof AppUploadRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reports/$reportId': {
+      id: '/_app/reports/$reportId'
+      path: '/reports/$reportId'
+      fullPath: '/reports/$reportId'
+      preLoaderRoute: typeof AppReportsReportIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+  }
 }
 
 interface AppRouteChildren {
-    AppUploadRoute: typeof AppUploadRoute;
-    AppReportsReportIdRoute: typeof AppReportsReportIdRoute;
+  AppUploadRoute: typeof AppUploadRoute
+  AppReportsReportIdRoute: typeof AppReportsReportIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-    AppUploadRoute: AppUploadRoute,
-    AppReportsReportIdRoute: AppReportsReportIdRoute,
-};
+  AppUploadRoute: AppUploadRoute,
+  AppReportsReportIdRoute: AppReportsReportIdRoute,
+}
 
-const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren);
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-    IndexRoute: IndexRoute,
-    AppRoute: AppRouteWithChildren,
-};
-export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>();
+  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
