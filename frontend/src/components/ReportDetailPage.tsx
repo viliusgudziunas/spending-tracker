@@ -10,15 +10,18 @@ import {
 import { AgGridReact } from "ag-grid-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useFilterForm from "../hooks/useFilterForm";
-import { RULE_OPERATORS, RULE_TYPES } from "../services/api.types";
-import { ReportCategory, ReportFull, ReportFilter, Transaction } from "../services/reports/api.types.parsed";
-import { RuleOperator, RuleType } from "../services/rules/api.types.parsed";
+import { RULE_OPERATORS, RULE_TYPES } from "../clients/backendClient/schemas";
 import {
-    useCategoriesQuery,
-    useCreateFilterMutation,
-    usePutFilterRuleGroupsMutation,
-} from "../services/categories/queries";
-import { useGenerateReportMutation, useReportQuery } from "../services/reports/queries";
+    ReportCategory,
+    ReportFilter,
+    ReportFull,
+    RuleOperator,
+    RuleType,
+    Transaction,
+} from "../clients/backendClient/responseParsers";
+import { useCategoriesQuery } from "../hooks/useCategoryQueries";
+import { useCreateFilterMutation, usePutFilterRuleGroupsMutation } from "../hooks/useFilterQueries";
+import { useGenerateReportMutation, useReportQuery } from "../hooks/useReportsQueries";
 import CategoriesPanel from "./CategoriesPanel";
 
 ModuleRegistry.registerModules([AllCommunityModule]);

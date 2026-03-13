@@ -18,17 +18,19 @@ import { CSS } from "@dnd-kit/utilities";
 import { useCallback, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { arrayMove } from "@dnd-kit/sortable";
-import { RULE_TYPES } from "../services/api.types";
-import { Category, Filter, RuleGroup, RuleOperator, RuleType } from "../services/rules/api.types.parsed";
+import { RULE_TYPES } from "../clients/backendClient/schemas";
+import { Category, Filter, RuleGroup, RuleOperator, RuleType } from "../clients/backendClient/responseParsers";
 import {
     CATEGORIES_QUERY_KEY,
     useCategoriesQuery,
     useCreateCategoryMutation,
-    useDeleteFilterMutation,
-    useCreateFilterMutation,
     useUpdateCategoryMutation,
+} from "../hooks/useCategoryQueries";
+import {
+    useCreateFilterMutation,
+    useDeleteFilterMutation,
     useUpdateFilterPositionMutation,
-} from "../services/categories/queries";
+} from "../hooks/useFilterQueries";
 
 interface CategoriesPanelProps {
     onClose: () => void;

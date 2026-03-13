@@ -1,7 +1,7 @@
 import { AllCommunityModule, ModuleRegistry, themeQuartz, type ColDef } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { ChangeEvent, DragEvent, useRef, useMemo, useState } from "react";
-import { useCreateReportMutation } from "../services/reports/queries";
+import { useCreateReportMutation } from "../hooks/useReportsQueries";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 

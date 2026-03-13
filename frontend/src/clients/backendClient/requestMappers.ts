@@ -8,7 +8,7 @@ import {
     UpdateApiFilterPayload,
     UpdateApiRuleGroupPayload,
     UpdateApiRulePayload,
-} from "../api.types";
+} from "./schemas";
 import {
     CreateFilterPayload,
     CreateRuleGroupPayload,
@@ -17,7 +17,7 @@ import {
     PutRuleGroupPayload,
     PutRulePayload,
     UpdateFilterPayload,
-} from "./apiService";
+} from "./types";
 
 export const parseIntoCreateApiFilterPayload = (filter: CreateFilterPayload): CreateApiFilterPayload => ({
     name: filter.name,
