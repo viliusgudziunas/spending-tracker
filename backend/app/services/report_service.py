@@ -345,6 +345,7 @@ class ReportDataFilter(BaseModel):
     id: str
     name: str
     position: int
+    rule_filter_id: str | None = None
     transaction_ids: list[str]
 
 
@@ -415,6 +416,8 @@ def _build_categories_from_data(
                     id=uuid.UUID(filter_.id),
                     name=filter_.name,
                     position=filter_.position,
+                    rule_filter_id=uuid.UUID(filter_.rule_filter_id) if filter_.rule_filter_id is not None else None,
+                    is_manual=filter_.rule_filter_id is None,
                     amount=amount,
                     transactions=[_build_transaction_response(tx) for tx in filter_txs],
                 ),
@@ -449,6 +452,8 @@ def _build_categories_from_legacy_links(report: Report) -> tuple[list[ReportDeta
                     id=filter_.id,
                     name=filter_.name,
                     position=filter_.position,
+                    rule_filter_id=filter_.id,
+                    is_manual=False,
                     amount=amount,
                     transactions=[_build_transaction_response(tx) for tx in filter_txs],
                 ),

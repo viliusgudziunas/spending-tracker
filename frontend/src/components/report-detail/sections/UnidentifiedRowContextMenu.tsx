@@ -9,6 +9,7 @@ interface UnidentifiedRowContextMenuProps {
     onCreateRuleFilter: (transaction: Transaction) => void;
     onCreateReportFilter: (transaction: Transaction) => void;
     onAddToRuleGroup: (transaction: Transaction) => void;
+    onAddToReportFilter: (transaction: Transaction) => void;
 }
 
 export default function UnidentifiedRowContextMenu({
@@ -19,6 +20,7 @@ export default function UnidentifiedRowContextMenu({
     onCreateRuleFilter,
     onCreateReportFilter,
     onAddToRuleGroup,
+    onAddToReportFilter,
 }: UnidentifiedRowContextMenuProps): JSX.Element {
     const contextMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -77,6 +79,16 @@ export default function UnidentifiedRowContextMenu({
                 }}
             >
                 Edit rule filter
+            </button>
+            <button
+                type="button"
+                className="block w-full rounded px-2 py-1.5 text-left text-xs text-slate-700 transition hover:bg-slate-50"
+                onClick={(): void => {
+                    onAddToReportFilter(transaction);
+                    onClose();
+                }}
+            >
+                Add to report filter
             </button>
         </div>
     );

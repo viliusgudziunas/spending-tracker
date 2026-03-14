@@ -8,6 +8,7 @@ interface ReportSectionsProps {
     onCreateRuleFilter: (transaction: Transaction) => void;
     onCreateReportFilter: (transaction: Transaction) => void;
     onAddToRuleGroup: (transaction: Transaction) => void;
+    onAddToReportFilter: (transaction: Transaction) => void;
     selectedFilterId: string | null;
 }
 
@@ -17,6 +18,7 @@ export default function ReportSections({
     onCreateRuleFilter,
     onCreateReportFilter,
     onAddToRuleGroup,
+    onAddToReportFilter,
     selectedFilterId,
 }: ReportSectionsProps): JSX.Element {
     const hasCategories = report.categories.length > 0;
@@ -47,6 +49,7 @@ export default function ReportSections({
                     onCreateRuleFilter={onCreateRuleFilter}
                     onCreateReportFilter={onCreateReportFilter}
                     onAddToRuleGroup={onAddToRuleGroup}
+                    onAddToReportFilter={onAddToReportFilter}
                 />
             ) : null}
         </>

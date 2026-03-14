@@ -50,6 +50,8 @@ class ReportDetailFilterResponse(BaseModel):
     id: uuid.UUID
     name: str
     position: int
+    rule_filter_id: uuid.UUID | None = None
+    is_manual: bool
     amount: Decimal
     transactions: list[ReportDetailTransactionResponse]
 

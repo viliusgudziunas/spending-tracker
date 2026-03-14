@@ -83,6 +83,8 @@ export const ReportTransactionSchema = ApiTransactionSchema.transform((transacti
 export const ReportFilterSchema = ApiReportFilterSchema.transform((filter) => ({
     id: filter.id,
     name: filter.name,
+    ruleFilterId: filter.rule_filter_id ?? undefined,
+    isManual: filter.is_manual,
     amount: String(-Number(filter.amount)),
     transactions: filter.transactions.map((transaction) => ReportTransactionSchema.parse(transaction)),
 }));

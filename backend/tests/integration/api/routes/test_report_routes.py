@@ -263,6 +263,8 @@ class TestGetReportEndpoint:
         assert len(category["filters"]) == 1
         assert category["filters"][0]["name"] == "Groceries"
         assert category["filters"][0]["position"] == 0
+        assert category["filters"][0]["is_manual"] is True
+        assert category["filters"][0]["rule_filter_id"] is None
         assert float(category["filters"][0]["amount"]) == 10.0
         assert len(category["filters"][0]["transactions"]) == 1
         assert payload["unidentified_transactions"] == []
@@ -657,7 +659,46 @@ class TestPutReportAssignmentEndpoint:
 
         assert len(filter_payload["transactions"]) == 1
         assert filter_payload["transactions"][0]["id"] == transaction_id
+        assert filter_payload["is_manual"] is True
+        assert filter_payload["rule_filter_id"] is None
         assert all(tx["id"] != transaction_id for tx in payload["unidentified_transactions"])
+
+    def test_sets_manual_assignment_for_rule_filter_includes_filter_metadata(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        report = report_factory()
+        category_name = f"Rule Assignment {uuid.uuid4()}"
+        filter_name = f"Rule Target {uuid.uuid4()}"
+        category = category_factory(name=category_name)
+        filter_ = filter_factory(
+            category_id=category.id,
+            name=filter_name,
+            description="does-not-match-auto-generated-transaction",
+        )
+        transaction_id = str(report.transactions[0].id)
+
+        response = client.put(
+            f"/reports/{report.id}/transactions/{transaction_id}/assignment",
+            json={"target_rule_filter_id": str(filter_.id)},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        category_payload = next(category for category in payload["categories"] if category["name"] == category_name)
+        filter_payload = next(
+            filter_payload
+            for filter_payload in category_payload["filters"]
+            if filter_payload["rule_filter_id"] == str(filter_.id)
+        )
+
+        assert len(filter_payload["transactions"]) == 1
+        assert filter_payload["transactions"][0]["id"] == transaction_id
+        assert filter_payload["is_manual"] is False
+        assert filter_payload["rule_filter_id"] == str(filter_.id)
 
     def test_returns_404_when_report_manual_filter_not_found(
         self,

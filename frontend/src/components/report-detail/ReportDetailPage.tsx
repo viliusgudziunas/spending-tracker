@@ -4,6 +4,7 @@ import { useGenerateReportMutation, useReportQuery } from "../../hooks/useReport
 import CategoriesPanel from "../categories-panel/CategoriesPanel";
 import { DEFAULT_PANEL_WIDTH, MAX_PANEL_WIDTH, MIN_PANEL_WIDTH, type RightPanel } from "./constants";
 import AddToRuleGroupPanel from "./panels/AddToRuleGroupPanel";
+import AddToReportFilterPanel from "./panels/AddToReportFilterPanel";
 import CreateReportFilterPanel from "./panels/CreateReportFilterPanel";
 import CreateTransactionFilterPanel from "./panels/CreateTransactionFilterPanel";
 import TransactionPanel from "./panels/TransactionPanel";
@@ -44,6 +45,10 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
 
     const handleAddToRuleGroupFromTransaction = useCallback((transaction: Transaction): void => {
         setRightPanel({ kind: "add-rule-group", transaction });
+    }, []);
+
+    const handleAddToReportFilterFromTransaction = useCallback((transaction: Transaction): void => {
+        setRightPanel({ kind: "add-report-filter", transaction });
     }, []);
 
     const handleMouseDown = useCallback((e: React.MouseEvent): void => {
@@ -125,6 +130,7 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
                     onCreateRuleFilter={handleCreateRuleFilterFromTransaction}
                     onCreateReportFilter={handleCreateReportFilterFromTransaction}
                     onAddToRuleGroup={handleAddToRuleGroupFromTransaction}
+                    onAddToReportFilter={handleAddToReportFilterFromTransaction}
                     selectedFilterId={rightPanel?.kind === "filter" ? rightPanel.filter.id : null}
                 />
             </div>
@@ -161,6 +167,14 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
                     ) : null}
                     {rightPanel.kind === "add-rule-group" ? (
                         <AddToRuleGroupPanel
+                            reportId={reportId}
+                            transaction={rightPanel.transaction}
+                            onClose={handleClosePanel}
+                            width={panelWidth}
+                        />
+                    ) : null}
+                    {rightPanel.kind === "add-report-filter" ? (
+                        <AddToReportFilterPanel
                             reportId={reportId}
                             transaction={rightPanel.transaction}
                             onClose={handleClosePanel}

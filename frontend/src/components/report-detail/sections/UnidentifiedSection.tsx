@@ -11,6 +11,7 @@ interface UnidentifiedSectionProps {
     onCreateRuleFilter: (transaction: Transaction) => void;
     onCreateReportFilter: (transaction: Transaction) => void;
     onAddToRuleGroup: (transaction: Transaction) => void;
+    onAddToReportFilter: (transaction: Transaction) => void;
 }
 
 interface ContextMenuState {
@@ -24,6 +25,7 @@ export default function UnidentifiedSection({
     onCreateRuleFilter,
     onCreateReportFilter,
     onAddToRuleGroup,
+    onAddToReportFilter,
 }: UnidentifiedSectionProps): JSX.Element {
     const gridRef = useRef<AgGridReact<Transaction>>(null);
     const columnsMenuRef = useRef<HTMLDivElement | null>(null);
@@ -248,6 +250,7 @@ export default function UnidentifiedSection({
                     onCreateRuleFilter={onCreateRuleFilter}
                     onCreateReportFilter={onCreateReportFilter}
                     onAddToRuleGroup={onAddToRuleGroup}
+                    onAddToReportFilter={onAddToReportFilter}
                 />
             ) : null}
         </div>

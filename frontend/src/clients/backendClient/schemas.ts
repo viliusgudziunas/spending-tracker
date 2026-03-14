@@ -62,6 +62,8 @@ export const ApiTransactionSchema = z.object({
 export const ApiReportFilterSchema = z.object({
     id: z.string(),
     name: z.string(),
+    rule_filter_id: z.string().nullable().optional(),
+    is_manual: z.boolean().optional().default(false),
     amount: z.string(),
     transactions: z.array(ApiTransactionSchema),
 });

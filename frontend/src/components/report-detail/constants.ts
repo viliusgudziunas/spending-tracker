@@ -58,7 +58,8 @@ type RightPanel =
     | { kind: "categories" }
     | { kind: "create-filter"; transaction: Transaction }
     | { kind: "create-report-filter"; transaction: Transaction }
-    | { kind: "add-rule-group"; transaction: Transaction };
+    | { kind: "add-rule-group"; transaction: Transaction }
+    | { kind: "add-report-filter"; transaction: Transaction };
 
 export {
     DEFAULT_PANEL_WIDTH,
