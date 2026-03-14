@@ -15,9 +15,7 @@ from app.api.schemas.report_schemas import (
     ReportManualFilterResponse,
 )
 from app.db.reports.models import (
-    CURRENT_REPORT_SCHEMA_VERSION,
     CURRENT_TRANSACTION_SCHEMA_VERSION,
-    Override,
     Report,
     Transaction,
 )
@@ -77,7 +75,6 @@ def _generate_report(db: Session, report_id: uuid.UUID) -> Report:
     rule_categories = category_repository.get_categories(db=db)
     category_names_by_id = {str(category.id): category.name for category in rule_categories}
     transactions = list(report.transactions)
-    overrides = list(report.overrides)
 
     data = _build_report_data(transactions=transactions, rule_categories=rule_categories)
     if len(manual_filters) > 0:
@@ -94,8 +91,6 @@ def _generate_report(db: Session, report_id: uuid.UUID) -> Report:
             transactions=transactions,
         )
         data["manual_assignments"] = manual_assignments
-    _apply_overrides(categories=data["categories"], overrides=overrides, db=db)
-
     report_repository.save_report_data(db=db, report=report, data=data)
     return report
 
@@ -136,39 +131,6 @@ def _build_report_data(
         categories.append(category_data)
 
     return {"categories": categories}
-
-
-def _apply_overrides(
-    categories: list[dict[str, Any]],
-    overrides: list[Override],
-    db: Session,
-) -> None:
-    for override in overrides:
-        target = _find_override_filter(categories=categories, override=override)
-        if target is None:
-            report_repository.delete_override(db=db, override=override)
-            continue
-
-        tx_id = str(override.transaction_id)
-        for cat in categories:
-            for f in cat["filters"]:
-                if tx_id in f["transaction_ids"]:
-                    f["transaction_ids"].remove(tx_id)
-
-        if tx_id not in target["transaction_ids"]:
-            target["transaction_ids"].append(tx_id)
-
-
-def _find_override_filter(
-    categories: list[dict[str, Any]],
-    override: Override,
-) -> dict[str, Any] | None:
-    for cat in categories:
-        if cat["name"] == override.category_name:
-            for f in cat["filters"]:
-                if f["name"] == override.filter_name:
-                    return f
-    return None
 
 
 def _extract_manual_assignments(report: Report) -> dict[str, dict[str, str]]:
@@ -375,10 +337,7 @@ def _build_transaction_response(transaction: Transaction) -> ReportDetailTransac
 
 def build_report_full_response(report: Report) -> ReportDetailResponse:
     tx_lookup: dict[str, Transaction] = {str(tx.id): tx for tx in report.transactions}
-    if report.schema_version >= CURRENT_REPORT_SCHEMA_VERSION:
-        categories, assigned_tx_ids = _build_categories_from_data(report=report, tx_lookup=tx_lookup)
-    else:
-        categories, assigned_tx_ids = _build_categories_from_legacy_links(report=report)
+    categories, assigned_tx_ids = _build_categories_from_data(report=report, tx_lookup=tx_lookup)
 
     unidentified = [_build_transaction_response(tx) for tx_id, tx in tx_lookup.items() if tx_id not in assigned_tx_ids]
 
@@ -426,42 +385,6 @@ def _build_categories_from_data(
         categories.append(
             ReportDetailCategoryResponse(
                 id=uuid.UUID(category.id),
-                name=category.name,
-                filters=filters,
-            ),
-        )
-
-    return categories, assigned_tx_ids
-
-
-def _build_categories_from_legacy_links(report: Report) -> tuple[list[ReportDetailCategoryResponse], set[str]]:
-    assigned_tx_ids: set[str] = set()
-    categories: list[ReportDetailCategoryResponse] = []
-
-    for category in report.categories:
-        filters: list[ReportDetailFilterResponse] = []
-
-        for filter_ in category.filters:
-            filter_txs = list(filter_.transactions)
-            assigned_tx_ids.update(str(tx.id) for tx in filter_txs)
-
-            amount = sum((Decimal(str(tx.amount)) for tx in filter_txs), Decimal(0))
-
-            filters.append(
-                ReportDetailFilterResponse(
-                    id=filter_.id,
-                    name=filter_.name,
-                    position=filter_.position,
-                    rule_filter_id=filter_.id,
-                    is_manual=False,
-                    amount=amount,
-                    transactions=[_build_transaction_response(tx) for tx in filter_txs],
-                ),
-            )
-
-        categories.append(
-            ReportDetailCategoryResponse(
-                id=category.id,
                 name=category.name,
                 filters=filters,
             ),

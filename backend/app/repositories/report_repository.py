@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.sql import select
 
-from app.db.reports.models import Override, Report, Transaction
+from app.db.reports.models import Report, Transaction
 from app.repositories.dtos import CreateTransactionDto
 from app.repositories.exceptions import ReportManualFilterNotFoundError, ReportNotFoundError, TransactionNotFoundError
 
@@ -157,13 +157,6 @@ def get_report_manual_filter(report: Report, report_filter_id: uuid.UUID) -> Rep
 
 
 def reset_report(db: Session, report: Report) -> None:
-    for category in report.categories:
-        for filter_ in category.filters:
-            for transaction in filter_.transactions:
-                transaction.reset()
-                db.add(transaction)
-            db.delete(filter_)
-        db.delete(category)
     report.data = None
     db.add(report)
     db.commit()
@@ -172,9 +165,4 @@ def reset_report(db: Session, report: Report) -> None:
 def save_report_data(db: Session, report: Report, data: dict[str, Any]) -> None:
     report.data = data
     db.add(report)
-    db.commit()
-
-
-def delete_override(db: Session, override: Override) -> None:
-    db.delete(override)
     db.commit()

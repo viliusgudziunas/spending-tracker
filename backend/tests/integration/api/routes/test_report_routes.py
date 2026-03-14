@@ -4,9 +4,6 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from app.db.reports.models import Category as ReportCategory
-from app.db.reports.models import Filter as ReportFilter
-
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
     from sqlalchemy.orm import Session
@@ -317,105 +314,6 @@ class TestGetReportEndpoint:
         assert payload["categories"][0]["filters"][0]["transactions"] == []
         assert float(payload["categories"][0]["filters"][0]["amount"]) == 0
         assert len(payload["unidentified_transactions"]) == 1
-
-    def test_schema_v2_uses_report_data_instead_of_legacy_links(
-        self,
-        client: TestClient,
-        db: Session,
-        report_factory: ReportFactory,
-    ) -> None:
-        report = report_factory()
-        tx = report.transactions[0]
-
-        legacy_filter = ReportFilter(
-            id=uuid.uuid4(),
-            name="Legacy Filter",
-            position=1,
-        )
-        ReportCategory(
-            id=uuid.uuid4(),
-            name="Legacy Category",
-            report=report,
-            filters=[legacy_filter],
-        )
-
-        tx.filter = legacy_filter
-        report.data = {
-            "categories": [
-                {
-                    "id": str(uuid.uuid4()),
-                    "name": "Data Category",
-                    "filters": [
-                        {
-                            "id": str(uuid.uuid4()),
-                            "name": "Data Filter",
-                            "position": 0,
-                            "transaction_ids": [str(tx.id)],
-                        },
-                    ],
-                },
-            ],
-        }
-        db.add(report)
-        db.commit()
-
-        response = client.get(f"/reports/{report.id}")
-
-        assert response.status_code == 200
-        payload = response.json()
-        assert [category["name"] for category in payload["categories"]] == ["Data Category"]
-        assert payload["categories"][0]["filters"][0]["name"] == "Data Filter"
-        assert len(payload["unidentified_transactions"]) == 0
-
-    def test_schema_v1_uses_legacy_links_instead_of_report_data(
-        self,
-        client: TestClient,
-        db: Session,
-        report_factory: ReportFactory,
-    ) -> None:
-        report = report_factory()
-        report.schema_version = 1
-        tx = report.transactions[0]
-
-        legacy_filter = ReportFilter(
-            id=uuid.uuid4(),
-            name="Legacy Filter",
-            position=1,
-        )
-        ReportCategory(
-            id=uuid.uuid4(),
-            name="Legacy Category",
-            report=report,
-            filters=[legacy_filter],
-        )
-
-        tx.filter = legacy_filter
-        report.data = {
-            "categories": [
-                {
-                    "id": str(uuid.uuid4()),
-                    "name": "Data Category",
-                    "filters": [
-                        {
-                            "id": str(uuid.uuid4()),
-                            "name": "Data Filter",
-                            "position": 0,
-                            "transaction_ids": [str(tx.id)],
-                        },
-                    ],
-                },
-            ],
-        }
-        db.add(report)
-        db.commit()
-
-        response = client.get(f"/reports/{report.id}")
-
-        assert response.status_code == 200
-        payload = response.json()
-        assert [category["name"] for category in payload["categories"]] == ["Legacy Category"]
-        assert payload["categories"][0]["filters"][0]["name"] == "Legacy Filter"
-        assert len(payload["unidentified_transactions"]) == 0
 
 
 @pytest.mark.integration
