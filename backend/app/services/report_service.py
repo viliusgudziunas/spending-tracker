@@ -61,6 +61,10 @@ def get_report_detail(db: Session, report_id: uuid.UUID) -> ReportDetailResponse
     return build_report_full_response(report)
 
 
+def delete_report(db: Session, report_id: uuid.UUID) -> None:
+    report_repository.delete_report(db=db, report_id=report_id)
+
+
 def generate_report_detail(db: Session, report_id: uuid.UUID) -> ReportDetailResponse:
     report = _generate_report(db=db, report_id=report_id)
     return build_report_full_response(report)

@@ -776,3 +776,23 @@ class TestGenerateReportEndpoint:
         assert len(payload["categories"]) == 1
         assert payload["categories"][0]["name"] == "Groceries"
         assert len(payload["unidentified_transactions"]) == 1
+
+
+@pytest.mark.integration
+class TestDeleteReportEndpoint:
+    def test_deletes_report_and_returns_204(self, client: TestClient) -> None:
+        report_id = _create_report(client)
+
+        delete_response = client.delete(f"/reports/{report_id}")
+
+        assert delete_response.status_code == 204
+
+        get_response = client.get(f"/reports/{report_id}")
+        assert get_response.status_code == 404
+        assert get_response.json()["detail"] == "Report not found"
+
+    def test_returns_404_for_nonexistent_report(self, client: TestClient) -> None:
+        response = client.delete(f"/reports/{uuid.uuid4()}")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Report not found"

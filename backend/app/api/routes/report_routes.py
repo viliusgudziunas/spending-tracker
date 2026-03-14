@@ -49,6 +49,14 @@ def get_report(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) ->
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc
 
 
+@router.delete("/reports/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_report(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> None:
+    try:
+        report_service.delete_report(db=db, report_id=report_id)
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc
+
+
 @router.post("/reports/{report_id}/generate", response_model=ReportDetailResponse)
 def generate_report(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> ReportDetailResponse:
     try:

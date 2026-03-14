@@ -52,6 +52,12 @@ def get_report(db: Session, report_id: uuid.UUID) -> Report:
     return report
 
 
+def delete_report(db: Session, report_id: uuid.UUID) -> None:
+    report = get_report(db=db, report_id=report_id)
+    db.delete(report)
+    db.commit()
+
+
 def get_report_transaction(db: Session, report_id: uuid.UUID, transaction_id: uuid.UUID) -> Transaction:
     transaction = db.scalar(
         select(Transaction).where(Transaction.id == transaction_id).where(Transaction.report_id == report_id),

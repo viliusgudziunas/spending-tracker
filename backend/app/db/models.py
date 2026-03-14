@@ -31,7 +31,12 @@ class Report(Base):
 
     data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
-    transactions: Mapped[list[Transaction]] = relationship("Transaction", back_populates="report")
+    transactions: Mapped[list[Transaction]] = relationship(
+        "Transaction",
+        back_populates="report",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self) -> str:
         return f"Report({self.name=})"
@@ -65,7 +70,11 @@ class Transaction(Base):
 
     source: Mapped[TransactionSource] = mapped_column(Enum(TransactionSource), default=TransactionSource.generated)
 
-    report_id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), ForeignKey("report.id"), nullable=False)
+    report_id: Mapped[uuid.UUID] = mapped_column(
+        UUID[uuid.UUID](as_uuid=True),
+        ForeignKey("report.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     report: Mapped[Report] = relationship(back_populates="transactions")
 
     def __repr__(self) -> str:
@@ -83,7 +92,13 @@ class Category(Base):
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    filters: Mapped[list[Filter]] = relationship("Filter", back_populates="category", order_by="Filter.position")
+    filters: Mapped[list[Filter]] = relationship(
+        "Filter",
+        back_populates="category",
+        order_by="Filter.position",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def __repr__(self) -> str:
         return f"Category({self.name=})"
@@ -96,7 +111,11 @@ class Filter(Base):
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
 
-    category_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("category.id"), nullable=False)
+    category_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("category.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     category: Mapped[Category] = relationship(back_populates="filters")
 
     rule_groups: Mapped[list[RuleGroup]] = relationship(

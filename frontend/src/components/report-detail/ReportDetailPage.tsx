@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { ReportFilter, Transaction } from "../../clients/backendClient/responseParsers";
-import { useGenerateReportMutation, useReportQuery } from "../../hooks/useReportsQueries";
+import { useDeleteReportMutation, useGenerateReportMutation, useReportQuery } from "../../hooks/useReportsQueries";
 import CategoriesPanel from "../categories-panel/CategoriesPanel";
 import { DEFAULT_PANEL_WIDTH, MAX_PANEL_WIDTH, MIN_PANEL_WIDTH, type RightPanel } from "./constants";
 import AddToRuleGroupPanel from "./panels/AddToRuleGroupPanel";
@@ -15,8 +16,10 @@ interface ReportDetailPageProps {
 }
 
 export default function ReportDetailPage({ reportId }: ReportDetailPageProps): JSX.Element {
+    const navigate = useNavigate();
     const { data: report, isLoading, isError } = useReportQuery(reportId);
     const generateMutation = useGenerateReportMutation();
+    const deleteMutation = useDeleteReportMutation();
     const [rightPanel, setRightPanel] = useState<RightPanel | null>(null);
     const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
     const isDragging = useRef(false);
@@ -50,6 +53,20 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
     const handleAddToReportFilterFromTransaction = useCallback((transaction: Transaction): void => {
         setRightPanel({ kind: "add-report-filter", transaction });
     }, []);
+
+    const handleDeleteReport = useCallback(async (): Promise<void> => {
+        if (report === undefined) {
+            return;
+        }
+
+        const shouldDelete = window.confirm(`Delete report "${report.name}"? This cannot be undone.`);
+        if (!shouldDelete) {
+            return;
+        }
+
+        await deleteMutation.mutateAsync(reportId);
+        await navigate({ to: "/" });
+    }, [deleteMutation, navigate, report, reportId]);
 
     const handleMouseDown = useCallback((e: React.MouseEvent): void => {
         e.preventDefault();
@@ -121,8 +138,21 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
                         >
                             {generateMutation.isPending ? "Generating..." : "Generate"}
                         </button>
+                        <button
+                            type="button"
+                            onClick={(): void => void handleDeleteReport()}
+                            disabled={deleteMutation.isPending}
+                            className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                        </button>
                     </div>
                 </div>
+                {deleteMutation.isError ? (
+                    <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-sm">
+                        {deleteMutation.error.message}
+                    </div>
+                ) : null}
 
                 <ReportSections
                     report={report}

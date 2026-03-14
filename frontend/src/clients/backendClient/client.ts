@@ -84,6 +84,14 @@ class BackendClient {
         return parseApiReport(response.data);
     }
 
+    async deleteReport(reportId: string): Promise<void> {
+        try {
+            await this.http.delete(`/reports/${reportId}`);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while deleting report.");
+        }
+    }
+
     async createReportManualFilter(
         reportId: string,
         payload: CreateReportManualFilterPayload,

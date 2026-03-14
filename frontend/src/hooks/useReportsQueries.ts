@@ -45,6 +45,18 @@ export function useGenerateReportMutation(): UseMutationResult<ReportFull, Error
     });
 }
 
+export function useDeleteReportMutation(): UseMutationResult<void, Error, string> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (reportId: string) => await client.deleteReport(reportId),
+        onSuccess: async (_data, reportId) => {
+            await queryClient.invalidateQueries({ queryKey: REPORTS_QUERY_KEY });
+            queryClient.removeQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+        },
+    });
+}
+
 interface CreateReportManualFilterVariables {
     reportId: string;
     payload: CreateReportManualFilterPayload;
