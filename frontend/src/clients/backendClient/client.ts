@@ -22,6 +22,7 @@ import {
 import {
     CreateCategoryPayload,
     CreateFilterPayload,
+    PatchReportPayload,
     CreateReportManualFilterPayload,
     CreateReportPayload,
     PutFilterRuleGroupsPayload,
@@ -77,6 +78,17 @@ class BackendClient {
     async fetchReport(reportId: string): Promise<ReportFull> {
         const response = await this.http.get(`/reports/${reportId}`);
         return parseApiReport(response.data);
+    }
+
+    async patchReport(reportId: string, payload: PatchReportPayload): Promise<Report> {
+        try {
+            const response = await this.http.patch(`/reports/${reportId}`, {
+                name: payload.name,
+            });
+            return ReportSchema.parse(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while updating report.");
+        }
     }
 
     async generateReport(reportId: string): Promise<ReportFull> {

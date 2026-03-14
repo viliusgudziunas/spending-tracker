@@ -106,6 +106,36 @@ class TestCreateReportEndpoint:
 
 
 @pytest.mark.integration
+class TestUpdateReportEndpoint:
+    def test_updates_report_name_and_returns_200(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory(name="Old report name")
+
+        response = client.patch(
+            f"/reports/{report.id}",
+            json={"name": "Updated report name"},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["id"] == str(report.id)
+        assert payload["name"] == "Updated report name"
+        assert "schema_version" in payload
+
+    def test_returns_404_for_nonexistent_report(self, client: TestClient) -> None:
+        response = client.patch(
+            f"/reports/{uuid.uuid4()}",
+            json={"name": "Updated report name"},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Report not found"
+
+
+@pytest.mark.integration
 class TestListReportsEndpoint:
     def test_returns_empty_list_when_no_reports(self, client: TestClient) -> None:
         response = client.get("/reports")

@@ -2,6 +2,7 @@ import { UseMutationResult, UseQueryResult, useMutation, useQuery, useQueryClien
 import { Report, ReportFull, ReportManualFilter } from "../clients/backendClient/responseParsers";
 import { client } from "../shared/stores/client";
 import {
+    PatchReportPayload,
     CreateReportManualFilterPayload,
     CreateReportPayload,
     PutReportAssignmentPayload,
@@ -53,6 +54,23 @@ export function useDeleteReportMutation(): UseMutationResult<void, Error, string
         onSuccess: async (_data, reportId) => {
             await queryClient.invalidateQueries({ queryKey: REPORTS_QUERY_KEY });
             queryClient.removeQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+        },
+    });
+}
+
+interface PatchReportVariables {
+    reportId: string;
+    payload: PatchReportPayload;
+}
+
+export function usePatchReportMutation(): UseMutationResult<Report, Error, PatchReportVariables> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ reportId, payload }: PatchReportVariables) => await client.patchReport(reportId, payload),
+        onSuccess: async (_data, { reportId }) => {
+            await queryClient.invalidateQueries({ queryKey: REPORTS_QUERY_KEY });
+            await queryClient.invalidateQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
         },
     });
 }

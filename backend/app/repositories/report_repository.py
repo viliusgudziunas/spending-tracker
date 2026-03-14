@@ -43,6 +43,15 @@ def create_report(db: Session, name: str, transactions: list[CreateTransactionDt
     return report
 
 
+def update_report(db: Session, report_id: uuid.UUID, name: str) -> Report:
+    report = get_report(db=db, report_id=report_id)
+    report.name = name
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+    return report
+
+
 def get_report(db: Session, report_id: uuid.UUID) -> Report:
     report = db.get(Report, report_id)
 

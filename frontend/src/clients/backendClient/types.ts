@@ -3,6 +3,10 @@ export interface CreateReportPayload {
     name: string;
 }
 
+export interface PatchReportPayload {
+    name: string;
+}
+
 export interface CreateCategoryPayload {
     name: string;
 }

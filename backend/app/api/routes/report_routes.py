@@ -12,6 +12,7 @@ from app.api.schemas.report_schemas import (
     ReportDetailResponse,
     ReportManualFilterResponse,
     ReportResponse,
+    UpdateReportInput,
 )
 from app.db.models import Report
 from app.repositories.exceptions import (
@@ -45,6 +46,18 @@ def create_report(
 def get_report(report_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> ReportDetailResponse:
     try:
         return report_service.get_report_detail(db=db, report_id=report_id)
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc
+
+
+@router.patch("/reports/{report_id}", response_model=ReportResponse)
+def update_report(
+    report_id: uuid.UUID,
+    form_data: UpdateReportInput,
+    db: Annotated[Session, Depends(get_db)],
+) -> Report:
+    try:
+        return report_service.update_report(db=db, report_id=report_id, name=form_data.name)
     except ReportNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc
 

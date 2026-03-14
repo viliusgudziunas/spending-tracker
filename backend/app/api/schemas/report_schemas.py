@@ -20,6 +20,10 @@ class PutReportAssignmentInput(BaseModel):
         return self
 
 
+class UpdateReportInput(BaseModel):
+    name: str
+
+
 class CreateReportManualFilterInput(BaseModel):
     name: str
     category_id: uuid.UUID

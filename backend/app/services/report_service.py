@@ -56,6 +56,10 @@ def create_report(db: Session, name: str, file_content: bytes) -> Report:
     return report_repository.create_report(db=db, name=name, transactions=transactions)
 
 
+def update_report(db: Session, report_id: uuid.UUID, name: str) -> Report:
+    return report_repository.update_report(db=db, report_id=report_id, name=name)
+
+
 def get_report_detail(db: Session, report_id: uuid.UUID) -> ReportDetailResponse:
     report = report_repository.get_report(db=db, report_id=report_id)
     return build_report_full_response(report)

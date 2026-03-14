@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ReportFilter, Transaction } from "../../clients/backendClient/responseParsers";
-import { useDeleteReportMutation, useGenerateReportMutation, useReportQuery } from "../../hooks/useReportsQueries";
+import {
+    useDeleteReportMutation,
+    useGenerateReportMutation,
+    usePatchReportMutation,
+    useReportQuery,
+} from "../../hooks/useReportsQueries";
 import CategoriesPanel from "../categories-panel/CategoriesPanel";
 import { DEFAULT_PANEL_WIDTH, MAX_PANEL_WIDTH, MIN_PANEL_WIDTH, type RightPanel } from "./constants";
 import AddToRuleGroupPanel from "./panels/AddToRuleGroupPanel";
@@ -20,8 +25,11 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
     const { data: report, isLoading, isError } = useReportQuery(reportId);
     const generateMutation = useGenerateReportMutation();
     const deleteMutation = useDeleteReportMutation();
+    const patchMutation = usePatchReportMutation();
     const [rightPanel, setRightPanel] = useState<RightPanel | null>(null);
     const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [editedReportName, setEditedReportName] = useState("");
     const isDragging = useRef(false);
 
     const handleFilterClick = useCallback((filter: ReportFilter): void => {
@@ -68,6 +76,45 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
         await navigate({ to: "/" });
     }, [deleteMutation, navigate, report, reportId]);
 
+    const handleStartEditingName = useCallback((): void => {
+        if (report === undefined) {
+            return;
+        }
+
+        setEditedReportName(report.name);
+        setIsEditingName(true);
+    }, [report]);
+
+    const handleCancelEditingName = useCallback((): void => {
+        if (report !== undefined) {
+            setEditedReportName(report.name);
+        }
+        setIsEditingName(false);
+    }, [report]);
+
+    const handleSubmitReportName = useCallback(
+        async (event: React.FormEvent): Promise<void> => {
+            event.preventDefault();
+            if (report === undefined) {
+                return;
+            }
+
+            const trimmedName = editedReportName.trim();
+            if (trimmedName === "" || trimmedName === report.name) {
+                setEditedReportName(report.name);
+                setIsEditingName(false);
+                return;
+            }
+
+            await patchMutation.mutateAsync({
+                reportId,
+                payload: { name: trimmedName },
+            });
+            setIsEditingName(false);
+        },
+        [editedReportName, patchMutation, report, reportId],
+    );
+
     const handleMouseDown = useCallback((e: React.MouseEvent): void => {
         e.preventDefault();
         isDragging.current = true;
@@ -97,6 +144,12 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
         };
     }, []);
 
+    useEffect(() => {
+        if (!isEditingName && report !== undefined) {
+            setEditedReportName(report.name);
+        }
+    }, [isEditingName, report]);
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -117,8 +170,46 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
         <div className="flex">
             <div className="flex min-w-0 flex-1 flex-col gap-3">
                 <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    <h1 className="m-0 text-2xl font-semibold text-slate-900">{report.name}</h1>
+                    {isEditingName ? (
+                        <form onSubmit={(event): void => void handleSubmitReportName(event)} className="min-w-0 flex-1">
+                            <div className="flex min-w-0 items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={editedReportName}
+                                    onChange={(event): void => setEditedReportName(event.target.value)}
+                                    autoFocus
+                                    className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-base font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={patchMutation.isPending || editedReportName.trim() === ""}
+                                    className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {patchMutation.isPending ? "Saving..." : "Save"}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleCancelEditingName}
+                                    disabled={patchMutation.isPending}
+                                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <h1 className="m-0 text-2xl font-semibold text-slate-900">{report.name}</h1>
+                    )}
                     <div className="flex items-center gap-2">
+                        {!isEditingName ? (
+                            <button
+                                type="button"
+                                onClick={handleStartEditingName}
+                                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                            >
+                                Rename
+                            </button>
+                        ) : null}
                         <button
                             type="button"
                             onClick={handleToggleCategories}
@@ -151,6 +242,11 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
                 {deleteMutation.isError ? (
                     <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-sm">
                         {deleteMutation.error.message}
+                    </div>
+                ) : null}
+                {patchMutation.isError ? (
+                    <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-sm">
+                        {patchMutation.error.message}
                     </div>
                 ) : null}
 
