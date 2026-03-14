@@ -14,12 +14,12 @@ from app.api.schemas.report_schemas import (
     ReportDetailTransactionV2Response,
     ReportManualFilterResponse,
 )
-from app.db.reports.models import (
+from app.db.models import (
     CURRENT_TRANSACTION_SCHEMA_VERSION,
+    Category,
     Report,
     Transaction,
 )
-from app.db.rules.models import Category as RuleCategory
 from app.repositories import category_repository, filter_repository, report_repository
 from app.repositories.dtos import CreateTransactionDto
 from app.services import statement_service, transactions_service
@@ -97,7 +97,7 @@ def _generate_report(db: Session, report_id: uuid.UUID) -> Report:
 
 def _build_report_data(
     transactions: list[Transaction],
-    rule_categories: Sequence[RuleCategory],
+    rule_categories: Sequence[Category],
 ) -> dict[str, Any]:
     remaining = list(transactions)
     categories: list[dict[str, Any]] = []
@@ -421,7 +421,7 @@ def create_report_manual_filter(
     )
 
 
-def _get_next_manual_filter_position(category: RuleCategory, report: Report) -> int:
+def _get_next_manual_filter_position(category: Category, report: Report) -> int:
     category_max_position = 0
     if len(category.filters) > 0:
         category_max_position = max(filter_.position for filter_ in category.filters)

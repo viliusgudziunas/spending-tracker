@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.sql import select
 
-from app.db.reports.models import Report, Transaction
+from app.db.models import Report, Transaction
 from app.repositories.dtos import CreateTransactionDto
 from app.repositories.exceptions import ReportManualFilterNotFoundError, ReportNotFoundError, TransactionNotFoundError
 

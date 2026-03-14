@@ -12,7 +12,7 @@ from app.api.schemas.filter_schemas import (
     PutFilterRuleGroupsInput,
     UpdateFilterInput,
 )
-from app.db.rules.models import Filter
+from app.db.models import Filter
 from app.repositories.exceptions import (
     DuplicateFilterError,
     FilterNotFoundError,

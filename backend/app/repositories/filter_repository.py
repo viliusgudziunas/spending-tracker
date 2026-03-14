@@ -6,7 +6,7 @@ from psycopg2.errors import UniqueViolation
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.db.rules.models import Filter, Rule, RuleGroup, RuleGroupOperator, RuleOperator, RuleType
+from app.db.models import Filter, Rule, RuleGroup, RuleGroupOperator, RuleOperator, RuleType
 from app.repositories.dtos import CreateFilterDto, PutRuleDto, PutRuleGroupDto
 from app.repositories.exceptions import (
     DuplicateFilterError,

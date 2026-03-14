@@ -13,7 +13,7 @@ from app.api.schemas.report_schemas import (
     ReportManualFilterResponse,
     ReportResponse,
 )
-from app.db.reports.models import Report
+from app.db.models import Report
 from app.repositories.exceptions import (
     CategoryNotFoundError,
     FilterNotFoundError,

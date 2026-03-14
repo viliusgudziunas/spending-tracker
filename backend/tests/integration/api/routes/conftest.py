@@ -3,8 +3,7 @@ from typing import TYPE_CHECKING, Protocol
 
 import pytest
 
-from app.db.reports.models import Report
-from app.db.rules.models import Category, Filter
+from app.db.models import Category, Filter, Report
 from app.repositories.category_repository import create_category
 from app.repositories.dtos import CreateFilterDto, CreateRuleDto, CreateRuleGroupDto, CreateTransactionDto
 from app.repositories.filter_repository import create_filter

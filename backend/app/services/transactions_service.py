@@ -2,8 +2,7 @@ import operator
 from collections.abc import Callable, Iterable
 from decimal import Decimal
 
-from app.db.reports.models import Transaction
-from app.db.rules.models import Rule, RuleOperator, RuleType
+from app.db.models import Rule, RuleOperator, RuleType, Transaction
 
 
 def _get_transactions_matching_description_rule(rule: Rule, transactions: Iterable[Transaction]) -> set[Transaction]:

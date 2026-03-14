@@ -6,7 +6,7 @@ from psycopg2.errors import UniqueViolation
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.db.rules.models import Category
+from app.db.models import Category
 from app.repositories.exceptions import CategoryNotFoundError, DuplicateCategoryError
 
 if TYPE_CHECKING:

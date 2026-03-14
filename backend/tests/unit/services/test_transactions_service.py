@@ -2,8 +2,7 @@ import uuid
 
 import pytest
 
-from app.db.reports.models import Transaction
-from app.db.rules.models import Rule, RuleOperator, RuleType
+from app.db.models import Rule, RuleOperator, RuleType, Transaction
 from app.services.transactions_service import get_transactions_matching_rule
 
 

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from app.api.schemas.filter_schemas import CreateFilterInput, PutFilterRuleGroupsInput
-from app.db.rules.models import Filter
+from app.db.models import Filter
 from app.repositories import filter_repository
 from app.repositories.dtos import (
     CreateFilterDto,

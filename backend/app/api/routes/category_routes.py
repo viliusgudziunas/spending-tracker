@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
 from app.api.schemas.category_schemas import CategoryResponse, CreateCategoryInput, UpdateCategoryInput
-from app.db.rules.models import Category
+from app.db.models import Category
 from app.repositories.exceptions import CategoryNotFoundError, DuplicateCategoryError
 from app.services import category_service
 

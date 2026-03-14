@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from app.db.rules.models import Filter, Rule, RuleGroup
+from app.db.models import Filter, Rule, RuleGroup
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
