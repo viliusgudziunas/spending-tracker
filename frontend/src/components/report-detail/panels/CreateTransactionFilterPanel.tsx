@@ -96,7 +96,7 @@ export default function CreateTransactionFilterPanel({
 
             <form
                 onSubmit={(event): void => void handleSubmit(event)}
-                className="min-h-0 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                className="flex min-h-0 flex-col gap-3 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
             >
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
                     <div className="font-semibold text-slate-700">Transaction</div>
