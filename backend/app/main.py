@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.legacy.reports import routes as reports
-from app.api.legacy.rules import routes as rules
 from app.api.routes.category_routes import router as category_router
 from app.api.routes.filter_routes import router as filter_router
 from app.api.routes.report_routes import router as report_router
@@ -23,7 +21,3 @@ app.add_middleware(
 app.include_router(category_router, tags=["Categories"])
 app.include_router(filter_router, tags=["Filters"])
 app.include_router(report_router, tags=["Reports"])
-
-# Legacy
-app.include_router(rules.router, tags=["Rules"])
-app.include_router(reports.router, tags=["Reports"])
