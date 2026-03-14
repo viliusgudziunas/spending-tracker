@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
     ApiCategorySchema,
     ApiFilterSchema,
+    ApiReportManualFilterSchema,
     ApiReportCategorySchema,
     ApiReportFilterSchema,
     ApiReportSchema,
@@ -101,13 +102,23 @@ export const ReportFullSchema = ApiReportSchema.transform((report) => ({
     ),
 }));
 
+export const ReportManualFilterSchema = ApiReportManualFilterSchema.transform((filter) => ({
+    id: filter.id,
+    name: filter.name,
+    categoryId: filter.category_id,
+    position: filter.position,
+}));
+
 export type Report = z.infer<typeof ReportSchema>;
 export type ReportFull = z.infer<typeof ReportFullSchema>;
 export type ReportCategory = z.infer<typeof ReportCategorySchema>;
 export type ReportFilter = z.infer<typeof ReportFilterSchema>;
+export type ReportManualFilter = z.infer<typeof ReportManualFilterSchema>;
 export type Transaction = z.infer<typeof ReportTransactionSchema>;
 export type TransactionSource = Transaction["source"];
 
 export const parseApiReports = (apiReports: unknown): Report[] => z.array(ReportSchema).parse(apiReports);
 
 export const parseApiReport = (apiReport: unknown): ReportFull => ReportFullSchema.parse(apiReport);
+export const parseApiReportManualFilter = (apiFilter: unknown): ReportManualFilter =>
+    ReportManualFilterSchema.parse(apiFilter);

@@ -4,12 +4,14 @@ import {
     Category,
     Filter,
     parseApiReport,
+    parseApiReportManualFilter,
     parseApiReports,
     parseApiCategories,
     parseApiCategory,
     parseApiFilter,
     Report,
     ReportFull,
+    ReportManualFilter,
     ReportSchema,
 } from "./responseParsers";
 import {
@@ -20,8 +22,10 @@ import {
 import {
     CreateCategoryPayload,
     CreateFilterPayload,
+    CreateReportManualFilterPayload,
     CreateReportPayload,
     PutFilterRuleGroupsPayload,
+    PutReportAssignmentPayload,
     UpdateCategoryPayload,
     UpdateFilterPayload,
     UpdateFilterPositionPayload,
@@ -77,6 +81,30 @@ class BackendClient {
 
     async generateReport(reportId: string): Promise<ReportFull> {
         const response = await this.http.post(`/reports/${reportId}/generate`);
+        return parseApiReport(response.data);
+    }
+
+    async createReportManualFilter(
+        reportId: string,
+        payload: CreateReportManualFilterPayload,
+    ): Promise<ReportManualFilter> {
+        const response = await this.http.post(`/reports/${reportId}/manual-filters`, {
+            name: payload.name,
+            category_id: payload.categoryId,
+            position: payload.position,
+        });
+        return parseApiReportManualFilter(response.data);
+    }
+
+    async assignReportTransaction(
+        reportId: string,
+        transactionId: string,
+        payload: PutReportAssignmentPayload,
+    ): Promise<ReportFull> {
+        const response = await this.http.put(`/reports/${reportId}/transactions/${transactionId}/assignment`, {
+            target_rule_filter_id: payload.targetRuleFilterId,
+            target_report_filter_id: payload.targetReportFilterId,
+        });
         return parseApiReport(response.data);
     }
 

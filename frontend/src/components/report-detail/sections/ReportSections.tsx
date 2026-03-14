@@ -5,7 +5,8 @@ import UnidentifiedSection from "./UnidentifiedSection";
 interface ReportSectionsProps {
     report: ReportFull;
     onFilterClick: (filter: ReportFilter) => void;
-    onCreateFilter: (transaction: Transaction) => void;
+    onCreateRuleFilter: (transaction: Transaction) => void;
+    onCreateReportFilter: (transaction: Transaction) => void;
     onAddToRuleGroup: (transaction: Transaction) => void;
     selectedFilterId: string | null;
 }
@@ -13,7 +14,8 @@ interface ReportSectionsProps {
 export default function ReportSections({
     report,
     onFilterClick,
-    onCreateFilter,
+    onCreateRuleFilter,
+    onCreateReportFilter,
     onAddToRuleGroup,
     selectedFilterId,
 }: ReportSectionsProps): JSX.Element {
@@ -42,7 +44,8 @@ export default function ReportSections({
             {hasUnidentified ? (
                 <UnidentifiedSection
                     transactions={report.unidentifiedTransactions}
-                    onCreateFilter={onCreateFilter}
+                    onCreateRuleFilter={onCreateRuleFilter}
+                    onCreateReportFilter={onCreateReportFilter}
                     onAddToRuleGroup={onAddToRuleGroup}
                 />
             ) : null}

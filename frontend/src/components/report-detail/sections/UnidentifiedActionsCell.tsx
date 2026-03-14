@@ -2,13 +2,15 @@ import { Transaction } from "../../../clients/backendClient/responseParsers";
 
 interface UnidentifiedActionsCellProps {
     transaction: Transaction;
-    onCreateFilter: (transaction: Transaction) => void;
+    onCreateRuleFilter: (transaction: Transaction) => void;
+    onCreateReportFilter: (transaction: Transaction) => void;
     onAddToRuleGroup: (transaction: Transaction) => void;
 }
 
 export default function UnidentifiedActionsCell({
     transaction,
-    onCreateFilter,
+    onCreateRuleFilter,
+    onCreateReportFilter,
     onAddToRuleGroup,
 }: UnidentifiedActionsCellProps): JSX.Element {
     return (
@@ -18,10 +20,20 @@ export default function UnidentifiedActionsCell({
                 className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
                 onClick={(event): void => {
                     event.stopPropagation();
-                    onCreateFilter(transaction);
+                    onCreateRuleFilter(transaction);
                 }}
             >
-                Create filter
+                Create rule filter
+            </button>
+            <button
+                type="button"
+                className="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                onClick={(event): void => {
+                    event.stopPropagation();
+                    onCreateReportFilter(transaction);
+                }}
+            >
+                Create report filter
             </button>
             <button
                 type="button"
@@ -31,7 +43,7 @@ export default function UnidentifiedActionsCell({
                     onAddToRuleGroup(transaction);
                 }}
             >
-                Add to filter
+                Edit rule filter
             </button>
         </div>
     );

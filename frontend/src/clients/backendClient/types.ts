@@ -67,3 +67,14 @@ export interface PutRuleGroupPayload {
 export interface PutFilterRuleGroupsPayload {
     ruleGroups: PutRuleGroupPayload[];
 }
+
+export interface CreateReportManualFilterPayload {
+    name: string;
+    categoryId: string;
+    position?: number;
+}
+
+export interface PutReportAssignmentPayload {
+    targetRuleFilterId?: string;
+    targetReportFilterId?: string;
+}

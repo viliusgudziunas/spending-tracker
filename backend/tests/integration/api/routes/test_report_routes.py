@@ -417,6 +417,60 @@ class TestGetReportEndpoint:
 
 
 @pytest.mark.integration
+class TestCreateReportManualFilterEndpoint:
+    def test_creates_manual_filter_for_report(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        report_factory: ReportFactory,
+        report_fetcher: ReportFetcher,
+    ) -> None:
+        report = report_factory()
+        category = category_factory(name="Transfers")
+
+        response = client.post(
+            f"/reports/{report.id}/manual-filters",
+            json={"name": "One-off transfer", "category_id": str(category.id)},
+        )
+
+        assert response.status_code == 201
+        payload = response.json()
+        assert payload["name"] == "One-off transfer"
+        assert payload["category_id"] == str(category.id)
+        assert payload["position"] == 1
+        assert "id" in payload
+
+        refreshed_report = report_fetcher(report_id=report.id)
+        assert refreshed_report.data is not None
+        assert "manual_filters" in refreshed_report.data
+        assert len(refreshed_report.data["manual_filters"]) == 1
+        assert refreshed_report.data["manual_filters"][0]["id"] == payload["id"]
+
+    def test_returns_404_when_report_not_found(self, client: TestClient) -> None:
+        response = client.post(
+            f"/reports/{uuid.uuid4()}/manual-filters",
+            json={"name": "One-off transfer", "category_id": str(uuid.uuid4())},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Report not found"
+
+    def test_returns_404_when_category_not_found(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory()
+        response = client.post(
+            f"/reports/{report.id}/manual-filters",
+            json={"name": "One-off transfer", "category_id": str(uuid.uuid4())},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Category not found"
+
+
+@pytest.mark.integration
 class TestPutReportAssignmentEndpoint:
     def test_sets_manual_assignment_for_report_transaction(
         self,
@@ -575,6 +629,51 @@ class TestPutReportAssignmentEndpoint:
         assert filter_payload["transactions"][0]["id"] == transaction_id
         assert float(filter_payload["amount"]) == 10.0
         assert all(tx["id"] != transaction_id for tx in payload["unidentified_transactions"])
+
+    def test_sets_manual_assignment_for_report_manual_filter(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory()
+        category = category_factory(name="Transfers")
+        transaction_id = str(report.transactions[0].id)
+        create_filter_response = client.post(
+            f"/reports/{report.id}/manual-filters",
+            json={"name": "Ambiguous transfer", "category_id": str(category.id)},
+        )
+        report_filter_id = create_filter_response.json()["id"]
+
+        response = client.put(
+            f"/reports/{report.id}/transactions/{transaction_id}/assignment",
+            json={"target_report_filter_id": report_filter_id},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        category_payload = next(category for category in payload["categories"] if category["name"] == "Transfers")
+        filter_payload = next(filter_ for filter_ in category_payload["filters"] if filter_["id"] == report_filter_id)
+
+        assert len(filter_payload["transactions"]) == 1
+        assert filter_payload["transactions"][0]["id"] == transaction_id
+        assert all(tx["id"] != transaction_id for tx in payload["unidentified_transactions"])
+
+    def test_returns_404_when_report_manual_filter_not_found(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory()
+        transaction_id = report.transactions[0].id
+
+        response = client.put(
+            f"/reports/{report.id}/transactions/{transaction_id}/assignment",
+            json={"target_report_filter_id": str(uuid.uuid4())},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Report filter not found"
 
 
 @pytest.mark.integration

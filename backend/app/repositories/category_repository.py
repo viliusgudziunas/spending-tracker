@@ -37,15 +37,22 @@ def create_category(db: Session, name: str) -> Category:
     return category
 
 
+def get_category(db: Session, category_id: uuid.UUID) -> Category:
+    category = db.get(Category, category_id)
+
+    if category is None:
+        raise CategoryNotFoundError
+
+    return category
+
+
 def update_category(
     db: Session,
     category_id: uuid.UUID,
     name: str | None,
     position: int | None,
 ) -> Category:
-    category = db.get(Category, category_id)
-    if category is None:
-        raise CategoryNotFoundError
+    category = get_category(db=db, category_id=category_id)
 
     if name is not None:
         category.name = name

@@ -1,7 +1,11 @@
 import { UseMutationResult, UseQueryResult, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Report, ReportFull } from "../clients/backendClient/responseParsers";
+import { Report, ReportFull, ReportManualFilter } from "../clients/backendClient/responseParsers";
 import { client } from "../shared/stores/client";
-import { CreateReportPayload } from "../clients/backendClient/types";
+import {
+    CreateReportManualFilterPayload,
+    CreateReportPayload,
+    PutReportAssignmentPayload,
+} from "../clients/backendClient/types";
 
 export const REPORTS_QUERY_KEY = ["reports"] as const;
 
@@ -36,6 +40,49 @@ export function useGenerateReportMutation(): UseMutationResult<ReportFull, Error
     return useMutation({
         mutationFn: async (reportId: string) => await client.generateReport(reportId),
         onSuccess: async (_data, reportId) => {
+            await queryClient.invalidateQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+        },
+    });
+}
+
+interface CreateReportManualFilterVariables {
+    reportId: string;
+    payload: CreateReportManualFilterPayload;
+}
+
+export function useCreateReportManualFilterMutation(): UseMutationResult<
+    ReportManualFilter,
+    Error,
+    CreateReportManualFilterVariables
+> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ reportId, payload }: CreateReportManualFilterVariables) =>
+            await client.createReportManualFilter(reportId, payload),
+        onSuccess: async (_data, { reportId }) => {
+            await queryClient.invalidateQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+        },
+    });
+}
+
+interface AssignReportTransactionVariables {
+    reportId: string;
+    transactionId: string;
+    payload: PutReportAssignmentPayload;
+}
+
+export function useAssignReportTransactionMutation(): UseMutationResult<
+    ReportFull,
+    Error,
+    AssignReportTransactionVariables
+> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ reportId, transactionId, payload }: AssignReportTransactionVariables) =>
+            await client.assignReportTransaction(reportId, transactionId, payload),
+        onSuccess: async (_data, { reportId }) => {
             await queryClient.invalidateQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
         },
     });

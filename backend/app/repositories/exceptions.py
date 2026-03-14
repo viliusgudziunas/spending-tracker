@@ -24,3 +24,7 @@ class InvalidFilterRulesPayloadError(Exception):
 
 class TransactionNotFoundError(Exception):
     pass
+
+
+class ReportManualFilterNotFoundError(Exception):
+    pass

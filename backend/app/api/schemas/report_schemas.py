@@ -3,11 +3,27 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class PutReportAssignmentInput(BaseModel):
-    target_rule_filter_id: uuid.UUID
+    target_rule_filter_id: uuid.UUID | None = None
+    target_report_filter_id: uuid.UUID | None = None
+
+    @model_validator(mode="after")
+    def exactly_one_target(self) -> PutReportAssignmentInput:
+        targets = [self.target_rule_filter_id, self.target_report_filter_id]
+        provided_targets = [target for target in targets if target is not None]
+        if len(provided_targets) != 1:
+            msg = "Exactly one of 'target_rule_filter_id' or 'target_report_filter_id' must be provided"
+            raise ValueError(msg)
+        return self
+
+
+class CreateReportManualFilterInput(BaseModel):
+    name: str
+    category_id: uuid.UUID
+    position: int | None = None
 
 
 class ReportResponse(BaseModel):
@@ -66,3 +82,10 @@ class ReportDetailTransactionV2Response(BaseModel):
     state: str
     balance: float
     source: str | None
+
+
+class ReportManualFilterResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    category_id: uuid.UUID
+    position: int

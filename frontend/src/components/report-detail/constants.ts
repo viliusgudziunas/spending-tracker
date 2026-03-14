@@ -57,6 +57,7 @@ type RightPanel =
     | { kind: "filter"; filter: ReportFilter }
     | { kind: "categories" }
     | { kind: "create-filter"; transaction: Transaction }
+    | { kind: "create-report-filter"; transaction: Transaction }
     | { kind: "add-rule-group"; transaction: Transaction };
 
 export {

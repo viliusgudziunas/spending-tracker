@@ -79,6 +79,13 @@ export const ApiReportSchema = z.object({
     unidentified_transactions: z.array(ApiTransactionSchema),
 });
 
+export const ApiReportManualFilterSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    category_id: z.string(),
+    position: z.number(),
+});
+
 export const CreateApiRulePayloadSchema = ApiRuleSchema.omit({
     id: true,
     group_id: true,
@@ -142,6 +149,25 @@ export const PutApiFilterRuleGroupsPayloadSchema = z.object({
     rule_groups: z.array(PutApiRuleGroupPayloadSchema),
 });
 
+export const CreateApiReportManualFilterPayloadSchema = z.object({
+    name: z.string(),
+    category_id: z.string(),
+    position: z.number().optional(),
+});
+
+export const PutApiReportAssignmentPayloadSchema = z
+    .object({
+        target_rule_filter_id: z.string().optional(),
+        target_report_filter_id: z.string().optional(),
+    })
+    .refine(
+        (payload) =>
+            Number(payload.target_rule_filter_id !== undefined) +
+                Number(payload.target_report_filter_id !== undefined) ===
+            1,
+        "Exactly one assignment target must be provided",
+    );
+
 export type ApiReport = z.infer<typeof ApiReportSchema>;
 export type ApiReportCategory = z.infer<typeof ApiReportCategorySchema>;
 export type ApiReportFilter = z.infer<typeof ApiReportFilterSchema>;
@@ -150,6 +176,7 @@ export type ApiCategory = z.infer<typeof ApiCategorySchema>;
 export type ApiFilter = z.infer<typeof ApiFilterSchema>;
 export type ApiRuleGroup = z.infer<typeof ApiRuleGroupSchema>;
 export type ApiRule = z.infer<typeof ApiRuleSchema>;
+export type ApiReportManualFilter = z.infer<typeof ApiReportManualFilterSchema>;
 
 export type CreateApiFilterPayload = z.infer<typeof CreateApiFilterPayloadSchema>;
 export type CreateApiRuleGroupPayload = z.infer<typeof CreateApiRuleGroupPayloadSchema>;
@@ -160,3 +187,5 @@ export type UpdateApiRulePayload = z.infer<typeof UpdateApiRulePayloadSchema>;
 export type PutApiFilterRuleGroupsPayload = z.infer<typeof PutApiFilterRuleGroupsPayloadSchema>;
 export type PutApiRuleGroupPayload = z.infer<typeof PutApiRuleGroupPayloadSchema>;
 export type PutApiRulePayload = z.infer<typeof PutApiRulePayloadSchema>;
+export type CreateApiReportManualFilterPayload = z.infer<typeof CreateApiReportManualFilterPayloadSchema>;
+export type PutApiReportAssignmentPayload = z.infer<typeof PutApiReportAssignmentPayloadSchema>;

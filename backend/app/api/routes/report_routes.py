@@ -7,12 +7,20 @@ from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
 from app.api.schemas.report_schemas import (
+    CreateReportManualFilterInput,
     PutReportAssignmentInput,
     ReportDetailResponse,
+    ReportManualFilterResponse,
     ReportResponse,
 )
 from app.db.reports.models import Report
-from app.repositories.exceptions import FilterNotFoundError, ReportNotFoundError, TransactionNotFoundError
+from app.repositories.exceptions import (
+    CategoryNotFoundError,
+    FilterNotFoundError,
+    ReportManualFilterNotFoundError,
+    ReportNotFoundError,
+    TransactionNotFoundError,
+)
 from app.services import report_service
 
 router = APIRouter()
@@ -62,6 +70,7 @@ def upsert_transaction_assignment(
             report_id=report_id,
             transaction_id=transaction_id,
             target_rule_filter_id=form_data.target_rule_filter_id,
+            target_report_filter_id=form_data.target_report_filter_id,
         )
     except ReportNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc
@@ -69,3 +78,29 @@ def upsert_transaction_assignment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found") from exc
     except FilterNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Filter not found") from exc
+    except ReportManualFilterNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report filter not found") from exc
+
+
+@router.post(
+    "/reports/{report_id}/manual-filters",
+    response_model=ReportManualFilterResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_report_manual_filter(
+    report_id: uuid.UUID,
+    form_data: CreateReportManualFilterInput,
+    db: Annotated[Session, Depends(get_db)],
+) -> ReportManualFilterResponse:
+    try:
+        return report_service.create_report_manual_filter(
+            db=db,
+            report_id=report_id,
+            name=form_data.name,
+            category_id=form_data.category_id,
+            position=form_data.position,
+        )
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc
+    except CategoryNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found") from exc

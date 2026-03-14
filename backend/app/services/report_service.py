@@ -12,6 +12,7 @@ from app.api.schemas.report_schemas import (
     ReportDetailTransactionResponse,
     ReportDetailTransactionV1Response,
     ReportDetailTransactionV2Response,
+    ReportManualFilterResponse,
 )
 from app.db.reports.models import (
     CURRENT_REPORT_SCHEMA_VERSION,
@@ -70,13 +71,22 @@ def generate_report_detail(db: Session, report_id: uuid.UUID) -> ReportDetailRes
 def _generate_report(db: Session, report_id: uuid.UUID) -> Report:
     report = report_repository.get_report(db=db, report_id=report_id)
     manual_assignments = _extract_manual_assignments(report=report)
+    manual_filters = _extract_manual_filters(report=report)
     report_repository.reset_report(db=db, report=report)
 
     rule_categories = category_repository.get_categories(db=db)
+    category_names_by_id = {str(category.id): category.name for category in rule_categories}
     transactions = list(report.transactions)
     overrides = list(report.overrides)
 
     data = _build_report_data(transactions=transactions, rule_categories=rule_categories)
+    if len(manual_filters) > 0:
+        _apply_manual_filters(
+            categories=data["categories"],
+            manual_filters=manual_filters,
+            category_names_by_id=category_names_by_id,
+        )
+        data["manual_filters"] = manual_filters
     if len(manual_assignments) > 0:
         _apply_manual_assignments(
             categories=data["categories"],
@@ -174,11 +184,97 @@ def _extract_manual_assignments(report: Report) -> dict[str, dict[str, str]]:
         if not isinstance(transaction_id, str) or not isinstance(assignment, dict):
             continue
 
+        extracted_assignment: dict[str, str] = {}
         target_rule_filter_id = assignment.get("target_rule_filter_id")
+        target_report_filter_id = assignment.get("target_report_filter_id")
         if isinstance(target_rule_filter_id, str):
-            manual_assignments[transaction_id] = {"target_rule_filter_id": target_rule_filter_id}
+            extracted_assignment["target_rule_filter_id"] = target_rule_filter_id
+        if isinstance(target_report_filter_id, str):
+            extracted_assignment["target_report_filter_id"] = target_report_filter_id
+        if len(extracted_assignment) == 1:
+            manual_assignments[transaction_id] = extracted_assignment
 
     return manual_assignments
+
+
+def _extract_manual_filters(report: Report) -> list[dict[str, str | int]]:
+    if not isinstance(report.data, dict):
+        return []
+
+    raw_manual_filters = report.data.get("manual_filters")
+    if not isinstance(raw_manual_filters, list):
+        return []
+
+    manual_filters: list[dict[str, str | int]] = []
+    for manual_filter in raw_manual_filters:
+        if not isinstance(manual_filter, dict):
+            continue
+
+        filter_id = manual_filter.get("id")
+        filter_name = manual_filter.get("name")
+        category_id = manual_filter.get("category_id")
+        position = manual_filter.get("position")
+        if (
+            isinstance(filter_id, str)
+            and isinstance(filter_name, str)
+            and isinstance(category_id, str)
+            and isinstance(position, int)
+        ):
+            manual_filters.append(
+                {
+                    "id": filter_id,
+                    "name": filter_name,
+                    "category_id": category_id,
+                    "position": position,
+                },
+            )
+
+    return manual_filters
+
+
+def _apply_manual_filters(
+    categories: list[dict[str, Any]],
+    manual_filters: list[dict[str, str | int]],
+    category_names_by_id: dict[str, str],
+) -> None:
+    for manual_filter in manual_filters:
+        category_id = str(manual_filter["category_id"])
+        category_name = category_names_by_id.get(category_id)
+        if category_name is None:
+            continue
+        target_category = next((category for category in categories if category["name"] == category_name), None)
+        if target_category is None:
+            target_category = {
+                "id": str(uuid.uuid4()),
+                "name": category_name,
+                "filters": [],
+            }
+            categories.append(target_category)
+
+        # Guard against malformed persisted data.
+        raw_category_filters = target_category.get("filters")
+        category_filters: list[dict[str, Any]]
+        if isinstance(raw_category_filters, list):
+            category_filters = [filter_ for filter_ in raw_category_filters if isinstance(filter_, dict)]
+        else:
+            category_filters = []
+        target_category["filters"] = category_filters
+
+        existing_filter = next(
+            (filter_ for filter_ in category_filters if filter_["id"] == manual_filter["id"]),
+            None,
+        )
+        if existing_filter is not None:
+            continue
+
+        category_filters.append(
+            {
+                "id": manual_filter["id"],
+                "name": manual_filter["name"],
+                "position": manual_filter["position"],
+                "transaction_ids": [],
+            },
+        )
 
 
 def _apply_manual_assignments(
@@ -187,14 +283,20 @@ def _apply_manual_assignments(
     transactions: list[Transaction],
 ) -> None:
     report_transaction_ids = {str(transaction.id) for transaction in transactions}
-    filters_by_rule_filter_id = _build_filter_lookup(categories=categories)
+    filters_by_rule_filter_id = _build_rule_filter_lookup(categories=categories)
+    filters_by_report_filter_id = _build_report_filter_lookup(categories=categories)
 
     for transaction_id, assignment in manual_assignments.items():
         if transaction_id not in report_transaction_ids:
             continue
 
-        target_rule_filter_id = assignment["target_rule_filter_id"]
-        target_filter = filters_by_rule_filter_id.get(target_rule_filter_id)
+        target_rule_filter_id = assignment.get("target_rule_filter_id")
+        target_report_filter_id = assignment.get("target_report_filter_id")
+        target_filter = None
+        if target_rule_filter_id is not None:
+            target_filter = filters_by_rule_filter_id.get(target_rule_filter_id)
+        elif target_report_filter_id is not None:
+            target_filter = filters_by_report_filter_id.get(target_report_filter_id)
         if target_filter is None:
             continue
 
@@ -207,7 +309,7 @@ def _apply_manual_assignments(
             target_filter["transaction_ids"].append(transaction_id)
 
 
-def _build_filter_lookup(categories: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def _build_rule_filter_lookup(categories: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     filters_by_rule_filter_id: dict[str, dict[str, Any]] = {}
     for category in categories:
         for filter_ in category["filters"]:
@@ -216,6 +318,17 @@ def _build_filter_lookup(categories: list[dict[str, Any]]) -> dict[str, dict[str
                 filters_by_rule_filter_id[rule_filter_id] = filter_
 
     return filters_by_rule_filter_id
+
+
+def _build_report_filter_lookup(categories: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    filters_by_report_filter_id: dict[str, dict[str, Any]] = {}
+    for category in categories:
+        for filter_ in category["filters"]:
+            report_filter_id = filter_.get("id")
+            if isinstance(report_filter_id, str):
+                filters_by_report_filter_id[report_filter_id] = filter_
+
+    return filters_by_report_filter_id
 
 
 class ReportData(BaseModel):
@@ -352,21 +465,71 @@ def _build_categories_from_legacy_links(report: Report) -> tuple[list[ReportDeta
     return categories, assigned_tx_ids
 
 
+def create_report_manual_filter(
+    db: Session,
+    report_id: uuid.UUID,
+    name: str,
+    category_id: uuid.UUID,
+    position: int | None,
+) -> ReportManualFilterResponse:
+    report = report_repository.get_report(db=db, report_id=report_id)
+    category = category_repository.get_category(db=db, category_id=category_id)
+    resolved_position = position
+    if resolved_position is None:
+        resolved_position = _get_next_manual_filter_position(category=category, report=report)
+
+    manual_filter = report_repository.create_report_manual_filter(
+        db=db,
+        report=report,
+        name=name,
+        category_id=category.id,
+        position=resolved_position,
+    )
+    return ReportManualFilterResponse(
+        id=manual_filter.id,
+        name=manual_filter.name,
+        category_id=manual_filter.category_id,
+        position=manual_filter.position,
+    )
+
+
+def _get_next_manual_filter_position(category: RuleCategory, report: Report) -> int:
+    category_max_position = 0
+    if len(category.filters) > 0:
+        category_max_position = max(filter_.position for filter_ in category.filters)
+
+    manual_filters = _extract_manual_filters(report=report)
+    manual_category_positions = [
+        int(manual_filter["position"])
+        for manual_filter in manual_filters
+        if manual_filter["category_id"] == str(category.id)
+    ]
+    if len(manual_category_positions) > 0:
+        category_max_position = max([category_max_position, *manual_category_positions])
+
+    return category_max_position + 1
+
+
 def upsert_transaction_assignment(
     db: Session,
     report_id: uuid.UUID,
     transaction_id: uuid.UUID,
-    target_rule_filter_id: uuid.UUID,
+    target_rule_filter_id: uuid.UUID | None = None,
+    target_report_filter_id: uuid.UUID | None = None,
 ) -> ReportDetailResponse:
     report = report_repository.get_report(db=db, report_id=report_id)
     report_repository.get_report_transaction(db=db, report_id=report_id, transaction_id=transaction_id)
-    filter_repository.get_filter(db=db, filter_id=target_rule_filter_id)
+    if target_rule_filter_id is not None:
+        filter_repository.get_filter(db=db, filter_id=target_rule_filter_id)
+    if target_report_filter_id is not None:
+        report_repository.get_report_manual_filter(report=report, report_filter_id=target_report_filter_id)
 
     report_repository.save_manual_assignment(
         db=db,
         report=report,
         transaction_id=transaction_id,
         target_rule_filter_id=target_rule_filter_id,
+        target_report_filter_id=target_report_filter_id,
     )
 
     updated_report = _generate_report(db=db, report_id=report.id)

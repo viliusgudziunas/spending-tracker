@@ -8,13 +8,15 @@ import UnidentifiedInnerHeader from "./UnidentifiedInnerHeader";
 
 interface UnidentifiedSectionProps {
     transactions: Transaction[];
-    onCreateFilter: (transaction: Transaction) => void;
+    onCreateRuleFilter: (transaction: Transaction) => void;
+    onCreateReportFilter: (transaction: Transaction) => void;
     onAddToRuleGroup: (transaction: Transaction) => void;
 }
 
 export default function UnidentifiedSection({
     transactions,
-    onCreateFilter,
+    onCreateRuleFilter,
+    onCreateReportFilter,
     onAddToRuleGroup,
 }: UnidentifiedSectionProps): JSX.Element {
     const gridRef = useRef<AgGridReact<Transaction>>(null);
@@ -139,8 +141,8 @@ export default function UnidentifiedSection({
             {
                 colId: "actions",
                 headerName: "Actions",
-                width: 220,
-                minWidth: 220,
+                width: 360,
+                minWidth: 360,
                 pinned: "right",
                 suppressMovable: true,
                 sortable: false,
@@ -156,14 +158,15 @@ export default function UnidentifiedSection({
                     return (
                         <UnidentifiedActionsCell
                             transaction={params.data}
-                            onCreateFilter={onCreateFilter}
+                            onCreateRuleFilter={onCreateRuleFilter}
+                            onCreateReportFilter={onCreateReportFilter}
                             onAddToRuleGroup={onAddToRuleGroup}
                         />
                     );
                 },
             },
         ],
-        [handleOpenColumnsMenu, onAddToRuleGroup, onCreateFilter],
+        [handleOpenColumnsMenu, onAddToRuleGroup, onCreateReportFilter, onCreateRuleFilter],
     );
 
     const defaultColDef = useMemo<ColDef<Transaction>>(
