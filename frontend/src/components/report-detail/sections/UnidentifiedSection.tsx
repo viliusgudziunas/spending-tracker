@@ -1,16 +1,22 @@
-import { type ColDef, type ICellRendererParams, themeQuartz } from "ag-grid-community";
+import { type CellContextMenuEvent, type ColDef, themeQuartz } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Transaction } from "../../../clients/backendClient/responseParsers";
 import { TRANSACTION_COLUMNS, UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY } from "../constants";
-import UnidentifiedActionsCell from "./UnidentifiedActionsCell";
 import UnidentifiedInnerHeader from "./UnidentifiedInnerHeader";
+import UnidentifiedRowContextMenu from "./UnidentifiedRowContextMenu";
 
 interface UnidentifiedSectionProps {
     transactions: Transaction[];
     onCreateRuleFilter: (transaction: Transaction) => void;
     onCreateReportFilter: (transaction: Transaction) => void;
     onAddToRuleGroup: (transaction: Transaction) => void;
+}
+
+interface ContextMenuState {
+    transaction: Transaction;
+    x: number;
+    y: number;
 }
 
 export default function UnidentifiedSection({
@@ -23,6 +29,7 @@ export default function UnidentifiedSection({
     const columnsMenuRef = useRef<HTMLDivElement | null>(null);
     const [isColumnsMenuOpen, setIsColumnsMenuOpen] = useState(false);
     const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>({});
+    const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
 
     const toggleableColumns = useMemo(
         () =>
@@ -126,6 +133,23 @@ export default function UnidentifiedSection({
         syncColumnVisibility();
     }, [restoreColumnsState, syncColumnVisibility]);
 
+    const handleCellContextMenu = useCallback((event: CellContextMenuEvent<Transaction>): void => {
+        const transaction = event.data;
+        if (transaction === undefined) return;
+
+        const mouseEvent = event.event as MouseEvent | undefined;
+        mouseEvent?.preventDefault();
+        setContextMenuState({
+            transaction,
+            x: mouseEvent?.clientX ?? 0,
+            y: mouseEvent?.clientY ?? 0,
+        });
+    }, []);
+
+    const closeContextMenu = useCallback((): void => {
+        setContextMenuState(null);
+    }, []);
+
     const unidentifiedColumns = useMemo<ColDef<Transaction>[]>(
         () => [
             ...TRANSACTION_COLUMNS.map((column) => ({
@@ -138,35 +162,8 @@ export default function UnidentifiedSection({
                     },
                 },
             })),
-            {
-                colId: "actions",
-                headerName: "Actions",
-                width: 360,
-                minWidth: 360,
-                pinned: "right",
-                suppressMovable: true,
-                sortable: false,
-                filter: false,
-                resizable: false,
-                cellStyle: {
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                },
-                cellRenderer: (params: ICellRendererParams<Transaction>): JSX.Element | null => {
-                    if (params.data === undefined) return null;
-                    return (
-                        <UnidentifiedActionsCell
-                            transaction={params.data}
-                            onCreateRuleFilter={onCreateRuleFilter}
-                            onCreateReportFilter={onCreateReportFilter}
-                            onAddToRuleGroup={onAddToRuleGroup}
-                        />
-                    );
-                },
-            },
         ],
-        [handleOpenColumnsMenu, onAddToRuleGroup, onCreateReportFilter, onCreateRuleFilter],
+        [handleOpenColumnsMenu],
     );
 
     const defaultColDef = useMemo<ColDef<Transaction>>(
@@ -179,7 +176,7 @@ export default function UnidentifiedSection({
     );
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="relative flex flex-col gap-2">
             <div className="flex items-center justify-between">
                 <h2 className="m-0 text-base font-semibold text-slate-700">
                     Unidentified Transactions ({transactions.length})
@@ -217,8 +214,12 @@ export default function UnidentifiedSection({
                     ) : null}
                 </div>
             </div>
+            <p className="m-0 text-xs text-slate-500">Right-click a row to open quick actions.</p>
 
-            <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white">
+            <div
+                className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white"
+                onContextMenu={(event): void => event.preventDefault()}
+            >
                 <AgGridReact<Transaction>
                     ref={gridRef}
                     theme={themeQuartz}
@@ -231,11 +232,24 @@ export default function UnidentifiedSection({
                         persistColumnsState();
                     }}
                     onColumnMoved={persistColumnsState}
+                    onCellContextMenu={handleCellContextMenu}
+                    onCellClicked={closeContextMenu}
                     domLayout="autoHeight"
                     enableCellTextSelection={true}
                     ensureDomOrder={true}
                 />
             </div>
+            {contextMenuState !== null ? (
+                <UnidentifiedRowContextMenu
+                    transaction={contextMenuState.transaction}
+                    x={contextMenuState.x}
+                    y={contextMenuState.y}
+                    onClose={closeContextMenu}
+                    onCreateRuleFilter={onCreateRuleFilter}
+                    onCreateReportFilter={onCreateReportFilter}
+                    onAddToRuleGroup={onAddToRuleGroup}
+                />
+            ) : null}
         </div>
     );
 }
