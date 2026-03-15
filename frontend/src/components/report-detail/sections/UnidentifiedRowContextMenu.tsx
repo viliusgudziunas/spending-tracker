@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Transaction } from "../../../clients/backendClient/responseParsers";
+import { getContextMenuPosition } from "../contextMenu";
 
 interface UnidentifiedRowContextMenuProps {
     transaction: Transaction;
@@ -23,6 +24,7 @@ export default function UnidentifiedRowContextMenu({
     onAddToReportFilter,
 }: UnidentifiedRowContextMenuProps): JSX.Element {
     const contextMenuRef = useRef<HTMLDivElement | null>(null);
+    const [position, setPosition] = useState<{ left: number; top: number }>({ left: x, top: y });
 
     useEffect(() => {
         const handleOutsideClick = (event: MouseEvent): void => {
@@ -44,11 +46,28 @@ export default function UnidentifiedRowContextMenu({
         };
     }, [onClose]);
 
+    useLayoutEffect(() => {
+        const menu = contextMenuRef.current;
+        if (menu === null) return;
+
+        const rect = menu.getBoundingClientRect();
+        setPosition(
+            getContextMenuPosition({
+                anchorX: x,
+                anchorY: y,
+                menuWidth: rect.width,
+                menuHeight: rect.height,
+                viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight,
+            }),
+        );
+    }, [x, y]);
+
     return (
         <div
             ref={contextMenuRef}
             className="fixed z-50 min-w-[220px] rounded-md border border-slate-200 bg-white p-1 shadow-xl"
-            style={{ left: x, top: y }}
+            style={{ left: position.left, top: position.top }}
         >
             <button
                 type="button"

@@ -1,7 +1,8 @@
 import { type CellContextMenuEvent, type ColDef, themeQuartz } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ReportFilter, Transaction } from "../../../clients/backendClient/responseParsers";
+import { getContextMenuPosition } from "../contextMenu";
 import { TRANSACTION_COLUMNS, getTransactionRowClass } from "../constants";
 
 interface TransactionPanelProps {
@@ -27,6 +28,7 @@ export default function TransactionPanel({
 }: TransactionPanelProps): JSX.Element {
     const contextMenuRef = useRef<HTMLDivElement | null>(null);
     const [contextMenuState, setContextMenuState] = useState<ContextMenuState | null>(null);
+    const [contextMenuPosition, setContextMenuPosition] = useState<{ left: number; top: number } | null>(null);
 
     const defaultColDef = useMemo<ColDef<Transaction>>(
         () => ({
@@ -58,6 +60,27 @@ export default function TransactionPanel({
             window.removeEventListener("mousedown", handleOutsideClick);
             window.removeEventListener("keydown", handleEscape);
         };
+    }, [contextMenuState]);
+
+    useLayoutEffect(() => {
+        if (contextMenuState === null) {
+            setContextMenuPosition(null);
+            return;
+        }
+        const menu = contextMenuRef.current;
+        if (menu === null) return;
+
+        const rect = menu.getBoundingClientRect();
+        setContextMenuPosition(
+            getContextMenuPosition({
+                anchorX: contextMenuState.x,
+                anchorY: contextMenuState.y,
+                menuWidth: rect.width,
+                menuHeight: rect.height,
+                viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight,
+            }),
+        );
     }, [contextMenuState]);
 
     const handleCellContextMenu = useCallback((event: CellContextMenuEvent<Transaction>): void => {
@@ -130,7 +153,10 @@ export default function TransactionPanel({
                 <div
                     ref={contextMenuRef}
                     className="fixed z-50 min-w-[220px] rounded-md border border-slate-200 bg-white p-1 shadow-xl"
-                    style={{ left: contextMenuState.x, top: contextMenuState.y }}
+                    style={{
+                        left: contextMenuPosition?.left ?? contextMenuState.x,
+                        top: contextMenuPosition?.top ?? contextMenuState.y,
+                    }}
                 >
                     <button
                         type="button"
