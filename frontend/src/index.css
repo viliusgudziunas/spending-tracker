@@ -27,3 +27,21 @@
 .ag-row.report-transaction-row--auto.ag-row-hover .ag-cell {
     background-color: #f1f5f9;
 }
+
+.transaction-panel-scroll-area {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.transaction-panel-scroll-area::-webkit-scrollbar {
+    display: none;
+}
+
+.ag-body-horizontal-scroll-viewport {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.ag-body-horizontal-scroll-viewport::-webkit-scrollbar {
+    display: none;
+}

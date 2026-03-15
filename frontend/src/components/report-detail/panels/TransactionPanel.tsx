@@ -45,17 +45,19 @@ export default function TransactionPanel({ filter, onClose, width }: Transaction
             </div>
 
             {filter.transactions.length > 0 ? (
-                <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white">
-                    <AgGridReact<Transaction>
-                        theme={themeQuartz}
-                        columnDefs={TRANSACTION_COLUMNS}
-                        rowData={filter.transactions}
-                        defaultColDef={defaultColDef}
-                        getRowClass={getRowClass}
-                        domLayout="autoHeight"
-                        enableCellTextSelection={true}
-                        ensureDomOrder={true}
-                    />
+                <div className="transaction-panel-scroll-area max-h-[calc(100vh-8rem)] overflow-y-auto overflow-x-hidden rounded-xl border border-slate-200 bg-white">
+                    <div className="w-full">
+                        <AgGridReact<Transaction>
+                            theme={themeQuartz}
+                            columnDefs={TRANSACTION_COLUMNS}
+                            rowData={filter.transactions}
+                            defaultColDef={defaultColDef}
+                            getRowClass={getRowClass}
+                            domLayout="autoHeight"
+                            enableCellTextSelection={true}
+                            ensureDomOrder={true}
+                        />
+                    </div>
                 </div>
             ) : (
                 <div className="rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm">
