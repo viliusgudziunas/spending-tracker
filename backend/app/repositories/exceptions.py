@@ -28,3 +28,7 @@ class TransactionNotFoundError(Exception):
 
 class ReportManualFilterNotFoundError(Exception):
     pass
+
+
+class ReportManualAssignmentNotFoundError(Exception):
+    pass

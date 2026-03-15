@@ -485,3 +485,32 @@ def upsert_transaction_assignment(
 
     updated_report = _generate_report(db=db, report_id=report.id)
     return build_report_full_response(updated_report)
+
+
+def remove_transaction_assignment(
+    db: Session,
+    report_id: uuid.UUID,
+    transaction_id: uuid.UUID,
+) -> ReportDetailResponse:
+    report = report_repository.get_report(db=db, report_id=report_id)
+    report_repository.get_report_transaction(db=db, report_id=report_id, transaction_id=transaction_id)
+    removed_assignment = report_repository.delete_manual_assignment(
+        db=db,
+        report=report,
+        transaction_id=transaction_id,
+    )
+    target_report_filter_id = removed_assignment.get("target_report_filter_id")
+    if target_report_filter_id is not None:
+        try:
+            parsed_report_filter_id = uuid.UUID(target_report_filter_id)
+        except ValueError:
+            parsed_report_filter_id = None
+        if parsed_report_filter_id is not None:
+            report_repository.delete_report_manual_filter_if_unused(
+                db=db,
+                report=report,
+                report_filter_id=parsed_report_filter_id,
+            )
+
+    updated_report = _generate_report(db=db, report_id=report.id)
+    return build_report_full_response(updated_report)

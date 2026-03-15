@@ -18,6 +18,7 @@ from app.db.models import Report
 from app.repositories.exceptions import (
     CategoryNotFoundError,
     FilterNotFoundError,
+    ReportManualAssignmentNotFoundError,
     ReportManualFilterNotFoundError,
     ReportNotFoundError,
     TransactionNotFoundError,
@@ -101,6 +102,26 @@ def upsert_transaction_assignment(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Filter not found") from exc
     except ReportManualFilterNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report filter not found") from exc
+
+
+@router.delete("/reports/{report_id}/transactions/{transaction_id}/assignment", response_model=ReportDetailResponse)
+def delete_transaction_assignment(
+    report_id: uuid.UUID,
+    transaction_id: uuid.UUID,
+    db: Annotated[Session, Depends(get_db)],
+) -> ReportDetailResponse:
+    try:
+        return report_service.remove_transaction_assignment(
+            db=db,
+            report_id=report_id,
+            transaction_id=transaction_id,
+        )
+    except ReportNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc
+    except TransactionNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found") from exc
+    except ReportManualAssignmentNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Manual assignment not found") from exc
 
 
 @router.post(

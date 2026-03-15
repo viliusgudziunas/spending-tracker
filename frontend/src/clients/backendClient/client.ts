@@ -128,6 +128,15 @@ class BackendClient {
         return parseApiReport(response.data);
     }
 
+    async removeReportTransactionAssignment(reportId: string, transactionId: string): Promise<ReportFull> {
+        try {
+            const response = await this.http.delete(`/reports/${reportId}/transactions/${transactionId}/assignment`);
+            return parseApiReport(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while removing manual assignment.");
+        }
+    }
+
     async createCategory(payload: CreateCategoryPayload): Promise<Category> {
         const response = await this.http.post("/categories", payload);
         return parseApiCategory(response.data);

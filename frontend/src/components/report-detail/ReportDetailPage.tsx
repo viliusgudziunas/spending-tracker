@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { ReportFilter, Transaction } from "../../clients/backendClient/responseParsers";
 import {
     useDeleteReportMutation,
     useGenerateReportMutation,
     usePatchReportMutation,
+    useRemoveReportTransactionAssignmentMutation,
     useReportQuery,
 } from "../../hooks/useReportsQueries";
 import CategoriesPanel from "../categories-panel/CategoriesPanel";
@@ -26,6 +27,7 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
     const generateMutation = useGenerateReportMutation();
     const deleteMutation = useDeleteReportMutation();
     const patchMutation = usePatchReportMutation();
+    const removeAssignmentMutation = useRemoveReportTransactionAssignmentMutation();
     const [rightPanel, setRightPanel] = useState<RightPanel | null>(null);
     const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
     const [isEditingName, setIsEditingName] = useState(false);
@@ -61,6 +63,16 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
     const handleAddToReportFilterFromTransaction = useCallback((transaction: Transaction): void => {
         setRightPanel({ kind: "add-report-filter", transaction });
     }, []);
+
+    const handleRemoveManualAssignmentFromTransaction = useCallback(
+        async (transaction: Transaction): Promise<void> => {
+            await removeAssignmentMutation.mutateAsync({
+                reportId,
+                transactionId: transaction.id,
+            });
+        },
+        [removeAssignmentMutation, reportId],
+    );
 
     const handleDeleteReport = useCallback(async (): Promise<void> => {
         if (report === undefined) {
@@ -149,6 +161,31 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
             setEditedReportName(report.name);
         }
     }, [isEditingName, report]);
+
+    const selectedPanelFilter = useMemo(() => {
+        if (report === undefined || rightPanel?.kind !== "filter") {
+            return null;
+        }
+
+        for (const category of report.categories) {
+            const matchedFilter = category.filters.find((filter) => filter.id === rightPanel.filter.id);
+            if (matchedFilter !== undefined) {
+                return matchedFilter;
+            }
+        }
+
+        return null;
+    }, [report, rightPanel]);
+
+    useEffect(() => {
+        if (rightPanel?.kind !== "filter") {
+            return;
+        }
+        if (selectedPanelFilter !== null) {
+            return;
+        }
+        setRightPanel(null);
+    }, [rightPanel, selectedPanelFilter]);
 
     if (isLoading) {
         return (
@@ -249,6 +286,11 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
                         {patchMutation.error.message}
                     </div>
                 ) : null}
+                {removeAssignmentMutation.isError ? (
+                    <div className="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-sm">
+                        {removeAssignmentMutation.error.message}
+                    </div>
+                ) : null}
 
                 <ReportSections
                     report={report}
@@ -257,7 +299,7 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
                     onCreateReportFilter={handleCreateReportFilterFromTransaction}
                     onAddToRuleGroup={handleAddToRuleGroupFromTransaction}
                     onAddToReportFilter={handleAddToReportFilterFromTransaction}
-                    selectedFilterId={rightPanel?.kind === "filter" ? rightPanel.filter.id : null}
+                    selectedFilterId={selectedPanelFilter?.id ?? null}
                 />
             </div>
 
@@ -269,8 +311,14 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
                     >
                         <div className="w-px bg-slate-200 transition-colors group-hover:w-0.5 group-hover:bg-slate-400" />
                     </div>
-                    {rightPanel.kind === "filter" ? (
-                        <TransactionPanel filter={rightPanel.filter} onClose={handleClosePanel} width={panelWidth} />
+                    {rightPanel.kind === "filter" && selectedPanelFilter !== null ? (
+                        <TransactionPanel
+                            filter={selectedPanelFilter}
+                            onClose={handleClosePanel}
+                            onRemoveManualAssignment={handleRemoveManualAssignmentFromTransaction}
+                            isRemovingManualAssignment={removeAssignmentMutation.isPending}
+                            width={panelWidth}
+                        />
                     ) : null}
                     {rightPanel.kind === "categories" ? (
                         <CategoriesPanel onClose={handleClosePanel} width={panelWidth} />

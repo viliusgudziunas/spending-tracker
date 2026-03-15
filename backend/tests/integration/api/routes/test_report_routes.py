@@ -648,6 +648,133 @@ class TestPutReportAssignmentEndpoint:
 
 
 @pytest.mark.integration
+class TestDeleteReportAssignmentEndpoint:
+    def test_removes_manual_assignment_for_report_transaction(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+        report_fetcher: ReportFetcher,
+    ) -> None:
+        report = report_factory()
+        transaction_id = str(report.transactions[0].id)
+        category_name = f"Manual Remove {uuid.uuid4()}"
+        filter_name = f"Manual Target {uuid.uuid4()}"
+        category = category_factory(name=category_name)
+        filter_ = filter_factory(
+            category_id=category.id,
+            name=filter_name,
+            description="does-not-match-auto-generated-transaction",
+        )
+        assign_response = client.put(
+            f"/reports/{report.id}/transactions/{transaction_id}/assignment",
+            json={"target_rule_filter_id": str(filter_.id)},
+        )
+        assert assign_response.status_code == 200
+
+        response = client.delete(f"/reports/{report.id}/transactions/{transaction_id}/assignment")
+
+        assert response.status_code == 200
+        payload = response.json()
+        target_category = next(category for category in payload["categories"] if category["name"] == category_name)
+        target_filter = next(
+            filter_payload
+            for filter_payload in target_category["filters"]
+            if filter_payload["rule_filter_id"] == str(filter_.id)
+        )
+
+        assert target_filter["transactions"] == []
+        assert float(target_filter["amount"]) == 0.0
+        assert len(payload["unidentified_transactions"]) == 1
+        assert payload["unidentified_transactions"][0]["id"] == transaction_id
+        assert payload["unidentified_transactions"][0]["source"] == "generated"
+
+        refreshed_report = report_fetcher(report_id=report.id)
+        assert refreshed_report.data is not None
+        assert "manual_assignments" not in refreshed_report.data
+
+    def test_returns_404_when_manual_assignment_not_found(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory()
+        transaction_id = report.transactions[0].id
+
+        response = client.delete(f"/reports/{report.id}/transactions/{transaction_id}/assignment")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Manual assignment not found"
+
+    def test_returns_404_when_report_not_found(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory()
+        transaction_id = report.transactions[0].id
+
+        response = client.delete(f"/reports/{uuid.uuid4()}/transactions/{transaction_id}/assignment")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Report not found"
+
+    def test_returns_404_when_transaction_is_not_in_report(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory(name="First report")
+        other_report = report_factory(name="Second report")
+        transaction_id = other_report.transactions[0].id
+
+        response = client.delete(f"/reports/{report.id}/transactions/{transaction_id}/assignment")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Transaction not found"
+
+    def test_deletes_report_manual_filter_when_it_has_no_transactions_after_unassign(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+        category_factory: CategoryFactory,
+        report_fetcher: ReportFetcher,
+    ) -> None:
+        report = report_factory()
+        transaction_id = str(report.transactions[0].id)
+        category = category_factory(name="Accommodation")
+        create_manual_filter_response = client.post(
+            f"/reports/{report.id}/manual-filters",
+            json={"name": "Hotels", "category_id": str(category.id)},
+        )
+        report_filter_id = create_manual_filter_response.json()["id"]
+        assign_response = client.put(
+            f"/reports/{report.id}/transactions/{transaction_id}/assignment",
+            json={"target_report_filter_id": report_filter_id},
+        )
+        assert assign_response.status_code == 200
+
+        response = client.delete(f"/reports/{report.id}/transactions/{transaction_id}/assignment")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert all(
+            filter_payload["id"] != report_filter_id
+            for category_payload in payload["categories"]
+            for filter_payload in category_payload["filters"]
+        )
+        assert len(payload["unidentified_transactions"]) == 1
+        assert payload["unidentified_transactions"][0]["id"] == transaction_id
+        assert payload["unidentified_transactions"][0]["source"] == "generated"
+
+        refreshed_report = report_fetcher(report_id=report.id)
+        assert refreshed_report.data is not None
+        assert "manual_assignments" not in refreshed_report.data
+        assert "manual_filters" not in refreshed_report.data
+
+
+@pytest.mark.integration
 class TestGenerateReportEndpoint:
     def test_returns_all_unidentified_when_no_rules(self, client: TestClient) -> None:
         report_id = _create_report(client)

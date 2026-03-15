@@ -117,3 +117,24 @@ export function useAssignReportTransactionMutation(): UseMutationResult<
         },
     });
 }
+
+interface RemoveReportTransactionAssignmentVariables {
+    reportId: string;
+    transactionId: string;
+}
+
+export function useRemoveReportTransactionAssignmentMutation(): UseMutationResult<
+    ReportFull,
+    Error,
+    RemoveReportTransactionAssignmentVariables
+> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ reportId, transactionId }: RemoveReportTransactionAssignmentVariables) =>
+            await client.removeReportTransactionAssignment(reportId, transactionId),
+        onSuccess: async (_data, { reportId }) => {
+            await queryClient.invalidateQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+        },
+    });
+}
