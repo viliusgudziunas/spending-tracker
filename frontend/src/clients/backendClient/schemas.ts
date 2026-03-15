@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const TRANSACTION_SOURCES = ["generated", "override", null] as const;
+export const TRANSACTION_SOURCES = ["generated", "manual", "override", null] as const;
 export const RULE_GROUP_OPERATORS = ["AND"] as const;
 export const RULE_TYPES = ["DESCRIPTION", "AMOUNT", "PRODUCT"] as const;
 export const RULE_OPERATORS = [
@@ -12,7 +12,7 @@ export const RULE_OPERATORS = [
     "LESS_THAN_EQUAL",
 ] as const;
 
-export const TransactionSourceSchema = z.enum(["generated", "override"]).nullable();
+export const TransactionSourceSchema = z.enum(["generated", "manual", "override"]).nullable();
 
 export const ApiRuleSchema = z.object({
     id: z.string(),

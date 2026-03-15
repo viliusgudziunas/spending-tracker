@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
@@ -319,7 +319,10 @@ class ReportDataFilter(BaseModel):
     transaction_ids: list[str]
 
 
-def _build_transaction_response(transaction: Transaction) -> ReportDetailTransactionResponse:
+def _build_transaction_response(
+    transaction: Transaction,
+    source: str | None,
+) -> ReportDetailTransactionResponse:
     base = {
         "id": transaction.id,
         "started_date": transaction.started_date,
@@ -327,7 +330,7 @@ def _build_transaction_response(transaction: Transaction) -> ReportDetailTransac
         "description": transaction.description,
         "amount": transaction.amount,
         "fee": transaction.fee,
-        "source": transaction.source,
+        "source": source,
     }
     if transaction.schema_version >= CURRENT_TRANSACTION_SCHEMA_VERSION:
         return ReportDetailTransactionV2Response.model_validate(
@@ -345,9 +348,20 @@ def _build_transaction_response(transaction: Transaction) -> ReportDetailTransac
 
 def build_report_full_response(report: Report) -> ReportDetailResponse:
     tx_lookup: dict[str, Transaction] = {str(tx.id): tx for tx in report.transactions}
-    categories, assigned_tx_ids = _build_categories_from_data(report=report, tx_lookup=tx_lookup)
+    manual_assignments = _extract_manual_assignments(report=report)
+    manual_assignment_tx_ids = set(manual_assignments.keys())
 
-    unidentified = [_build_transaction_response(tx) for tx_id, tx in tx_lookup.items() if tx_id not in assigned_tx_ids]
+    def build_transaction_response(transaction: Transaction) -> ReportDetailTransactionResponse:
+        source = "manual" if str(transaction.id) in manual_assignment_tx_ids else transaction.source
+        return _build_transaction_response(transaction=transaction, source=source)
+
+    categories, assigned_tx_ids = _build_categories_from_data(
+        report=report,
+        tx_lookup=tx_lookup,
+        build_transaction_response=build_transaction_response,
+    )
+
+    unidentified = [build_transaction_response(tx) for tx_id, tx in tx_lookup.items() if tx_id not in assigned_tx_ids]
 
     return ReportDetailResponse(
         id=report.id,
@@ -361,6 +375,7 @@ def build_report_full_response(report: Report) -> ReportDetailResponse:
 def _build_categories_from_data(
     report: Report,
     tx_lookup: dict[str, Transaction],
+    build_transaction_response: Callable[[Transaction], ReportDetailTransactionResponse],
 ) -> tuple[list[ReportDetailCategoryResponse], set[str]]:
     assigned_tx_ids: set[str] = set()
     categories: list[ReportDetailCategoryResponse] = []
@@ -386,7 +401,7 @@ def _build_categories_from_data(
                     rule_filter_id=uuid.UUID(filter_.rule_filter_id) if filter_.rule_filter_id is not None else None,
                     is_manual=filter_.rule_filter_id is None,
                     amount=amount,
-                    transactions=[_build_transaction_response(tx) for tx in filter_txs],
+                    transactions=[build_transaction_response(tx) for tx in filter_txs],
                 ),
             )
 

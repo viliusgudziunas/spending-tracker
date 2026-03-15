@@ -2,7 +2,7 @@ import { type CellContextMenuEvent, type ColDef, themeQuartz } from "ag-grid-com
 import { AgGridReact } from "ag-grid-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Transaction } from "../../../clients/backendClient/responseParsers";
-import { TRANSACTION_COLUMNS, UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY } from "../constants";
+import { TRANSACTION_COLUMNS, UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY, getTransactionRowClass } from "../constants";
 import UnidentifiedInnerHeader from "./UnidentifiedInnerHeader";
 import UnidentifiedRowContextMenu from "./UnidentifiedRowContextMenu";
 
@@ -151,6 +151,10 @@ export default function UnidentifiedSection({
     const closeContextMenu = useCallback((): void => {
         setContextMenuState(null);
     }, []);
+    const getRowClass = useCallback(
+        (params: { data: Transaction | undefined }): string => getTransactionRowClass(params.data?.source),
+        [],
+    );
 
     const unidentifiedColumns = useMemo<ColDef<Transaction>[]>(
         () => [
@@ -236,6 +240,7 @@ export default function UnidentifiedSection({
                     onColumnMoved={persistColumnsState}
                     onCellContextMenu={handleCellContextMenu}
                     onCellClicked={closeContextMenu}
+                    getRowClass={getRowClass}
                     domLayout="autoHeight"
                     enableCellTextSelection={true}
                     ensureDomOrder={true}

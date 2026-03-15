@@ -7,3 +7,23 @@
 .ag-layout-auto-height .ag-root:has(.ag-overlay-no-rows-wrapper) .ag-center-cols-viewport {
     min-height: 42px !important;
 }
+
+.ag-row.report-transaction-row--manual .ag-cell {
+    background-color: #eff6ff;
+}
+
+.ag-row.report-transaction-row--manual.ag-row-hover .ag-cell {
+    background-color: #dbeafe;
+}
+
+.ag-row.report-transaction-row--manual .ag-cell:first-child {
+    border-left: 3px solid #2563eb;
+}
+
+.ag-row.report-transaction-row--auto .ag-cell {
+    background-color: #f8fafc;
+}
+
+.ag-row.report-transaction-row--auto.ag-row-hover .ag-cell {
+    background-color: #f1f5f9;
+}

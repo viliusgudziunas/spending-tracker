@@ -27,11 +27,31 @@ const TRANSACTION_COLUMNS: ColDef<Transaction>[] = [
     { field: "fee", headerName: "Fee", width: 90 },
     { field: "currency", headerName: "Currency", width: 100 },
     { field: "state", headerName: "State", width: 110 },
-    { field: "source", headerName: "Source", width: 120 },
+    {
+        field: "source",
+        headerName: "Source",
+        width: 120,
+        valueFormatter: ({ value }): string => {
+            if (value === "manual" || value === "override") return "Manual";
+            if (value === "generated") return "Auto";
+            return "Unknown";
+        },
+        tooltipValueGetter: ({ value }): string => {
+            if (value === "manual" || value === "override") return "Assigned manually";
+            if (value === "generated") return "Assigned automatically";
+            return "Assignment source unavailable";
+        },
+    },
     { field: "balance", headerName: "Balance", width: 110 },
     { field: "startedDate", headerName: "Started", width: 160 },
     { field: "completedDate", headerName: "Completed", width: 160 },
 ];
+
+function getTransactionRowClass(source: Transaction["source"] | undefined): string {
+    if (source === "manual" || source === "override") return "report-transaction-row--manual";
+    if (source === "generated") return "report-transaction-row--auto";
+    return "";
+}
 
 const OPERATOR_LABELS: Record<RuleOperator, string> = {
     EQUAL: "= Equal",
@@ -70,5 +90,6 @@ export {
     RULE_TYPE_LABELS,
     TRANSACTION_COLUMNS,
     UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY,
+    getTransactionRowClass,
 };
 export type { FilterRow, RightPanel };

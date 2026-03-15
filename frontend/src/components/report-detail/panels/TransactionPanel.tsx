@@ -1,8 +1,8 @@
 import { type ColDef, themeQuartz } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ReportFilter, Transaction } from "../../../clients/backendClient/responseParsers";
-import { TRANSACTION_COLUMNS } from "../constants";
+import { TRANSACTION_COLUMNS, getTransactionRowClass } from "../constants";
 
 interface TransactionPanelProps {
     filter: ReportFilter;
@@ -17,6 +17,10 @@ export default function TransactionPanel({ filter, onClose, width }: Transaction
             sortable: true,
             filter: true,
         }),
+        [],
+    );
+    const getRowClass = useCallback(
+        (params: { data: Transaction | undefined }): string => getTransactionRowClass(params.data?.source),
         [],
     );
 
@@ -47,6 +51,7 @@ export default function TransactionPanel({ filter, onClose, width }: Transaction
                         columnDefs={TRANSACTION_COLUMNS}
                         rowData={filter.transactions}
                         defaultColDef={defaultColDef}
+                        getRowClass={getRowClass}
                         domLayout="autoHeight"
                         enableCellTextSelection={true}
                         ensureDomOrder={true}

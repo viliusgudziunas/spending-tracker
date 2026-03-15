@@ -587,6 +587,7 @@ class TestPutReportAssignmentEndpoint:
 
         assert len(filter_payload["transactions"]) == 1
         assert filter_payload["transactions"][0]["id"] == transaction_id
+        assert filter_payload["transactions"][0]["source"] == "manual"
         assert filter_payload["is_manual"] is True
         assert filter_payload["rule_filter_id"] is None
         assert all(tx["id"] != transaction_id for tx in payload["unidentified_transactions"])
@@ -625,6 +626,7 @@ class TestPutReportAssignmentEndpoint:
 
         assert len(filter_payload["transactions"]) == 1
         assert filter_payload["transactions"][0]["id"] == transaction_id
+        assert filter_payload["transactions"][0]["source"] == "manual"
         assert filter_payload["is_manual"] is False
         assert filter_payload["rule_filter_id"] == str(filter_.id)
 
