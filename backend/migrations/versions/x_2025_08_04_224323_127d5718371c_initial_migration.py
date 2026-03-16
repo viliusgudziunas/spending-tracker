@@ -144,5 +144,5 @@ def downgrade() -> None:
     op.drop_table("filter")
     op.drop_table("report", schema="report")
     op.drop_table("category")
-    op.execute("drop schema report;")
+    op.execute("drop schema report cascade;")
     # ### end Alembic commands ###

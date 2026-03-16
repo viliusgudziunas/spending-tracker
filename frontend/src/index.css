@@ -1,16 +1,47 @@
-table {
-    width: 100%;
-    border-collapse: collapse;
+@import "tailwindcss";
+
+.ag-layout-auto-height .ag-center-cols-viewport {
+    min-height: unset !important;
 }
-th,
-td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
+
+.ag-layout-auto-height .ag-root:has(.ag-overlay-no-rows-wrapper) .ag-center-cols-viewport {
+    min-height: 42px !important;
 }
-th {
-    background-color: #f4f4f4;
+
+.ag-row.report-transaction-row--manual .ag-cell {
+    background-color: #eff6ff;
 }
-h4 {
-    margin: 0;
+
+.ag-row.report-transaction-row--manual.ag-row-hover .ag-cell {
+    background-color: #dbeafe;
+}
+
+.ag-row.report-transaction-row--manual .ag-cell:first-child {
+    border-left: 3px solid #2563eb;
+}
+
+.ag-row.report-transaction-row--auto .ag-cell {
+    background-color: #f8fafc;
+}
+
+.ag-row.report-transaction-row--auto.ag-row-hover .ag-cell {
+    background-color: #f1f5f9;
+}
+
+.transaction-panel-scroll-area {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.transaction-panel-scroll-area::-webkit-scrollbar {
+    display: none;
+}
+
+.ag-body-horizontal-scroll-viewport {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.ag-body-horizontal-scroll-viewport::-webkit-scrollbar {
+    display: none;
 }

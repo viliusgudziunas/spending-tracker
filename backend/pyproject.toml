@@ -6,21 +6,24 @@ authors = ["Vilius Gudziunas"]
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "~3.12"
-fastapi = "~0.112.2"
-pandas = "~2.2.3"
+python = "~3.14"
+fastapi = "~0.135.1"
+pandas = "~3.0.1"
 psycopg2-binary = "~2.9.11"
-pydantic = "^2.9.2"
-pydantic-settings = "~2.5.2"
-python-multipart = "^0.0.10"
-sqlalchemy = "~2.0.35"
-uvicorn = "~0.30.6"
+pydantic = "~2.12.5"
+pydantic-settings = "~2.13.1"
+python-multipart = "^0.0.22"
+sqlalchemy = "~2.0.48"
+uvicorn = "~0.41.0"
 
 [tool.poetry.group.dev.dependencies]
-alembic = "~1.16.4"
-pandas-stubs = "^2.2.2.240909"
-ruff = "^0.11.9"
-types-psycopg2 = "^2.9.21.20240819"
+alembic = "^1.18.4"
+httpx = "^0.28.1"
+pandas-stubs = "^3.0.0.260204"
+pytest = "^9.0.2"
+ruff = "^0.15.4"
+ty = "^0.0.20"
+types-psycopg2 = "^2.9.21.20260223"
 
 
 [build-system]
@@ -28,24 +31,15 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 
-[tool.pyright]
-venvPath = "."
-venv = ".venv"
-
-
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 120
 
 [tool.ruff.lint]
 select = [
-    "F",     # Pyflakes
-    "E",     # pycodestyle
-    "W",     # pycodestyle
-    "C90",   # mccabe
-    "I",     # isort
-    "N",     # pep8-naming
-    "UP",    # pyupgrade
+    "AIR",   # Airflow
+    "ERA",   # eradicate
+    "FAST",  # FastAPI
     "YTT",   # flake8-2020
     "ANN",   # flake8-annotations
     "ASYNC", # flake8-async
@@ -61,7 +55,9 @@ select = [
     "DJ",    # flake8-django
     "EM",    # flake8-errmsg
     "EXE",   # flake8-executable
+    "FIX",   # flake8-fixme
     "FA",    # flake8-future-annotations
+    "INT",   # flake8-gettext
     "ISC",   # flake8-implicit-str-concat
     "ICN",   # flake8-import-conventions
     "LOG",   # flake8-logging
@@ -75,30 +71,33 @@ select = [
     "RSE",   # flake8-raise
     "RET",   # flake8-return
     "SLF",   # flake8-self
-    "SLOT",  # flake8-slots
     "SIM",   # flake8-simplify
+    "SLOT",  # flake8-slots
     "TID",   # flake8-tidy-imports
+    "TD",    # flake8-todos
     "TC",    # flake8-type-checking
-    "INT",   # flake8-gettext
     "ARG",   # flake8-unused-arguments
     "PTH",   # flake8-use-pathlib
-    "TD",    # flake8-todo
-    "FIX",   # flake8-fixme
-    "ERA",   # eradicate
-    "PD",    # pandas-vet
-    "PGH",   # pygrep-hooks
-    "PL",    # pylint
-    "TRY",   # tryceratops
     "FLY",   # flynt
+    "I",     # isort
+    "C90",   # mccabe
     "NPY",   # NumPy-specific rules
-    "AIR",   # Airflow
-    "PERF",  # perflint
+    "PD",    # pandas-vet
+    "N",     # pep8-naming
+    "PERF",  # Perflint
+    "E",     # pycodestyle
+    "W",     # pycodestyle
+    "F",     # Pyflakes
+    "PGH",   # pygrep-hooks
+    "PL",    # Pylint
+    "UP",    # pyupgrade
     "FURB",  # refurb
-    "RUF",   # ruff
+    "RUF",   # Ruff-specific rules
+    "TRY",   # tryceratops
 
     # requires preview mode
     # "CPY",  # flake8-copyright
-    # "FAST", # FastAPI
+    # "DOC",  # pydoclint
 
     # not following the coding style
     # "D",   # pydocstyle
@@ -115,6 +114,18 @@ ignore = [
 "migrations/env.py" = [
     "E402", # module-import-not-at-top-of-file
 ]
+"tests/*" = [
+    "S101",    # assert
+    "PLR2004", # magic-value-comparison
+]
 
 [tool.ruff.lint.pep8-naming]
 classmethod-decorators = ["pydantic.field_validator"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: Unit tests (no external dependencies)",
+    "integration: Integration tests (require database)",
+]

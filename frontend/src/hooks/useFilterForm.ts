@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { Filter, Rule, RuleGroup, RuleOperator, RuleType } from "../services/rules/api.types.parsed";
+import { Filter, Rule, RuleGroup, RuleOperator, RuleType } from "../clients/backendClient/responseParsers";
 
 type NewFilter = Omit<Filter, "id" | "ruleGroups" | "position"> & { ruleGroups: NewRuleGroup[] } & Partial<
         Pick<Filter, "id" | "position">
@@ -31,6 +31,7 @@ export interface UseFilterForm {
         changeFilter: ChangeFilter;
         addRuleGroup: (rule?: string) => void;
         addRule: (groupId: string) => void;
+        removeRule: (groupId: string, ruleId: string) => void;
         changeRule: ChangeRule;
         removeRuleGroup: (groupId: string) => void;
         resetFilter: () => void;
@@ -90,11 +91,24 @@ const useFilterForm = (): UseFilterForm => {
         setFilter((currentFilter) => ({ ...currentFilter, ruleGroups: newRuleGroups }));
     };
 
+    const removeRule = (groupId: string, ruleId: string): void => {
+        const changingRuleGroup = filter.ruleGroups.find((group) => group.id === groupId);
+        if (!changingRuleGroup || changingRuleGroup.rules.length <= 1) return;
+
+        const changingRuleGroupIndex = filter.ruleGroups.indexOf(changingRuleGroup);
+        const newRuleGroups = [...filter.ruleGroups];
+        newRuleGroups[changingRuleGroupIndex] = {
+            ...changingRuleGroup,
+            rules: changingRuleGroup.rules.filter((rule) => rule.id !== ruleId),
+        };
+        setFilter((currentFilter) => ({ ...currentFilter, ruleGroups: newRuleGroups }));
+    };
+
     const changeRule: ChangeRule = (
         groupId: string,
         ruleId: string,
         field: keyof NewRule,
-        value: RuleType | RuleOperator | string
+        value: RuleType | RuleOperator | string,
     ) => {
         const changingRuleGroup = filter.ruleGroups.find((group) => group.id === groupId);
         const changingRule = changingRuleGroup?.rules.find((rule) => rule.id === ruleId);
@@ -130,6 +144,7 @@ const useFilterForm = (): UseFilterForm => {
             changeFilter,
             addRuleGroup,
             addRule,
+            removeRule,
             changeRule,
             removeRuleGroup,
             resetFilter,

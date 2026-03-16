@@ -1,19 +1,20 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
-import { ModalProvider } from "./contexts/ModalContext.tsx";
-import { ReportsProvider } from "./contexts/ReportsContext.tsx";
-import { RulesProvider } from "./contexts/RulesContext.tsx";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
 import "./index.css";
+import "./shared/setup/agGrid";
+import { routeTree } from "./routeTree.gen";
+
+const router = createRouter({ routeTree });
+
+declare module "@tanstack/react-router" {
+    interface Register {
+        router: typeof router;
+    }
+}
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
-        <ReportsProvider>
-            <RulesProvider>
-                <ModalProvider>
-                    <App />
-                </ModalProvider>
-            </RulesProvider>
-        </ReportsProvider>
-    </StrictMode>
+        <RouterProvider router={router} />
+    </StrictMode>,
 );

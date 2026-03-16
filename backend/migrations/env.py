@@ -16,16 +16,10 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from app.db.base import Base, ReportsBase
-from app.db.reports.models import Override, Report, Transaction  # noqa: F401
-from app.db.rules.models import Category, Filter, Rule, RuleGroup  # noqa: F401
+from app.db.base import Base
+from app.db.models import Category, Filter, Report, Rule, RuleGroup, Transaction  # noqa: F401
 
-# Combine metadata from both schemas
 target_metadata = Base.metadata
-# Add the reports schema metadata
-target_metadata._schemas.update(ReportsBase.metadata._schemas)  # noqa: SLF001
-for table in ReportsBase.metadata.tables.values():
-    target_metadata._add_table(table.name, table.schema, table)  # noqa: SLF001
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -57,8 +51,6 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        # Include both schemas
-        include_schemas=True,
     )
 
     with context.begin_transaction():
@@ -86,8 +78,6 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            # Include both schemas
-            include_schemas=True,
         )
 
         with context.begin_transaction():
