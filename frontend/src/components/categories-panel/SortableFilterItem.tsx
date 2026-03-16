@@ -1,7 +1,8 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Filter } from "../../clients/backendClient/responseParsers";
+import { useRenameFilterMutation } from "../../hooks/useFilterQueries";
 import EditFilterRuleGroupsForm from "./EditFilterRuleGroupsForm";
 import RuleGroupItem from "./RuleGroupItem";
 
@@ -21,10 +22,37 @@ export default function SortableFilterItem({
     });
     const [expanded, setExpanded] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [isRenaming, setIsRenaming] = useState(false);
+    const [renameDraft, setRenameDraft] = useState(filter.name);
+    const renameInputRef = useRef<HTMLInputElement>(null);
+    const renameMutation = useRenameFilterMutation();
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
         zIndex: isDragging ? 11 : undefined,
+    };
+
+    const startRenaming = (): void => {
+        setRenameDraft(filter.name);
+        setIsRenaming(true);
+        requestAnimationFrame(() => renameInputRef.current?.select());
+    };
+
+    const submitRename = (): void => {
+        const trimmed = renameDraft.trim();
+        if (trimmed === "" || trimmed === filter.name) {
+            setIsRenaming(false);
+            return;
+        }
+        renameMutation.mutate(
+            { filterId: filter.id, payload: { name: trimmed } },
+            { onSettled: () => setIsRenaming(false) },
+        );
+    };
+
+    const cancelRename = (): void => {
+        setIsRenaming(false);
+        setRenameDraft(filter.name);
     };
 
     return (
@@ -46,27 +74,55 @@ export default function SortableFilterItem({
                         <circle cx="7" cy="13" r="1.5" />
                     </svg>
                 </button>
+                {isRenaming ? (
+                    <input
+                        ref={renameInputRef}
+                        type="text"
+                        value={renameDraft}
+                        onChange={(e): void => setRenameDraft(e.target.value)}
+                        onKeyDown={(e): void => {
+                            if (e.key === "Enter") submitRename();
+                            if (e.key === "Escape") cancelRename();
+                        }}
+                        onBlur={submitRename}
+                        disabled={renameMutation.isPending}
+                        className="min-w-0 flex-1 rounded-md border border-blue-300 px-2 py-1 text-xs font-medium text-slate-700 outline-none focus:ring-1 focus:ring-blue-400 disabled:opacity-50"
+                        aria-label={`Rename filter ${filter.name}`}
+                    />
+                ) : (
+                    <button
+                        type="button"
+                        onClick={(): void => setExpanded((prev) => !prev)}
+                        onDoubleClick={startRenaming}
+                        className="flex min-w-0 flex-1 items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-slate-50"
+                    >
+                        <span className="truncate text-xs font-medium text-slate-700">{filter.name}</span>
+                        {filter.ruleGroups.length > 0 ? (
+                            <svg
+                                width="12"
+                                height="12"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className={`shrink-0 text-slate-300 transition-transform ${expanded ? "rotate-90" : ""}`}
+                            >
+                                <polyline points="6 3 11 8 6 13" />
+                            </svg>
+                        ) : null}
+                    </button>
+                )}
                 <button
                     type="button"
-                    onClick={(): void => setExpanded((prev) => !prev)}
-                    className="flex min-w-0 flex-1 items-center justify-between rounded-md px-2 py-1.5 text-left transition hover:bg-slate-50"
+                    onClick={startRenaming}
+                    disabled={isRenaming}
+                    className="rounded-md px-2 py-1 text-[10px] font-semibold text-amber-600 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label={`Rename filter ${filter.name}`}
+                    title="Rename filter"
                 >
-                    <span className="truncate text-xs font-medium text-slate-700">{filter.name}</span>
-                    {filter.ruleGroups.length > 0 ? (
-                        <svg
-                            width="12"
-                            height="12"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className={`shrink-0 text-slate-300 transition-transform ${expanded ? "rotate-90" : ""}`}
-                        >
-                            <polyline points="6 3 11 8 6 13" />
-                        </svg>
-                    ) : null}
+                    Rename
                 </button>
                 <button
                     type="button"

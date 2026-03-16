@@ -55,6 +55,10 @@ export interface UpdateFilterPositionPayload {
     position: number;
 }
 
+export interface RenameFilterPayload {
+    name: string;
+}
+
 export interface PutRulePayload {
     id?: string;
     type: string;

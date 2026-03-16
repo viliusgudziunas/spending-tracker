@@ -11,7 +11,7 @@ alwaysApply: false
 ```
 CategoriesPanel
 ├── SortableCategoryCard (drag-and-drop reorder)
-│   ├── SortableFilterItem (drag-and-drop reorder, expand/collapse)
+│   ├── SortableFilterItem (drag-and-drop reorder, expand/collapse, inline rename)
 │   │   ├── RuleGroupItem (read-only display)
 │   │   └── EditFilterRuleGroupsForm (edit mode)
 │   └── CreateFilterForm (inline creation)
@@ -29,6 +29,7 @@ CategoriesPanel
 ## API integration
 
 - Create filter: `POST /filters` via `useCreateFilterMutation`
+- Rename filter: `PATCH /filters/{id}` with `name` via `useRenameFilterMutation`
 - Edit rule groups: `PUT /filters/{id}/rule-groups` via `usePutFilterRuleGroupsMutation`
 - Reorder: `PATCH /categories/{id}` or `PATCH /filters/{id}` with `position`
 - Delete: `DELETE /filters/{id}` via `useDeleteFilterMutation`

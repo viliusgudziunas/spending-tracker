@@ -27,6 +27,7 @@ import {
     CreateReportPayload,
     PutFilterRuleGroupsPayload,
     PutReportAssignmentPayload,
+    RenameFilterPayload,
     UpdateCategoryPayload,
     UpdateFilterPayload,
     UpdateFilterPositionPayload,
@@ -159,6 +160,11 @@ class BackendClient {
 
     async updateFilter(filterId: string, payload: UpdateFilterPayload): Promise<Filter> {
         const response = await this.http.put(`/filters/${filterId}`, parseIntoUpdateApiFilterPayload(payload));
+        return parseApiFilter(response.data);
+    }
+
+    async renameFilter(filterId: string, payload: RenameFilterPayload): Promise<Filter> {
+        const response = await this.http.patch(`/filters/${filterId}`, payload);
         return parseApiFilter(response.data);
     }
 

@@ -2,6 +2,7 @@ import { UseMutationResult, useMutation, useQueryClient } from "@tanstack/react-
 import {
     CreateFilterPayload,
     PutFilterRuleGroupsPayload,
+    RenameFilterPayload,
     UpdateFilterPositionPayload,
 } from "../clients/backendClient/types";
 import { Filter } from "../clients/backendClient/responseParsers";
@@ -13,6 +14,23 @@ export function useCreateFilterMutation(): UseMutationResult<Filter, Error, Crea
 
     return useMutation({
         mutationFn: async (payload: CreateFilterPayload) => await client.createFilter(payload),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
+        },
+    });
+}
+
+interface RenameFilterVariables {
+    filterId: string;
+    payload: RenameFilterPayload;
+}
+
+export function useRenameFilterMutation(): UseMutationResult<Filter, Error, RenameFilterVariables> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ filterId, payload }: RenameFilterVariables) =>
+            await client.renameFilter(filterId, payload),
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
         },
