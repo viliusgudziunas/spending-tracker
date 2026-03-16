@@ -1,0 +1,41 @@
+---
+description: Architecture and patterns for the categories panel and filter editing
+globs: frontend/src/components/categories-panel/**,frontend/src/hooks/useFilter*.ts
+alwaysApply: false
+---
+
+# Categories Panel Architecture
+
+## Component hierarchy
+
+```
+CategoriesPanel
+├── SortableCategoryCard (drag-and-drop reorder)
+│   ├── SortableFilterItem (drag-and-drop reorder, expand/collapse)
+│   │   ├── RuleGroupItem (read-only display)
+│   │   └── EditFilterRuleGroupsForm (edit mode)
+│   └── CreateFilterForm (inline creation)
+└── CreateCategoryForm
+```
+
+## State management
+
+- `useCategoriesPanelState` — shared panel state: queries, drag handlers, delete filter
+- `useFilterForm` — form state for both creating and editing filters/rule groups
+  - `initNewFilter(rule)` — sets up a blank filter with one rule group
+  - `initExistingFilter(filter)` — populates form from an existing `Filter` object
+  - Temporary IDs use `temp-` prefix (e.g. `temp-<uuid>`); strip these before sending to the API so the backend treats them as new entities
+
+## API integration
+
+- Create filter: `POST /filters` via `useCreateFilterMutation`
+- Edit rule groups: `PUT /filters/{id}/rule-groups` via `usePutFilterRuleGroupsMutation`
+- Reorder: `PATCH /categories/{id}` or `PATCH /filters/{id}` with `position`
+- Delete: `DELETE /filters/{id}` via `useDeleteFilterMutation`
+- All mutations invalidate the `CATEGORIES_QUERY_KEY` to refresh the panel
+
+## Data model (Filter → RuleGroup → Rule)
+
+- **Filter**: `id`, `name`, `position`, `categoryId`, `ruleGroups[]`
+- **RuleGroup**: `id`, `operator` (currently only `AND`), `rules[]`
+- **Rule**: `id`, `type` (DESCRIPTION | AMOUNT | PRODUCT), `operator` (EQUAL | NOT_EQUAL | GREATER_THAN | LESS_THAN | GREATER_THAN_EQUAL | LESS_THAN_EQUAL), `value`
