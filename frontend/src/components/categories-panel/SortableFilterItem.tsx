@@ -2,6 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
 import { Filter } from "../../clients/backendClient/responseParsers";
+import EditFilterRuleGroupsForm from "./EditFilterRuleGroupsForm";
 import RuleGroupItem from "./RuleGroupItem";
 
 interface SortableFilterItemProps {
@@ -19,6 +20,7 @@ export default function SortableFilterItem({
         id: filter.id,
     });
     const [expanded, setExpanded] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -68,6 +70,18 @@ export default function SortableFilterItem({
                 </button>
                 <button
                     type="button"
+                    onClick={(): void => {
+                        setIsEditing(true);
+                        setExpanded(true);
+                    }}
+                    className="rounded-md px-2 py-1 text-[10px] font-semibold text-blue-600 transition hover:bg-blue-50"
+                    aria-label={`Edit filter ${filter.name}`}
+                    title="Edit filter rules"
+                >
+                    Edit
+                </button>
+                <button
+                    type="button"
                     onClick={(): void => void onDelete(filter)}
                     disabled={isDeletePending}
                     className="rounded-md px-2 py-1 text-[10px] font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -78,7 +92,13 @@ export default function SortableFilterItem({
                 </button>
             </div>
 
-            {expanded && filter.ruleGroups.length > 0 ? (
+            {expanded && isEditing ? (
+                <div className="ml-2 mt-1 pl-2">
+                    <EditFilterRuleGroupsForm filter={filter} onClose={(): void => setIsEditing(false)} />
+                </div>
+            ) : null}
+
+            {expanded && !isEditing && filter.ruleGroups.length > 0 ? (
                 <div className="ml-2 border-l border-slate-100 pl-2">
                     {filter.ruleGroups.map((group) => (
                         <RuleGroupItem key={group.id} ruleGroup={group} />
