@@ -16,6 +16,17 @@ export interface UpdateCategoryPayload {
     position?: number;
 }
 
+export interface CreatePlanSectionPayload {
+    name: string;
+    isIncome?: boolean;
+}
+
+export interface UpdatePlanSectionPayload {
+    name?: string;
+    position?: number;
+    isIncome?: boolean;
+}
+
 export interface CreateRulePayload {
     type: string;
     operator: string;

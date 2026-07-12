@@ -17,7 +17,7 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from app.db.base import Base
-from app.db.models import Category, Filter, Report, Rule, RuleGroup, Transaction  # noqa: F401
+from app.db.models import Category, Filter, PlanSection, Report, Rule, RuleGroup, Transaction  # noqa: F401
 
 target_metadata = Base.metadata
 
@@ -28,9 +28,8 @@ target_metadata = Base.metadata
 
 
 def get_url() -> str:
-    """Get database URL from settings."""
-    settings = get_settings()
-    return settings.database_url
+    """Use an explicit Alembic URL when provided, otherwise app settings."""
+    return config.get_main_option("sqlalchemy.url") or get_settings().database_url
 
 
 def run_migrations_offline() -> None:

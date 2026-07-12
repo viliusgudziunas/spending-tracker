@@ -9,6 +9,9 @@ import {
     parseApiCategories,
     parseApiCategory,
     parseApiFilter,
+    parseApiPlanSection,
+    parseApiPlanSections,
+    PlanSection,
     Report,
     ReportFull,
     ReportManualFilter,
@@ -22,6 +25,7 @@ import {
 import {
     CreateCategoryPayload,
     CreateFilterPayload,
+    CreatePlanSectionPayload,
     PatchReportPayload,
     CreateReportManualFilterPayload,
     CreateReportPayload,
@@ -31,7 +35,9 @@ import {
     UpdateCategoryPayload,
     UpdateFilterPayload,
     UpdateFilterPositionPayload,
+    UpdatePlanSectionPayload,
 } from "./types";
+import { ApiErrorSchema } from "./schemas";
 
 function parseAxiosError(error: unknown, fallbackMessage: string): Error {
     if (!(error instanceof AxiosError)) {
@@ -42,15 +48,13 @@ function parseAxiosError(error: unknown, fallbackMessage: string): Error {
         return new Error("Cannot connect to backend. Is the backend server running?");
     }
 
-    const detail =
-        typeof error.response.data === "object" &&
-        error.response.data !== null &&
-        "detail" in error.response.data &&
-        typeof error.response.data.detail === "string"
-            ? error.response.data.detail
-            : fallbackMessage;
+    const parsedError = ApiErrorSchema.safeParse(error.response.data);
+    if (!parsedError.success) {
+        return new Error(fallbackMessage);
+    }
 
-    return new Error(detail);
+    const detail = parsedError.data.detail;
+    return new Error(typeof detail === "string" ? detail : detail.map((item) => item.msg).join("; "));
 }
 
 class BackendClient {
@@ -151,6 +155,44 @@ class BackendClient {
     async fetchCategories(): Promise<Category[]> {
         const response = await this.http.get("/categories");
         return parseApiCategories(response.data);
+    }
+
+    async fetchPlanSections(): Promise<PlanSection[]> {
+        const response = await this.http.get("/plan/sections");
+        return parseApiPlanSections(response.data);
+    }
+
+    async createPlanSection(payload: CreatePlanSectionPayload): Promise<PlanSection> {
+        try {
+            const response = await this.http.post("/plan/sections", {
+                name: payload.name,
+                is_income: payload.isIncome ?? false,
+            });
+            return parseApiPlanSection(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while creating plan section.");
+        }
+    }
+
+    async updatePlanSection(sectionId: string, payload: UpdatePlanSectionPayload): Promise<PlanSection> {
+        try {
+            const response = await this.http.patch(`/plan/sections/${sectionId}`, {
+                name: payload.name,
+                position: payload.position,
+                is_income: payload.isIncome,
+            });
+            return parseApiPlanSection(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while updating plan section.");
+        }
+    }
+
+    async deletePlanSection(sectionId: string): Promise<void> {
+        try {
+            await this.http.delete(`/plan/sections/${sectionId}`);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while deleting plan section.");
+        }
     }
 
     async createFilter(payload: CreateFilterPayload): Promise<Filter> {

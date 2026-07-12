@@ -6,7 +6,6 @@ Create Date: 2026-03-11 10:30:00.000000
 
 """
 
-
 from typing import TYPE_CHECKING
 
 from alembic import op

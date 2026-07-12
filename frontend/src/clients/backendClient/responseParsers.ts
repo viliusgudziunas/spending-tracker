@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
     ApiCategorySchema,
     ApiFilterSchema,
+    ApiPlanSectionSchema,
     ApiReportManualFilterSchema,
     ApiReportCategorySchema,
     ApiReportFilterSchema,
@@ -59,6 +60,20 @@ export const parseApiCategories = (apiCategories: unknown): Category[] => z.arra
 export const parseApiCategory = (category: unknown): Category => CategorySchema.parse(category);
 
 export const parseApiFilter = (apiFilter: unknown): Filter => FilterSchema.parse(apiFilter);
+
+const PlanSectionSchema = ApiPlanSectionSchema.transform((section) => ({
+    id: section.id,
+    name: section.name,
+    position: section.position,
+    isIncome: section.is_income,
+}));
+
+export type PlanSection = z.infer<typeof PlanSectionSchema>;
+
+export const parseApiPlanSections = (apiSections: unknown): PlanSection[] =>
+    z.array(PlanSectionSchema).parse(apiSections);
+
+export const parseApiPlanSection = (apiSection: unknown): PlanSection => PlanSectionSchema.parse(apiSection);
 
 export const ReportSchema = z.object({
     id: z.string(),

@@ -54,7 +54,7 @@ Spending Tracker is a full-stack web application for analysing bank statement CS
 
 ### Layers
 
-The backend (`backend/app/`) is organised by layer, with one module per domain (category, filter, report) in each layer:
+The backend (`backend/app/`) is organised by layer, with one module per domain (category, filter, plan, report) in each layer:
 
 ```
 HTTP Request
@@ -64,7 +64,7 @@ api/routes/       FastAPI routers. Translate repository exceptions → HTTP erro
 api/schemas/      Pydantic request/response models.
     │
     ▼
-services/         Business logic (report generation, rule matching, CSV parsing).
+services/         Business logic (plan ordering, report generation, rule matching, CSV parsing).
     │
     ▼
 repositories/     All database access. DTOs for writes; domain exceptions in
@@ -78,11 +78,12 @@ Convention: routes stay thin and delegate to a service; services orchestrate rep
 
 ### API Surface
 
-Three domains, all registered in `main.py`. Full request/response detail lives in FastAPI's `/docs`; the summary:
+Four domains, all registered in `main.py`. Full request/response detail lives in FastAPI's `/docs`; the summary:
 
 - **Reports** (`/reports`) — CRUD for reports (created by uploading a CSV), `POST /{id}/generate` to run the rules engine, `PUT`/`DELETE` on `/{id}/transactions/{tx_id}/assignment` for manual assignments, and `POST /{id}/manual-filters` for report-only filters.
 - **Categories** (`/categories`) — create, list, and update (rename/reposition) rule categories.
 - **Filters** (`/filters`) — CRUD for rule filters plus `PUT /{id}/rule-groups` to replace a filter's rule groups wholesale.
+- **Plan** (`/plan/sections`) — CRUD for the ordered sections of the monthly budget waterfall.
 
 ### Key Flows
 
@@ -104,7 +105,7 @@ Because generation snapshots rule *results* (not references), historical reports
 
 ## Database
 
-Single PostgreSQL database, single (public) schema, six tables:
+Single PostgreSQL database, single (public) schema, seven tables:
 
 **Rules domain** — reusable rule definitions, independent of any report:
 
@@ -126,6 +127,12 @@ Relationships: `category` 1→N `filter` 1→N `rule_group` 1→N `rule`, cascad
 
 Relationship: `report` 1→N `transaction` (cascade delete).
 
+**Planning domain**:
+
+| Table          | Purpose                                                                  |
+| -------------- | ------------------------------------------------------------------------ |
+| `plan_section` | Named, ordered groups in the budget waterfall; income groups are marked. |
+
 **Key design choice:** report categorisation is stored as a JSON snapshot in `report.data` — `{categories: [{name, filters: [{name, rule_filter_id, transaction_ids}]}], manual_filters, manual_assignments}` — not as foreign keys into the rules tables. Earlier versions used dedicated snapshot tables (`report.category`, `report.filter`, `override` in a separate `report` schema); those were migrated into the JSONB structure and dropped.
 
 **Schema versioning:** `report` and `transaction` rows carry a `schema_version` integer so old records stay readable. Transaction v1 has only the minimal fields (`description`, `amount`, `fee`, dates); v2 adds `type`, `product`, `currency`, `state`, `balance`, `raw_data`. The API serialises the right shape via Pydantic discriminated unions keyed on `schema_version`.
@@ -142,6 +149,7 @@ TanStack Router with file-based routes in `src/routes/` (tree auto-generated int
 | --------------------- | ------------------ |
 | `/` and `/upload`     | `ReportUploadPage` — CSV upload with client-side AG Grid preview. |
 | `/reports/:reportId`  | `ReportDetailPage` — categorised transactions, generation, manual assignment. |
+| `/plan`               | `PlanPage` — monthly budget planning. |
 
 ### Data Layer
 
@@ -152,12 +160,13 @@ Component → TanStack Query hooks (src/hooks/) → BackendClient (src/clients/b
 - **`client.ts`** — `BackendClient` class with one method per endpoint, built on a shared Axios instance. A singleton lives in `src/shared/stores/client.ts` (base URL from `VITE_API_URL`).
 - **`responseParsers.ts` / `schemas.ts`** — Zod schemas validate API responses and transform snake_case JSON into camelCase domain types; the Zod-inferred types *are* the frontend's domain types.
 - **`requestMappers.ts` / `types.ts`** — camelCase payload types mapped back to snake_case for requests.
-- **Hooks** (`useReportsQueries`, `useCategoryQueries`, `useFilterQueries`, …) wrap queries and mutations, and invalidate the relevant query keys on success. There is no other client-side state store.
+- **Hooks** (`useReportsQueries`, `useCategoryQueries`, `useFilterQueries`, `usePlanQueries`, …) wrap queries and mutations, and invalidate the relevant query keys on success. There is no other client-side state store.
 
 ### Components
 
 - `components/report-detail/` — report page, split into `sections/` (category and unidentified-transaction sections with AG Grid tables and context menus) and `panels/` (side panels for assigning transactions and creating filters).
 - `components/categories-panel/` — rule management UI: sortable categories and filters (dnd-kit), inline create/rename, and rule-group editing. See `.cursor/rules/categories-panel.mdc` for its internal structure.
+- `components/plan/` — monthly plan page and section-management UI.
 
 ---
 
@@ -185,7 +194,7 @@ Environment: backend gets `DATABASE_URL` and `ORIGIN_URL` (CORS origin); fronten
 
 ### Testing
 
-Backend tests live in `backend/tests/` — `unit/` for services, `integration/` for API routes (with fixtures), separated by pytest markers. The frontend has no test suite.
+Backend tests live in `backend/tests/` — `unit/` for services, `integration/` for API routes, separated by pytest markers. By default, integration sessions create a temporary PostgreSQL database, migrate it to head, isolate each test in a rolled-back transaction, then drop the temporary database. `TEST_DATABASE_URL` can point to a dedicated, pre-provisioned test database when the database user cannot create databases. The application database is never migrated or modified by tests. The frontend has no test suite.
 
 ### Alembic
 

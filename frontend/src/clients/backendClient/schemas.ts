@@ -12,6 +12,17 @@ export const RULE_OPERATORS = [
     "LESS_THAN_EQUAL",
 ] as const;
 
+export const ApiErrorSchema = z.object({
+    detail: z.union([
+        z.string(),
+        z.array(
+            z.object({
+                msg: z.string(),
+            }),
+        ),
+    ]),
+});
+
 export const TransactionSourceSchema = z.enum(["generated", "manual", "override"]).nullable();
 
 export const ApiRuleSchema = z.object({
@@ -42,6 +53,13 @@ export const ApiCategorySchema = z.object({
     name: z.string(),
     position: z.number(),
     filters: z.array(ApiFilterSchema),
+});
+
+export const ApiPlanSectionSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    position: z.number(),
+    is_income: z.boolean(),
 });
 
 export const ApiTransactionSchema = z.object({

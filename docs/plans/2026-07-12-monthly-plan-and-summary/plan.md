@@ -63,10 +63,10 @@ Migrations are created incrementally, one per build step that needs new schema (
 - **Summary** (new `summary_routes.py`, `summary_service.py`):
   - `GET /summary?from&to` returns, per month: plan values mapped onto linked categories/filters (summing when several lines share a target), and (if a **generated** report with that month exists) actuals aggregated from `report.data` mapped to live taxonomy by stable identity (`rule_filter_id` / manual-filter `category_id`), plus an Unidentified row, excluding income/ignore rows; plus FINAL, SPENDING, SPENDING % computed from category kinds. Amounts keep DB sign; the frontend flips at parse time.
 
-## Frontend (TanStack Router routes, backendClient + Zod parsers, TanStack Query hooks, AG Grid)
+## Frontend (TanStack Router, backendClient + Zod, TanStack Query, hand-rolled plan grid, AG Grid summary)
 
 - **Report upload/detail**: month picker on [ReportUploadPage.tsx](../../../frontend/src/components/ReportUploadPage.tsx); editable month on [ReportDetailPage.tsx](../../../frontend/src/components/report-detail/ReportDetailPage.tsx) for backfilling existing reports.
-- **`/plan` page**: sheet-like AG Grid — months as columns, sections/lines/left-over as rows. Click a cell to override; overridden cells visually distinct with a revert action. Section/line management UI (add/reorder lines, link to category/filter, set default).
+- **`/plan` page**: hand-rolled sheet-like table — months as columns, sections/lines/left-over as rows. Click a cell to override; overridden cells visually distinct with a revert action. Section/line management UI (add/reorder lines, link to category/filter, set default).
 - **`/summary` page**: AG Grid — months as columns (two sub-columns Plan | Actual for submitted months, one Plan column otherwise), category rows expandable to filters, FINAL/SPENDING/SPENDING % pinned at bottom, toggle for both/plan-only/actual-only.
 - Sidebar ([AppSidebar.tsx](../../../frontend/src/components/AppSidebar.tsx)): links to Plan and Summary.
 
@@ -80,9 +80,17 @@ Vertical slices: every step is committable, introduces no dead code, and ends wi
 
 ### Phase 1 — Plan grid
 
-#### [Step 1 — Plan sections](step-01-plan-sections.md) [PENDING]
+#### [Step 1 — Plan sections](step-01-plan-sections.md) [COMMITTED]
 
 Migration: `plan_section` (name, position, is_income). CRUD API + new `/plan` page (sidebar link) listing sections as rows with add / rename / reorder / delete, income section marked.
+
+**Post-step refactor** (do before or alongside Step 2):
+
+- [ ] Split `PlanPage.tsx` (~250 lines) into `SectionRow` + `CreateSectionForm` components with a `usePlanSectionsState` hook — Step 2 nests lines inside sections and will fight the monolith; mirror the categories-panel decomposition (`CreateCategoryForm`, `SortableCategoryCard`, `useCategoriesPanelState`).
+- [ ] (BEHAVIOR CHANGE) Backport plan's stricter input validation to category/filter schemas (trimmed non-empty names, `position >= 1` + upper-bound check) — siblings can still persist blank names and position gaps that plan rejects. Separate commit.
+- [ ] (BEHAVIOR CHANGE) Route category/filter client mutations through `parseAxiosError` — they surface raw Axios messages while report/plan mutations show the backend `detail`. Separate commit.
+
+Deferred by choice: `update_plan_section` taking an entity instead of an id (avoids a double fetch for position validation); plan's `APIRouter(prefix="/plan")` style vs siblings' bare routers (forward-compatible with `GET /plan?from&to`).
 
 #### [Step 2 — Plan lines](step-02-plan-lines.md) [PENDING]
 

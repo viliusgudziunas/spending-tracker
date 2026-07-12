@@ -6,7 +6,6 @@ Create Date: 2026-03-02 23:31:53.148996
 
 """
 
-
 from typing import TYPE_CHECKING
 
 import sqlalchemy as sa

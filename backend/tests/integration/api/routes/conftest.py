@@ -5,6 +5,7 @@ import pytest
 from app.repositories.category_repository import create_category
 from app.repositories.dtos import CreateFilterDto, CreateRuleDto, CreateRuleGroupDto, CreateTransactionDto
 from app.repositories.filter_repository import create_filter
+from app.repositories.plan_section_repository import create_plan_section
 from app.repositories.report_repository import create_report, get_report
 
 if TYPE_CHECKING:
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
 
     from sqlalchemy.orm import Session
 
-    from app.db.models import Category, Filter, Report
+    from app.db.models import Category, Filter, PlanSection, Report
 
 
 class CategoryFactory(Protocol):
@@ -59,6 +60,18 @@ def filter_factory(db: Session) -> FilterFactory:
                 ],
             ),
         )
+
+    return _create
+
+
+class PlanSectionFactory(Protocol):
+    def __call__(self, *, name: str = ..., is_income: bool = ...) -> PlanSection: ...
+
+
+@pytest.fixture
+def plan_section_factory(db: Session) -> PlanSectionFactory:
+    def _create(*, name: str = "Home", is_income: bool = False) -> PlanSection:
+        return create_plan_section(db=db, name=name, is_income=is_income)
 
     return _create
 

@@ -6,6 +6,14 @@ class CategoryNotFoundError(Exception):
     pass
 
 
+class PlanSectionNotFoundError(Exception):
+    pass
+
+
+class InvalidPlanSectionPositionError(Exception):
+    pass
+
+
 class ReportNotFoundError(Exception):
     pass
 

@@ -5,7 +5,8 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any, Final, override
 
-from sqlalchemy import UUID, DateTime, Enum, Float, ForeignKey, Integer, String
+import sqlalchemy as sa
+from sqlalchemy import Boolean, DateTime, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,7 +23,7 @@ CURRENT_REPORT_SCHEMA_VERSION: Final[int] = 2
 class Report(Base):
     __tablename__ = "report"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     schema_version: Mapped[int] = mapped_column(Integer, default=CURRENT_REPORT_SCHEMA_VERSION, nullable=False)
 
@@ -54,7 +55,7 @@ CURRENT_TRANSACTION_SCHEMA_VERSION: Final[int] = 2
 class Transaction(Base):
     __tablename__ = "transaction"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
     description: Mapped[str] = mapped_column(String, nullable=False)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     fee: Mapped[float] = mapped_column(Float, nullable=False)
@@ -72,7 +73,7 @@ class Transaction(Base):
     source: Mapped[TransactionSource] = mapped_column(Enum(TransactionSource), default=TransactionSource.generated)
 
     report_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(),
+        sa.UUID(),
         ForeignKey("report.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -90,7 +91,7 @@ class Transaction(Base):
 class Category(Base):
     __tablename__ = "category"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -107,15 +108,28 @@ class Category(Base):
         return f"Category({self.name=})"
 
 
+class PlanSection(Base):
+    __tablename__ = "plan_section"
+
+    id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_income: Mapped[bool] = mapped_column(Boolean, default=False, server_default=sa.false(), nullable=False)
+
+    @override
+    def __repr__(self) -> str:
+        return f"PlanSection({self.name=})"
+
+
 class Filter(Base):
     __tablename__ = "filter"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
 
     category_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(),
+        sa.UUID(),
         ForeignKey("category.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -140,11 +154,11 @@ class RuleGroupOperator(enum.StrEnum):
 class RuleGroup(Base):
     __tablename__ = "rule_group"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
     operator: Mapped[RuleGroupOperator] = mapped_column(Enum(RuleGroupOperator), nullable=False)
 
     filter_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(),
+        sa.UUID(),
         ForeignKey("filter.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -175,13 +189,13 @@ class RuleOperator(enum.StrEnum):
 class Rule(Base):
     __tablename__ = "rule"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
     type: Mapped[RuleType] = mapped_column(Enum(RuleType), nullable=False)
     operator: Mapped[RuleOperator] = mapped_column(Enum(RuleOperator), nullable=False)
     value: Mapped[str] = mapped_column(String, nullable=False)
 
     group_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(),
+        sa.UUID(),
         ForeignKey("rule_group.id", ondelete="CASCADE"),
         nullable=False,
     )

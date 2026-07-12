@@ -37,6 +37,19 @@ export default function AppSidebar({ collapsed, onToggle }: AppSidebarProps): JS
 
     return (
         <aside className="sticky top-4 flex h-fit flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <nav>
+                <Link
+                    to="/plan"
+                    className={`block rounded-md px-3 py-2 text-sm font-semibold no-underline transition ${
+                        matchRoute({ to: "/plan" })
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                >
+                    Plan
+                </Link>
+            </nav>
+
             <div className="flex items-center justify-between">
                 <h2 className="m-0 text-lg font-semibold text-slate-900">Reports</h2>
                 <div className="flex items-center gap-1.5">
