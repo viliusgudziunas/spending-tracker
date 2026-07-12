@@ -1,0 +1,18 @@
+---
+description: Keep docs/architecture.md in sync with architectural changes
+alwaysApply: true
+---
+
+# Keep the Architecture Doc Updated
+
+`docs/architecture.md` is a high-level description of the system: tech stack, backend layers, API surface by domain, DB tables and key design choices, frontend data flow, and infrastructure.
+
+If your change alters something that doc describes, update the relevant section **in the same change**. Triggers include:
+
+- Adding/removing a dependency, service, route domain, or endpoint group
+- Changing DB tables, the `report.data` JSON structure, or schema versioning
+- Changing a key flow (CSV parsing, report generation, rule matching, manual assignments)
+- Restructuring layers or folders in `backend/app/` or `frontend/src/`
+- Changing Docker Compose services, env vars, or Make targets
+
+Keep the doc at its current altitude: layers, domains, flows, and design choices — **not** file trees, individual functions, or exhaustive endpoint tables (FastAPI `/docs` covers those). Small refactors that don't change the described architecture need no doc edit.
