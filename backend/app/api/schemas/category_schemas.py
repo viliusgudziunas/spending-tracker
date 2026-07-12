@@ -1,8 +1,8 @@
-import uuid
+import uuid  # noqa: TC003
 
 from pydantic import BaseModel, model_validator
 
-from app.api.schemas.filter_schemas import FilterResponse
+from app.api.schemas.filter_schemas import FilterResponse  # noqa: TC001
 
 
 class CreateCategoryInput(BaseModel):

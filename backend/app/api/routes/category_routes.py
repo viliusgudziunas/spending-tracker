@@ -1,15 +1,18 @@
-import uuid
-from collections.abc import Sequence
-from typing import Annotated
+import uuid  # noqa: TC003
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
 from app.api.schemas.category_schemas import CategoryResponse, CreateCategoryInput, UpdateCategoryInput
-from app.db.models import Category
 from app.repositories.exceptions import CategoryNotFoundError, DuplicateCategoryError
 from app.services import category_service
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from app.db.models import Category
 
 router = APIRouter()
 

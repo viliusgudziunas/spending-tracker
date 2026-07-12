@@ -1,5 +1,5 @@
 import enum
-import uuid
+import uuid  # noqa: TC003
 
 from pydantic import BaseModel
 

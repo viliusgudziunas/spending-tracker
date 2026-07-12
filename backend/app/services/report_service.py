@@ -1,5 +1,4 @@
 import uuid
-from collections.abc import Callable, Sequence
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
@@ -25,6 +24,8 @@ from app.repositories.dtos import CreateTransactionDto
 from app.services import statement_service, transactions_service
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
     from sqlalchemy.orm import Session
 
 

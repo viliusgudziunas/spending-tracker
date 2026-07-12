@@ -1,6 +1,6 @@
-import uuid
-from datetime import datetime
-from decimal import Decimal
+import uuid  # noqa: TC003
+from datetime import datetime  # noqa: TC003
+from decimal import Decimal  # noqa: TC003
 from typing import Literal
 
 from pydantic import BaseModel, model_validator

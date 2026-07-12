@@ -1,5 +1,5 @@
 import os
-from collections.abc import Generator
+from typing import TYPE_CHECKING
 
 import pytest
 from alembic import command
@@ -11,6 +11,9 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.api.dependencies import get_db
 from app.config import get_settings
 from app.main import app
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 def _get_alembic_config(url: str) -> Config:

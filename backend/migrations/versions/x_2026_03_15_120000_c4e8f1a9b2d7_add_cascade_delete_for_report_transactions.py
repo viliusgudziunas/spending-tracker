@@ -6,9 +6,13 @@ Create Date: 2026-03-15 12:00:00.000000
 
 """
 
-from collections.abc import Sequence
+
+from typing import TYPE_CHECKING
 
 from alembic import op
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 revision: str = "c4e8f1a9b2d7"
 down_revision: str | Sequence[str] | None = "a1f4c9d2e7b6"

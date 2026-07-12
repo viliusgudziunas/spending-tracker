@@ -1,8 +1,8 @@
-import uuid
+import uuid  # noqa: TC003
 
 from pydantic import BaseModel, Field, model_validator
 
-from app.api.schemas.rule_group_schemas import CreateRuleGroupInput, PutRuleGroupInput, RuleGroupResponse
+from app.api.schemas.rule_group_schemas import CreateRuleGroupInput, PutRuleGroupInput, RuleGroupResponse  # noqa: TC001
 
 
 class CreateFilterInput(BaseModel):

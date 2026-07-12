@@ -1,8 +1,10 @@
-from collections.abc import Hashable
 from io import BytesIO
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
+
+if TYPE_CHECKING:
+    from collections.abc import Hashable
 
 
 def parse_file_content(content: bytes) -> pd.DataFrame:

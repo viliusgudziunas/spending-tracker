@@ -1,5 +1,3 @@
-import uuid
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from psycopg2.errors import UniqueViolation
@@ -7,7 +5,6 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.db.models import Filter, Rule, RuleGroup, RuleGroupOperator, RuleOperator, RuleType
-from app.repositories.dtos import CreateFilterDto, PutRuleDto, PutRuleGroupDto
 from app.repositories.exceptions import (
     DuplicateFilterError,
     FilterNotFoundError,
@@ -15,7 +12,12 @@ from app.repositories.exceptions import (
 )
 
 if TYPE_CHECKING:
+    import uuid
+    from collections.abc import Sequence
+
     from sqlalchemy.orm import Session
+
+    from app.repositories.dtos import CreateFilterDto, PutRuleDto, PutRuleGroupDto
 
 
 def get_filters(db: Session) -> Sequence[Filter]:

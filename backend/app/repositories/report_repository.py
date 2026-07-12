@@ -1,12 +1,10 @@
 import uuid
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.sql import select
 
 from app.db.models import Report, Transaction
-from app.repositories.dtos import CreateTransactionDto
 from app.repositories.exceptions import (
     ReportManualAssignmentNotFoundError,
     ReportManualFilterNotFoundError,
@@ -15,7 +13,11 @@ from app.repositories.exceptions import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from sqlalchemy.orm import Session
+
+    from app.repositories.dtos import CreateTransactionDto
 
 
 def get_reports(db: Session) -> Sequence[Report]:

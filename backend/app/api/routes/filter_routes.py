@@ -1,6 +1,5 @@
-from collections.abc import Sequence
-from typing import Annotated
-from uuid import UUID
+import uuid  # noqa: TC003
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session  # noqa: TC002
@@ -12,13 +11,17 @@ from app.api.schemas.filter_schemas import (
     PutFilterRuleGroupsInput,
     UpdateFilterInput,
 )
-from app.db.models import Filter
 from app.repositories.exceptions import (
     DuplicateFilterError,
     FilterNotFoundError,
     InvalidFilterRulesPayloadError,
 )
 from app.services import filter_service
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from app.db.models import Filter
 
 router = APIRouter()
 
@@ -34,7 +37,7 @@ def create_filter(form_data: CreateFilterInput, db: Annotated[Session, Depends(g
 
 
 @router.get("/filters/{filter_id}", response_model=FilterResponse)
-def get_filter(filter_id: UUID, db: Annotated[Session, Depends(get_db)]) -> Filter:
+def get_filter(filter_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> Filter:
     try:
         return filter_service.get_filter(db=db, filter_id=filter_id)
     except FilterNotFoundError as exc:
@@ -43,7 +46,7 @@ def get_filter(filter_id: UUID, db: Annotated[Session, Depends(get_db)]) -> Filt
 
 @router.patch("/filters/{filter_id}", response_model=FilterResponse)
 def update_filter(
-    filter_id: UUID,
+    filter_id: uuid.UUID,
     form_data: UpdateFilterInput,
     db: Annotated[Session, Depends(get_db)],
 ) -> Filter:
@@ -61,7 +64,7 @@ def update_filter(
 
 
 @router.delete("/filters/{filter_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_filter(filter_id: UUID, db: Annotated[Session, Depends(get_db)]) -> None:
+def delete_filter(filter_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> None:
     try:
         filter_service.delete_filter(db=db, filter_id=filter_id)
     except FilterNotFoundError as exc:
@@ -70,7 +73,7 @@ def delete_filter(filter_id: UUID, db: Annotated[Session, Depends(get_db)]) -> N
 
 @router.put("/filters/{filter_id}/rule-groups", response_model=FilterResponse)
 def put_filter_rule_groups(
-    filter_id: UUID,
+    filter_id: uuid.UUID,
     form_data: PutFilterRuleGroupsInput,
     db: Annotated[Session, Depends(get_db)],
 ) -> Filter:

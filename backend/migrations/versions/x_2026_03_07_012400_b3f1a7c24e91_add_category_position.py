@@ -6,10 +6,14 @@ Create Date: 2026-03-07 01:24:00.000000
 
 """
 
-from collections.abc import Sequence
+
+from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from alembic import op
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 revision: str = "b3f1a7c24e91"
 down_revision: str | Sequence[str] | None = "ae2302096d52"

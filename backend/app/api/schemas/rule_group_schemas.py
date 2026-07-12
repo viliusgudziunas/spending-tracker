@@ -1,9 +1,9 @@
 import enum
-import uuid
+import uuid  # noqa: TC003
 
 from pydantic import BaseModel, Field
 
-from app.api.schemas.rule_schemas import CreateRuleInput, PutRuleInput, RuleResponse
+from app.api.schemas.rule_schemas import CreateRuleInput, PutRuleInput, RuleResponse  # noqa: TC001
 
 
 class CreateRuleGroupInput(BaseModel):

@@ -1,16 +1,18 @@
-import uuid
 from typing import TYPE_CHECKING, Protocol
 
 import pytest
 
-from app.db.models import Category, Filter, Report
 from app.repositories.category_repository import create_category
 from app.repositories.dtos import CreateFilterDto, CreateRuleDto, CreateRuleGroupDto, CreateTransactionDto
 from app.repositories.filter_repository import create_filter
 from app.repositories.report_repository import create_report, get_report
 
 if TYPE_CHECKING:
+    import uuid
+
     from sqlalchemy.orm import Session
+
+    from app.db.models import Category, Filter, Report
 
 
 class CategoryFactory(Protocol):

@@ -1,6 +1,8 @@
-import uuid
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import uuid
 
 
 @dataclass(frozen=True, kw_only=True)

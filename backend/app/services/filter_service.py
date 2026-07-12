@@ -1,9 +1,5 @@
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
-from uuid import UUID
 
-from app.api.schemas.filter_schemas import CreateFilterInput, PutFilterRuleGroupsInput
-from app.db.models import Filter
 from app.repositories import filter_repository
 from app.repositories.dtos import (
     CreateFilterDto,
@@ -14,7 +10,13 @@ from app.repositories.dtos import (
 )
 
 if TYPE_CHECKING:
+    import uuid
+    from collections.abc import Sequence
+
     from sqlalchemy.orm import Session
+
+    from app.api.schemas.filter_schemas import CreateFilterInput, PutFilterRuleGroupsInput
+    from app.db.models import Filter
 
 
 def get_filters(db: Session) -> Sequence[Filter]:
@@ -39,13 +41,13 @@ def create_filter(db: Session, form_data: CreateFilterInput) -> Filter:
     )
 
 
-def get_filter(db: Session, filter_id: UUID) -> Filter:
+def get_filter(db: Session, filter_id: uuid.UUID) -> Filter:
     return filter_repository.get_filter(db=db, filter_id=filter_id)
 
 
 def update_filter(
     db: Session,
-    filter_id: UUID,
+    filter_id: uuid.UUID,
     name: str | None,
     position: int | None,
 ) -> Filter:
@@ -57,11 +59,11 @@ def update_filter(
     )
 
 
-def delete_filter(db: Session, filter_id: UUID) -> None:
+def delete_filter(db: Session, filter_id: uuid.UUID) -> None:
     filter_repository.delete_filter(db=db, filter_id=filter_id)
 
 
-def put_filter_rule_groups(db: Session, filter_id: UUID, form_data: PutFilterRuleGroupsInput) -> Filter:
+def put_filter_rule_groups(db: Session, filter_id: uuid.UUID, form_data: PutFilterRuleGroupsInput) -> Filter:
     return filter_repository.put_filter_rule_groups(
         db=db,
         filter_id=filter_id,

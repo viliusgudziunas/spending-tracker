@@ -1,5 +1,3 @@
-import uuid
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from psycopg2.errors import UniqueViolation
@@ -10,6 +8,9 @@ from app.db.models import Category
 from app.repositories.exceptions import CategoryNotFoundError, DuplicateCategoryError
 
 if TYPE_CHECKING:
+    import uuid
+    from collections.abc import Sequence
+
     from sqlalchemy.orm import Session
 
 

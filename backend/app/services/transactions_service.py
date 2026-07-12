@@ -1,8 +1,11 @@
 import operator
-from collections.abc import Callable, Iterable
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from app.db.models import Rule, RuleOperator, RuleType, Transaction
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
 
 
 def _get_transactions_matching_description_rule(rule: Rule, transactions: Iterable[Transaction]) -> set[Transaction]:
