@@ -1,5 +1,5 @@
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from tests.integration.api.routes.conftest import CategoryFactory, FilterFactory
 
 
-def _valid_filter_payload(category_id: str, name: str | None = None) -> dict:
+def _valid_filter_payload(category_id: str, name: str | None = None) -> dict[str, Any]:
     return {
         "name": name or f"Rent-{uuid.uuid4()}",
         "category_id": category_id,

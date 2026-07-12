@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import UTC, datetime
-from typing import Final
+from typing import Any, Final, override
 
 from sqlalchemy import UUID, DateTime, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -22,14 +22,14 @@ CURRENT_REPORT_SCHEMA_VERSION: Final[int] = 2
 class Report(Base):
     __tablename__ = "report"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     schema_version: Mapped[int] = mapped_column(Integer, default=CURRENT_REPORT_SCHEMA_VERSION, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=naive_utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=naive_utcnow, onupdate=naive_utcnow, nullable=False)
 
-    data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     transactions: Mapped[list[Transaction]] = relationship(
         "Transaction",
@@ -38,6 +38,7 @@ class Report(Base):
         passive_deletes=True,
     )
 
+    @override
     def __repr__(self) -> str:
         return f"Report({self.name=})"
 
@@ -53,7 +54,7 @@ CURRENT_TRANSACTION_SCHEMA_VERSION: Final[int] = 2
 class Transaction(Base):
     __tablename__ = "transaction"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID[uuid.UUID](as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
     description: Mapped[str] = mapped_column(String, nullable=False)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     fee: Mapped[float] = mapped_column(Float, nullable=False)
@@ -66,17 +67,18 @@ class Transaction(Base):
     state: Mapped[str | None] = mapped_column(String, nullable=True)
     balance: Mapped[float | None] = mapped_column(Float, nullable=True)
 
-    raw_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    raw_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
     source: Mapped[TransactionSource] = mapped_column(Enum(TransactionSource), default=TransactionSource.generated)
 
     report_id: Mapped[uuid.UUID] = mapped_column(
-        UUID[uuid.UUID](as_uuid=True),
+        UUID(),
         ForeignKey("report.id", ondelete="CASCADE"),
         nullable=False,
     )
     report: Mapped[Report] = relationship(back_populates="transactions")
 
+    @override
     def __repr__(self) -> str:
         return (
             "Transaction("
@@ -88,7 +90,7 @@ class Transaction(Base):
 class Category(Base):
     __tablename__ = "category"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
 
@@ -100,6 +102,7 @@ class Category(Base):
         passive_deletes=True,
     )
 
+    @override
     def __repr__(self) -> str:
         return f"Category({self.name=})"
 
@@ -107,12 +110,12 @@ class Category(Base):
 class Filter(Base):
     __tablename__ = "filter"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
 
     category_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        UUID(),
         ForeignKey("category.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -124,6 +127,7 @@ class Filter(Base):
         cascade="all, delete-orphan",
     )
 
+    @override
     def __repr__(self) -> str:
         return f"Filter({self.name=})"
 
@@ -136,11 +140,11 @@ class RuleGroupOperator(enum.StrEnum):
 class RuleGroup(Base):
     __tablename__ = "rule_group"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
     operator: Mapped[RuleGroupOperator] = mapped_column(Enum(RuleGroupOperator), nullable=False)
 
     filter_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        UUID(),
         ForeignKey("filter.id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -148,6 +152,7 @@ class RuleGroup(Base):
 
     rules: Mapped[list[Rule]] = relationship("Rule", back_populates="group", cascade="all, delete-orphan")
 
+    @override
     def __repr__(self) -> str:
         return f"RuleGroup({self.operator=!s})"
 
@@ -170,17 +175,18 @@ class RuleOperator(enum.StrEnum):
 class Rule(Base):
     __tablename__ = "rule"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(), primary_key=True, default=uuid.uuid4)
     type: Mapped[RuleType] = mapped_column(Enum(RuleType), nullable=False)
     operator: Mapped[RuleOperator] = mapped_column(Enum(RuleOperator), nullable=False)
     value: Mapped[str] = mapped_column(String, nullable=False)
 
     group_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        UUID(),
         ForeignKey("rule_group.id", ondelete="CASCADE"),
         nullable=False,
     )
     group: Mapped[RuleGroup] = relationship(back_populates="rules")
 
+    @override
     def __repr__(self) -> str:
         return f"Rule({self.type=!s}, {self.operator=!s}, {self.value=})"

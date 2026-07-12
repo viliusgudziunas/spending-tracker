@@ -1,5 +1,6 @@
 import uuid
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -50,4 +51,4 @@ class CreateTransactionDto:
     currency: str | None = None
     state: str | None = None
     balance: float | None = None
-    raw_data: dict | None = None
+    raw_data: dict[str, Any] | None = None
