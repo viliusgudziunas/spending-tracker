@@ -63,7 +63,7 @@ class BackendClient {
 
     async createReport(payload: CreateReportPayload): Promise<Report> {
         const formData = new FormData();
-        formData.append("file", payload.bankStatement);
+        formData.append("upload_file", payload.bankStatement);
         formData.append("name", payload.name);
 
         try {
