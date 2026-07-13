@@ -143,13 +143,21 @@ class BackendClient {
     }
 
     async createCategory(payload: CreateCategoryPayload): Promise<Category> {
-        const response = await this.http.post("/categories", payload);
-        return parseApiCategory(response.data);
+        try {
+            const response = await this.http.post("/categories", payload);
+            return parseApiCategory(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while creating category.");
+        }
     }
 
     async updateCategory(categoryId: string, payload: UpdateCategoryPayload): Promise<Category> {
-        const response = await this.http.patch(`/categories/${categoryId}`, payload);
-        return parseApiCategory(response.data);
+        try {
+            const response = await this.http.patch(`/categories/${categoryId}`, payload);
+            return parseApiCategory(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while updating category.");
+        }
     }
 
     async fetchCategories(): Promise<Category[]> {
@@ -196,35 +204,59 @@ class BackendClient {
     }
 
     async createFilter(payload: CreateFilterPayload): Promise<Filter> {
-        const response = await this.http.post("/filters", parseIntoCreateApiFilterPayload(payload));
-        return parseApiFilter(response.data);
+        try {
+            const response = await this.http.post("/filters", parseIntoCreateApiFilterPayload(payload));
+            return parseApiFilter(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while creating filter.");
+        }
     }
 
     async updateFilter(filterId: string, payload: UpdateFilterPayload): Promise<Filter> {
-        const response = await this.http.put(`/filters/${filterId}`, parseIntoUpdateApiFilterPayload(payload));
-        return parseApiFilter(response.data);
+        try {
+            const response = await this.http.put(`/filters/${filterId}`, parseIntoUpdateApiFilterPayload(payload));
+            return parseApiFilter(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while updating filter.");
+        }
     }
 
     async renameFilter(filterId: string, payload: RenameFilterPayload): Promise<Filter> {
-        const response = await this.http.patch(`/filters/${filterId}`, payload);
-        return parseApiFilter(response.data);
+        try {
+            const response = await this.http.patch(`/filters/${filterId}`, payload);
+            return parseApiFilter(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while renaming filter.");
+        }
     }
 
     async updateFilterPosition(filterId: string, payload: UpdateFilterPositionPayload): Promise<Filter> {
-        const response = await this.http.patch(`/filters/${filterId}`, payload);
-        return parseApiFilter(response.data);
+        try {
+            const response = await this.http.patch(`/filters/${filterId}`, payload);
+            return parseApiFilter(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while moving filter.");
+        }
     }
 
     async deleteFilter(filterId: string): Promise<void> {
-        await this.http.delete(`/filters/${filterId}`);
+        try {
+            await this.http.delete(`/filters/${filterId}`);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while deleting filter.");
+        }
     }
 
     async putFilterRuleGroups(filterId: string, payload: PutFilterRuleGroupsPayload): Promise<Filter> {
-        const response = await this.http.put(
-            `/filters/${filterId}/rule-groups`,
-            parseIntoPutApiFilterRuleGroupsPayload(payload),
-        );
-        return parseApiFilter(response.data);
+        try {
+            const response = await this.http.put(
+                `/filters/${filterId}/rule-groups`,
+                parseIntoPutApiFilterRuleGroupsPayload(payload),
+            );
+            return parseApiFilter(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while updating filter rules.");
+        }
     }
 }
 
