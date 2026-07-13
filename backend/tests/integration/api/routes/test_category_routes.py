@@ -59,6 +59,18 @@ class TestCreateCategoryEndpoint:
 
         assert response.status_code == 422
 
+    def test_trims_name(self, client: TestClient) -> None:
+        response = client.post("/categories", json={"name": "  Groceries  "})
+
+        assert response.status_code == 201
+        assert response.json()["name"] == "Groceries"
+
+    @pytest.mark.parametrize("name", ["", "   "])
+    def test_rejects_blank_name(self, client: TestClient, name: str) -> None:
+        response = client.post("/categories", json={"name": name})
+
+        assert response.status_code == 422
+
 
 @pytest.mark.integration
 class TestGetCategoriesEndpoint:
@@ -184,6 +196,46 @@ class TestUpdateCategoryEndpoint:
         response = client.patch(f"/categories/{category.id}", json={})
 
         assert response.status_code == 422
+
+    def test_trims_name(self, client: TestClient, category_factory: CategoryFactory) -> None:
+        category = category_factory(name="Groceries")
+
+        response = client.patch(f"/categories/{category.id}", json={"name": "  Food  "})
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "Food"
+
+    @pytest.mark.parametrize("name", ["", "   "])
+    def test_rejects_blank_name(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        name: str,
+    ) -> None:
+        category = category_factory(name="Groceries")
+
+        response = client.patch(f"/categories/{category.id}", json={"name": name})
+
+        assert response.status_code == 422
+
+    def test_rejects_position_below_one(self, client: TestClient, category_factory: CategoryFactory) -> None:
+        category = category_factory(name="Groceries")
+
+        response = client.patch(f"/categories/{category.id}", json={"position": 0})
+
+        assert response.status_code == 422
+
+    def test_rejects_position_above_category_count(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+    ) -> None:
+        category = category_factory(name="Groceries")
+
+        response = client.patch(f"/categories/{category.id}", json={"position": 2})
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Invalid category position"
 
     def test_returns_404_for_nonexistent_category(self, client: TestClient) -> None:
         response = client.patch(f"/categories/{uuid.uuid4()}", json={"name": "New"})

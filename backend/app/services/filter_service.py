@@ -8,6 +8,7 @@ from app.repositories.dtos import (
     PutRuleDto,
     PutRuleGroupDto,
 )
+from app.repositories.exceptions import InvalidFilterPositionError
 
 if TYPE_CHECKING:
     import uuid
@@ -28,7 +29,6 @@ def create_filter(db: Session, form_data: CreateFilterInput) -> Filter:
         db=db,
         filter_dto=CreateFilterDto(
             name=form_data.name,
-            position=form_data.position,
             category_id=form_data.category_id,
             rule_groups=[
                 CreateRuleGroupDto(
@@ -51,6 +51,13 @@ def update_filter(
     name: str | None,
     position: int | None,
 ) -> Filter:
+    filter_ = filter_repository.get_filter(db=db, filter_id=filter_id)
+    if position is not None and position > filter_repository.get_filter_count(
+        db=db,
+        category_id=filter_.category_id,
+    ):
+        raise InvalidFilterPositionError
+
     return filter_repository.update_filter(
         db=db,
         filter_id=filter_id,

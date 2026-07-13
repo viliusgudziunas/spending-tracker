@@ -18,6 +18,10 @@ def get_categories(db: Session) -> Sequence[Category]:
     return db.scalars(select(Category).order_by(Category.position)).all()
 
 
+def get_category_count(db: Session) -> int:
+    return db.scalar(select(func.count(Category.id))) or 0
+
+
 def create_category(db: Session, name: str) -> Category:
     max_position: int | None = db.scalar(select(func.max(Category.position)))
     next_position = (max_position or 0) + 1

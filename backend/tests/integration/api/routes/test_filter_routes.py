@@ -94,15 +94,6 @@ class TestCreateFilterEndpoint:
         assert first.json()["position"] == 1
         assert second.json()["position"] == 2
 
-    def test_uses_explicit_position(self, client: TestClient, category_factory: CategoryFactory) -> None:
-        category = category_factory()
-        payload = _valid_filter_payload(str(category.id))
-        payload["position"] = 5
-
-        response = client.post("/filters", json=payload)
-
-        assert response.json()["position"] == 5
-
     def test_creates_filter_with_multiple_rule_groups(
         self,
         client: TestClient,
@@ -163,6 +154,30 @@ class TestCreateFilterEndpoint:
 
     def test_rejects_missing_required_fields(self, client: TestClient) -> None:
         response = client.post("/filters", json={})
+
+        assert response.status_code == 422
+
+    def test_trims_name(self, client: TestClient, category_factory: CategoryFactory) -> None:
+        category = category_factory()
+        payload = _valid_filter_payload(str(category.id), name="  Rent  ")
+
+        response = client.post("/filters", json=payload)
+
+        assert response.status_code == 201
+        assert response.json()["name"] == "Rent"
+
+    @pytest.mark.parametrize("name", ["", "   "])
+    def test_rejects_blank_name(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        name: str,
+    ) -> None:
+        category = category_factory()
+        payload = _valid_filter_payload(str(category.id))
+        payload["name"] = name
+
+        response = client.post("/filters", json=payload)
 
         assert response.status_code == 422
 
@@ -313,6 +328,64 @@ class TestUpdateFilterEndpoint:
         response = client.patch(f"/filters/{filter_.id}", json={})
 
         assert response.status_code == 422
+
+    def test_trims_name(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory()
+        filter_ = filter_factory(category_id=category.id, name=f"Old-{uuid.uuid4()}")
+
+        response = client.patch(f"/filters/{filter_.id}", json={"name": "  New name  "})
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "New name"
+
+    @pytest.mark.parametrize("name", ["", "   "])
+    def test_rejects_blank_name(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+        name: str,
+    ) -> None:
+        category = category_factory()
+        filter_ = filter_factory(category_id=category.id, name=f"Old-{uuid.uuid4()}")
+
+        response = client.patch(f"/filters/{filter_.id}", json={"name": name})
+
+        assert response.status_code == 422
+
+    def test_rejects_position_below_one(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory()
+        filter_ = filter_factory(category_id=category.id, name=f"Filter-{uuid.uuid4()}")
+
+        response = client.patch(f"/filters/{filter_.id}", json={"position": 0})
+
+        assert response.status_code == 422
+
+    def test_rejects_position_above_filter_count_in_category(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory(name="Housing")
+        filter_ = filter_factory(category_id=category.id, name=f"Rent-{uuid.uuid4()}")
+        other_category = category_factory(name="Transport")
+        filter_factory(category_id=other_category.id, name=f"Fuel-{uuid.uuid4()}")
+
+        response = client.patch(f"/filters/{filter_.id}", json={"position": 2})
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Invalid filter position"
 
     def test_returns_404_for_unknown_filter(self, client: TestClient) -> None:
         response = client.patch(f"/filters/{uuid.uuid4()}", json={"name": "New name"})

@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 from app.repositories import category_repository
+from app.repositories.exceptions import InvalidCategoryPositionError
 
 if TYPE_CHECKING:
     import uuid
@@ -25,6 +26,10 @@ def update_category(
     name: str | None,
     position: int | None,
 ) -> Category:
+    category_repository.get_category(db=db, category_id=category_id)
+    if position is not None and position > category_repository.get_category_count(db=db):
+        raise InvalidCategoryPositionError
+
     return category_repository.update_category(
         db=db,
         category_id=category_id,

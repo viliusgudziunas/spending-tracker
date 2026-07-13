@@ -794,7 +794,7 @@ class TestGenerateReportEndpoint:
     ) -> None:
         report_id = _create_report(client)
         category = category_factory(name="Groceries")
-        filter_factory(category_id=category.id, name="Grocery store", position=1, description="Dummy grocery store")
+        filter_factory(category_id=category.id, name="Grocery store", description="Dummy grocery store")
 
         response = client.post(f"/reports/{report_id}/generate")
 
@@ -824,7 +824,6 @@ class TestGenerateReportEndpoint:
         filter_factory(
             category_id=category.id,
             name="Transfer filter",
-            position=1,
             description="Dummy transfer description",
         )
 
@@ -846,7 +845,7 @@ class TestGenerateReportEndpoint:
         client.post(f"/reports/{report_id}/generate")
 
         category = category_factory(name="Groceries")
-        filter_factory(category_id=category.id, name="Grocery store", position=1, description="Dummy grocery store")
+        filter_factory(category_id=category.id, name="Grocery store", description="Dummy grocery store")
 
         response = client.post(f"/reports/{report_id}/generate")
 
@@ -871,12 +870,12 @@ class TestGenerateReportEndpoint:
         report_id = _create_report(client, filename="report_multi_category.csv")
 
         food = category_factory(name="Food")
-        filter_factory(category_id=food.id, name="Supermarkets", position=1, description="Supermarket A")
-        filter_factory(category_id=food.id, name="Restaurants", position=2, description="Restaurant X")
+        filter_factory(category_id=food.id, name="Supermarkets", description="Supermarket A")
+        filter_factory(category_id=food.id, name="Restaurants", description="Restaurant X")
 
         housing = category_factory(name="Housing")
-        filter_factory(category_id=housing.id, name="Rent", position=1, description="Monthly rent")
-        filter_factory(category_id=housing.id, name="Utilities", position=2, description="Electric bill")
+        filter_factory(category_id=housing.id, name="Rent", description="Monthly rent")
+        filter_factory(category_id=housing.id, name="Utilities", description="Electric bill")
 
         response = client.post(f"/reports/{report_id}/generate")
 
@@ -925,7 +924,7 @@ class TestGenerateReportEndpoint:
     ) -> None:
         report_id = _create_report(client)
         category = category_factory(name="Groceries")
-        filter_factory(category_id=category.id, name="Grocery store", position=1, description="Dummy grocery store")
+        filter_factory(category_id=category.id, name="Grocery store", description="Dummy grocery store")
         client.post(f"/reports/{report_id}/generate")
 
         response = client.get(f"/reports/{report_id}")

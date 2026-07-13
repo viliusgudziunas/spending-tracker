@@ -34,7 +34,6 @@ class FilterFactory(Protocol):
         category_id: uuid.UUID,
         name: str = ...,
         description: str = ...,
-        position: int | None = ...,
     ) -> Filter: ...
 
 
@@ -44,13 +43,11 @@ def filter_factory(db: Session) -> FilterFactory:
         category_id: uuid.UUID,
         name: str = "Default Filter",
         description: str = "default",
-        position: int | None = None,
     ) -> Filter:
         return create_filter(
             db=db,
             filter_dto=CreateFilterDto(
                 name=name,
-                position=position,
                 category_id=category_id,
                 rule_groups=[
                     CreateRuleGroupDto(

@@ -6,6 +6,10 @@ class CategoryNotFoundError(Exception):
     pass
 
 
+class InvalidCategoryPositionError(Exception):
+    pass
+
+
 class PlanSectionNotFoundError(Exception):
     pass
 
@@ -23,6 +27,10 @@ class FilterNotFoundError(Exception):
 
 
 class DuplicateFilterError(Exception):
+    pass
+
+
+class InvalidFilterPositionError(Exception):
     pass
 
 

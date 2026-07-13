@@ -14,6 +14,7 @@ from app.api.schemas.filter_schemas import (
 from app.repositories.exceptions import (
     DuplicateFilterError,
     FilterNotFoundError,
+    InvalidFilterPositionError,
     InvalidFilterRulesPayloadError,
 )
 from app.services import filter_service
@@ -61,6 +62,8 @@ def update_filter(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Filter not found") from exc
     except DuplicateFilterError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Filter already exists") from exc
+    except InvalidFilterPositionError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filter position") from exc
 
 
 @router.delete("/filters/{filter_id}", status_code=status.HTTP_204_NO_CONTENT)

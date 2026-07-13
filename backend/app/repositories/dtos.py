@@ -8,7 +8,6 @@ if TYPE_CHECKING:
 @dataclass(frozen=True, kw_only=True)
 class CreateFilterDto:
     name: str
-    position: int | None
     category_id: uuid.UUID
     rule_groups: list[CreateRuleGroupDto]
 

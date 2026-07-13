@@ -91,7 +91,7 @@ function useCategoriesPanelState(): UseCategoriesPanelStateResult {
 
             const reorderedFilters = arrayMove(category.filters, oldIndex, newIndex).map((filter, index) => ({
                 ...filter,
-                position: index,
+                position: index + 1,
             }));
             queryClient.setQueryData(
                 CATEGORIES_QUERY_KEY,
@@ -102,7 +102,7 @@ function useCategoriesPanelState(): UseCategoriesPanelStateResult {
                 ),
             );
 
-            const newPosition = newIndex;
+            const newPosition = newIndex + 1;
             void updateFilterPositionMutation.mutateAsync({
                 filterId: active.id as string,
                 payload: { position: newPosition },

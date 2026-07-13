@@ -25,13 +25,11 @@ def get_filters(db: Session) -> Sequence[Filter]:
 
 
 def create_filter(db: Session, filter_dto: CreateFilterDto) -> Filter:
-    position = (
-        filter_dto.position
-        if filter_dto.position is not None
-        else _get_max_position(db=db, category_id=filter_dto.category_id) + 1
+    filter_ = Filter(
+        name=filter_dto.name,
+        category_id=filter_dto.category_id,
+        position=_get_max_position(db=db, category_id=filter_dto.category_id) + 1,
     )
-
-    filter_ = Filter(name=filter_dto.name, category_id=filter_dto.category_id, position=position)
     db.add(filter_)
 
     for rule_group_dto in filter_dto.rule_groups:
@@ -57,6 +55,10 @@ def create_filter(db: Session, filter_dto: CreateFilterDto) -> Filter:
 
 def _get_max_position(db: Session, category_id: uuid.UUID) -> int:
     return db.scalar(select(func.max(Filter.position)).where(Filter.category_id == category_id)) or 0
+
+
+def get_filter_count(db: Session, category_id: uuid.UUID) -> int:
+    return db.scalar(select(func.count(Filter.id)).where(Filter.category_id == category_id)) or 0
 
 
 def get_filter(db: Session, filter_id: uuid.UUID) -> Filter:
