@@ -77,17 +77,7 @@ export default function UnidentifiedRowContextMenu({
                     onClose();
                 }}
             >
-                Create rule filter
-            </button>
-            <button
-                type="button"
-                className="block w-full rounded px-2 py-1.5 text-left text-xs text-slate-700 transition hover:bg-slate-50"
-                onClick={(): void => {
-                    onCreateReportFilter(transaction);
-                    onClose();
-                }}
-            >
-                Create report filter
+                Create new rule
             </button>
             <button
                 type="button"
@@ -97,7 +87,17 @@ export default function UnidentifiedRowContextMenu({
                     onClose();
                 }}
             >
-                Edit rule filter
+                Update existing rule
+            </button>
+            <button
+                type="button"
+                className="block w-full rounded px-2 py-1.5 text-left text-xs text-slate-700 transition hover:bg-slate-50"
+                onClick={(): void => {
+                    onCreateReportFilter(transaction);
+                    onClose();
+                }}
+            >
+                Create one-time rule
             </button>
             <button
                 type="button"
@@ -107,7 +107,7 @@ export default function UnidentifiedRowContextMenu({
                     onClose();
                 }}
             >
-                Add to report filter
+                Assign to existing rule
             </button>
         </div>
     );
