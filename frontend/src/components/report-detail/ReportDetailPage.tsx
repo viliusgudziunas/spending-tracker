@@ -64,6 +64,30 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
         setRightPanel({ kind: "add-report-filter", transaction });
     }, []);
 
+    const handleCloseAddToReportFilter = useCallback((): void => {
+        setRightPanel((prev) => {
+            if (prev?.kind === "add-report-filter" && prev.sourceFilter !== undefined) {
+                return { kind: "filter", filter: prev.sourceFilter };
+            }
+            return null;
+        });
+    }, []);
+
+    const handleMoveToAnotherFilterFromTransaction = useCallback(
+        (transaction: Transaction): void => {
+            if (rightPanel?.kind !== "filter") {
+                setRightPanel({ kind: "add-report-filter", transaction });
+                return;
+            }
+            setRightPanel({
+                kind: "add-report-filter",
+                transaction,
+                sourceFilter: rightPanel.filter,
+            });
+        },
+        [rightPanel],
+    );
+
     const handleRemoveManualAssignmentFromTransaction = useCallback(
         async (transaction: Transaction): Promise<void> => {
             await removeAssignmentMutation.mutateAsync({
@@ -315,6 +339,13 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
                         <TransactionPanel
                             filter={selectedPanelFilter}
                             onClose={handleClosePanel}
+                            onMoveToAnotherFilter={
+                                report.categories.some((category) =>
+                                    category.filters.some((item) => item.id !== selectedPanelFilter.id),
+                                )
+                                    ? handleMoveToAnotherFilterFromTransaction
+                                    : undefined
+                            }
                             onRemoveManualAssignment={handleRemoveManualAssignmentFromTransaction}
                             isRemovingManualAssignment={removeAssignmentMutation.isPending}
                             width={panelWidth}
@@ -351,7 +382,8 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
                         <AddToReportFilterPanel
                             reportId={reportId}
                             transaction={rightPanel.transaction}
-                            onClose={handleClosePanel}
+                            excludeFilterId={rightPanel.sourceFilter?.id}
+                            onClose={handleCloseAddToReportFilter}
                             width={panelWidth}
                         />
                     ) : null}

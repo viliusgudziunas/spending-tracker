@@ -630,6 +630,58 @@ class TestPutReportAssignmentEndpoint:
         assert filter_payload["is_manual"] is False
         assert filter_payload["rule_filter_id"] == str(filter_.id)
 
+    def test_overrides_rule_matched_transaction_with_manual_assignment(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        report = report_factory()
+        transaction_id = str(report.transactions[0].id)
+        category = category_factory(name=f"Override {uuid.uuid4()}")
+        matched_filter = filter_factory(
+            category_id=category.id,
+            name=f"Matched {uuid.uuid4()}",
+            description="Sample transaction",
+        )
+        override_filter = filter_factory(
+            category_id=category.id,
+            name=f"Override {uuid.uuid4()}",
+            description="does-not-match",
+        )
+
+        generate_response = client.post(f"/reports/{report.id}/generate")
+        assert generate_response.status_code == 200
+        generated = generate_response.json()
+        generated_filter = next(
+            filter_payload
+            for category_payload in generated["categories"]
+            for filter_payload in category_payload["filters"]
+            if filter_payload["rule_filter_id"] == str(matched_filter.id)
+        )
+        assert [tx["id"] for tx in generated_filter["transactions"]] == [transaction_id]
+        assert generated_filter["transactions"][0]["source"] == "generated"
+
+        response = client.put(
+            f"/reports/{report.id}/transactions/{transaction_id}/assignment",
+            json={"target_rule_filter_id": str(override_filter.id)},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        filters_by_rule_id = {
+            filter_payload["rule_filter_id"]: filter_payload
+            for category_payload in payload["categories"]
+            for filter_payload in category_payload["filters"]
+        }
+        assert filters_by_rule_id[str(matched_filter.id)]["transactions"] == []
+        override_payload = filters_by_rule_id[str(override_filter.id)]
+        assert len(override_payload["transactions"]) == 1
+        assert override_payload["transactions"][0]["id"] == transaction_id
+        assert override_payload["transactions"][0]["source"] == "manual"
+        assert all(tx["id"] != transaction_id for tx in payload["unidentified_transactions"])
+
     def test_returns_404_when_report_manual_filter_not_found(
         self,
         client: TestClient,

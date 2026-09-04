@@ -19,6 +19,10 @@ const FILTER_COLUMNS: ColDef<FilterRow>[] = [
     },
 ];
 
+function isManualSource(source: Transaction["source"] | undefined): boolean {
+    return source === "manual" || source === "override";
+}
+
 const TRANSACTION_COLUMNS: ColDef<Transaction>[] = [
     { field: "type", headerName: "Type", width: 140 },
     { field: "product", headerName: "Product", width: 140 },
@@ -32,12 +36,12 @@ const TRANSACTION_COLUMNS: ColDef<Transaction>[] = [
         headerName: "Source",
         width: 120,
         valueFormatter: ({ value }): string => {
-            if (value === "manual" || value === "override") return "Manual";
+            if (isManualSource(value)) return "Manual";
             if (value === "generated") return "Auto";
             return "Unknown";
         },
         tooltipValueGetter: ({ value }): string => {
-            if (value === "manual" || value === "override") return "Assigned manually";
+            if (isManualSource(value)) return "Assigned manually";
             if (value === "generated") return "Assigned automatically";
             return "Assignment source unavailable";
         },
@@ -48,7 +52,7 @@ const TRANSACTION_COLUMNS: ColDef<Transaction>[] = [
 ];
 
 function getTransactionRowClass(source: Transaction["source"] | undefined): string {
-    if (source === "manual" || source === "override") return "report-transaction-row--manual";
+    if (isManualSource(source)) return "report-transaction-row--manual";
     if (source === "generated") return "report-transaction-row--auto";
     return "";
 }
@@ -79,7 +83,7 @@ type RightPanel =
     | { kind: "create-filter"; transaction: Transaction }
     | { kind: "create-report-filter"; transaction: Transaction }
     | { kind: "add-rule-group"; transaction: Transaction }
-    | { kind: "add-report-filter"; transaction: Transaction };
+    | { kind: "add-report-filter"; transaction: Transaction; sourceFilter?: ReportFilter };
 
 export {
     DEFAULT_PANEL_WIDTH,
@@ -91,5 +95,6 @@ export {
     TRANSACTION_COLUMNS,
     UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY,
     getTransactionRowClass,
+    isManualSource,
 };
 export type { FilterRow, RightPanel };

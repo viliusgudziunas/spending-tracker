@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Transaction } from "../../../clients/backendClient/responseParsers";
 import { useAssignReportTransactionMutation, useReportQuery } from "../../../hooks/useReportsQueries";
 
 interface AddToReportFilterPanelProps {
     reportId: string;
     transaction: Transaction;
+    excludeFilterId?: string;
     onClose: () => void;
     width: number;
 }
@@ -12,6 +13,7 @@ interface AddToReportFilterPanelProps {
 export default function AddToReportFilterPanel({
     reportId,
     transaction,
+    excludeFilterId,
     onClose,
     width,
 }: AddToReportFilterPanelProps): JSX.Element {
@@ -21,30 +23,55 @@ export default function AddToReportFilterPanel({
     const [selectedFilterId, setSelectedFilterId] = useState("");
     const [submitError, setSubmitError] = useState<string | null>(null);
 
+    const categoriesWithAssignableFilters = useMemo(
+        () =>
+            (report?.categories ?? [])
+                .map((category) => ({
+                    ...category,
+                    filters: category.filters.filter((filter) => filter.id !== excludeFilterId),
+                }))
+                .filter((category) => category.filters.length > 0),
+        [excludeFilterId, report?.categories],
+    );
     const selectedCategory = useMemo(
-        () => (report?.categories ?? []).find((category) => category.id === selectedCategoryId),
-        [report?.categories, selectedCategoryId],
+        () => categoriesWithAssignableFilters.find((category) => category.id === selectedCategoryId),
+        [categoriesWithAssignableFilters, selectedCategoryId],
     );
     const selectedFilter = useMemo(
         () => selectedCategory?.filters.find((filter) => filter.id === selectedFilterId),
         [selectedCategory, selectedFilterId],
     );
     const isSubmitting = assignReportTransactionMutation.isPending;
+    const reportRef = useRef(report);
+    reportRef.current = report;
 
     useEffect(() => {
-        setSelectedCategoryId("");
         setSelectedFilterId("");
         setSubmitError(null);
-    }, [reportId, transaction.id]);
+        const currentReport = reportRef.current;
+        if (excludeFilterId === undefined || currentReport === undefined) {
+            setSelectedCategoryId("");
+            return;
+        }
+        const sourceCategory = currentReport.categories.find((category) =>
+            category.filters.some((filter) => filter.id === excludeFilterId),
+        );
+        const hasSiblingFilter = sourceCategory?.filters.some((filter) => filter.id !== excludeFilterId) ?? false;
+        setSelectedCategoryId(sourceCategory !== undefined && hasSiblingFilter ? sourceCategory.id : "");
+    }, [excludeFilterId, reportId, transaction.id]);
 
     useEffect(() => {
         setSelectedFilterId("");
     }, [selectedCategoryId]);
 
-    const hasAnyFilters = useMemo(
-        () => (report?.categories ?? []).some((category) => category.filters.length > 0),
-        [report?.categories],
-    );
+    const hasAnyFilters = categoriesWithAssignableFilters.length > 0;
+    const isMove = excludeFilterId !== undefined;
+    let submitLabel = "Assign to filter";
+    if (isMove) {
+        submitLabel = isSubmitting ? "Moving..." : "Move to filter";
+    } else if (isSubmitting) {
+        submitLabel = "Assigning...";
+    }
 
     const handleSubmit = useCallback(
         async (event: React.FormEvent): Promise<void> => {
@@ -58,7 +85,11 @@ export default function AddToReportFilterPanel({
                   ? { targetRuleFilterId: selectedFilter.ruleFilterId }
                   : null;
             if (payload === null) {
-                setSubmitError("Selected filter cannot be assigned because it has no rule filter id.");
+                setSubmitError(
+                    excludeFilterId !== undefined
+                        ? "This filter cannot be used as a destination."
+                        : "Selected filter cannot be assigned.",
+                );
                 return;
             }
             try {
@@ -72,11 +103,15 @@ export default function AddToReportFilterPanel({
                 if (error instanceof Error && error.message.trim().length > 0) {
                     setSubmitError(error.message);
                 } else {
-                    setSubmitError("Failed to assign transaction to filter.");
+                    setSubmitError(
+                        excludeFilterId !== undefined
+                            ? "Failed to move the transaction."
+                            : "Failed to assign transaction to filter.",
+                    );
                 }
             }
         },
-        [assignReportTransactionMutation, onClose, reportId, selectedFilter, transaction.id],
+        [assignReportTransactionMutation, excludeFilterId, onClose, reportId, selectedFilter, transaction.id],
     );
 
     return (
@@ -86,9 +121,13 @@ export default function AddToReportFilterPanel({
         >
             <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="min-w-0">
-                    <h2 className="m-0 truncate text-lg font-semibold text-slate-900">Add to Report Filter</h2>
+                    <h2 className="m-0 truncate text-lg font-semibold text-slate-900">
+                        {isMove ? "Move to another filter" : "Add to Report Filter"}
+                    </h2>
                     <p className="m-0 mt-0.5 text-xs text-slate-400">
-                        Assign selected transaction to an existing filter
+                        {isMove
+                            ? "Move this transaction to a different filter"
+                            : "Assign selected transaction to an existing filter"}
                     </p>
                 </div>
                 <button
@@ -122,13 +161,11 @@ export default function AddToReportFilterPanel({
                         required
                     >
                         <option value="">Select category</option>
-                        {(report?.categories ?? [])
-                            .filter((category) => category.filters.length > 0)
-                            .map((category) => (
-                                <option key={category.id} value={category.id}>
-                                    {category.name}
-                                </option>
-                            ))}
+                        {categoriesWithAssignableFilters.map((category) => (
+                            <option key={category.id} value={category.id}>
+                                {category.name}
+                            </option>
+                        ))}
                     </select>
                 </label>
 
@@ -152,13 +189,17 @@ export default function AddToReportFilterPanel({
 
                 {selectedFilter !== undefined ? (
                     <div className="rounded-md border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-600">
-                        Transaction will be assigned to <strong>{selectedFilter.name}</strong>.
+                        Transaction will be {isMove ? "moved" : "assigned"} to <strong>{selectedFilter.name}</strong>.
                     </div>
                 ) : null}
 
                 {isReportError ? <div className="text-xs text-red-600">Failed to load report filters.</div> : null}
                 {!isReportError && !isReportLoading && !hasAnyFilters ? (
-                    <div className="text-xs text-amber-700">No filters found. Create a filter first.</div>
+                    <div className="text-xs text-amber-700">
+                        {isMove
+                            ? "This is the only filter. Create another filter first, then you can move the transaction."
+                            : "No filters found. Create a filter first."}
+                    </div>
                 ) : null}
                 {submitError !== null ? <div className="text-xs text-red-600">{submitError}</div> : null}
 
@@ -168,7 +209,7 @@ export default function AddToReportFilterPanel({
                         disabled={isSubmitting || selectedFilterId === ""}
                         className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        {isSubmitting ? "Assigning..." : "Assign to filter"}
+                        {submitLabel}
                     </button>
                     <button
                         type="button"
