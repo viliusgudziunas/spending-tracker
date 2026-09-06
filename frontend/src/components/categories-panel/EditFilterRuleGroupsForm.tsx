@@ -1,8 +1,9 @@
 import { useCallback, useEffect } from "react";
-import { RULE_TYPES } from "../../clients/backendClient/schemas";
-import { Filter, RuleOperator, RuleType } from "../../clients/backendClient/responseParsers";
-import { usePutFilterRuleGroupsMutation } from "../../hooks/useFilterQueries";
-import useFilterForm from "../../hooks/useFilterForm";
+
+import { type Filter, type RuleOperator, type RuleType } from "@/clients/backendClient/responseParsers";
+import { RULE_TYPES } from "@/clients/backendClient/schemas";
+import useFilterForm from "@/hooks/useFilterForm";
+import { usePutFilterRuleGroupsMutation } from "@/hooks/useFilterQueries";
 
 interface EditFilterRuleGroupsFormProps {
     filter: Filter;

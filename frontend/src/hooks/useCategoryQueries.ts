@@ -1,7 +1,14 @@
-import { UseMutationResult, UseQueryResult, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CreateCategoryPayload, UpdateCategoryPayload } from "../clients/backendClient/types";
-import { Category } from "../clients/backendClient/responseParsers";
-import { client } from "../shared/stores/client";
+import {
+    useMutation,
+    type UseMutationResult,
+    useQuery,
+    useQueryClient,
+    type UseQueryResult,
+} from "@tanstack/react-query";
+
+import { type Category } from "@/clients/backendClient/responseParsers";
+import { type CreateCategoryPayload, type UpdateCategoryPayload } from "@/clients/backendClient/types";
+import { client } from "@/shared/stores/client";
 
 export const CATEGORIES_QUERY_KEY = ["categories"] as const;
 

@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
@@ -16,14 +17,37 @@ export default tseslint.config(
         plugins: {
             "react-hooks": reactHooks,
             "react-refresh": reactRefresh,
+            "simple-import-sort": simpleImportSort,
         },
         rules: {
             ...reactHooks.configs.recommended.rules,
+            "@typescript-eslint/consistent-type-imports": [
+                "error",
+                { prefer: "type-imports", fixStyle: "inline-type-imports" },
+            ],
             "@typescript-eslint/explicit-function-return-type": "warn",
             "@typescript-eslint/no-explicit-any": "error",
             "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+            "no-restricted-imports": [
+                "error",
+                {
+                    patterns: [
+                        {
+                            regex: "^\\.\\./",
+                            message: "Use @/ instead of a relative parent import. Relative imports may only be ./.",
+                        },
+                    ],
+                },
+            ],
             "react-hooks/exhaustive-deps": "off",
             "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+            "simple-import-sort/exports": "error",
+            "simple-import-sort/imports": [
+                "error",
+                {
+                    groups: [["^\\u0000"], ["^node:", "^@?\\w"], ["^@/"], ["^\\."]],
+                },
+            ],
         },
-    }
+    },
 );

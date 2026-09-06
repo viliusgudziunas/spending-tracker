@@ -1,22 +1,22 @@
 import {
-    CreateApiFilterPayload,
-    CreateApiRuleGroupPayload,
-    CreateApiRulePayload,
-    PutApiFilterRuleGroupsPayload,
-    PutApiRuleGroupPayload,
-    PutApiRulePayload,
-    UpdateApiFilterPayload,
-    UpdateApiRuleGroupPayload,
-    UpdateApiRulePayload,
+    type CreateApiFilterPayload,
+    type CreateApiRuleGroupPayload,
+    type CreateApiRulePayload,
+    type PutApiFilterRuleGroupsPayload,
+    type PutApiRuleGroupPayload,
+    type PutApiRulePayload,
+    type UpdateApiFilterPayload,
+    type UpdateApiRuleGroupPayload,
+    type UpdateApiRulePayload,
 } from "./schemas";
 import {
-    CreateFilterPayload,
-    CreateRuleGroupPayload,
-    CreateRulePayload,
-    PutFilterRuleGroupsPayload,
-    PutRuleGroupPayload,
-    PutRulePayload,
-    UpdateFilterPayload,
+    type CreateFilterPayload,
+    type CreateRuleGroupPayload,
+    type CreateRulePayload,
+    type PutFilterRuleGroupsPayload,
+    type PutRuleGroupPayload,
+    type PutRulePayload,
+    type UpdateFilterPayload,
 } from "./types";
 
 export const parseIntoCreateApiFilterPayload = (filter: CreateFilterPayload): CreateApiFilterPayload => ({

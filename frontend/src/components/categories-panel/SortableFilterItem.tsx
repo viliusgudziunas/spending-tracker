@@ -1,8 +1,10 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useRef, useState } from "react";
-import { Filter } from "../../clients/backendClient/responseParsers";
-import { useRenameFilterMutation } from "../../hooks/useFilterQueries";
+
+import { type Filter } from "@/clients/backendClient/responseParsers";
+import { useRenameFilterMutation } from "@/hooks/useFilterQueries";
+
 import EditFilterRuleGroupsForm from "./EditFilterRuleGroupsForm";
 import RuleGroupItem from "./RuleGroupItem";
 

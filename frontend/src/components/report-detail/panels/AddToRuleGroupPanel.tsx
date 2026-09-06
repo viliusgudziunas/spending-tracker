@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import useFilterForm from "../../../hooks/useFilterForm";
-import { RULE_OPERATORS, RULE_TYPES } from "../../../clients/backendClient/schemas";
-import { RuleOperator, RuleType, Transaction } from "../../../clients/backendClient/responseParsers";
-import { useCategoriesQuery } from "../../../hooks/useCategoryQueries";
-import { usePutFilterRuleGroupsMutation } from "../../../hooks/useFilterQueries";
-import { useGenerateReportMutation } from "../../../hooks/useReportsQueries";
-import { OPERATOR_LABELS, RULE_TYPE_LABELS } from "../constants";
-import { getTransactionRuleValue } from "../helpers";
+
+import { type RuleOperator, type RuleType, type Transaction } from "@/clients/backendClient/responseParsers";
+import { RULE_OPERATORS, RULE_TYPES } from "@/clients/backendClient/schemas";
+import { OPERATOR_LABELS, RULE_TYPE_LABELS } from "@/components/report-detail/constants";
+import { getTransactionRuleValue } from "@/components/report-detail/helpers";
+import { useCategoriesQuery } from "@/hooks/useCategoryQueries";
+import useFilterForm from "@/hooks/useFilterForm";
+import { usePutFilterRuleGroupsMutation } from "@/hooks/useFilterQueries";
+import { useGenerateReportMutation } from "@/hooks/useReportsQueries";
 
 interface AddToRuleGroupPanelProps {
     reportId: string;

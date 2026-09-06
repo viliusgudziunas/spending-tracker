@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import ReportDetailPage from "../../components/report-detail/ReportDetailPage";
+
+import ReportDetailPage from "@/components/report-detail/ReportDetailPage";
 
 export const Route = createFileRoute("/_app/reports/$reportId")({
     component: ReportDetailRoute,

@@ -1,5 +1,5 @@
-import { Transaction } from "../../../clients/backendClient/responseParsers";
-import AnchoredMenu from "../AnchoredMenu";
+import { type Transaction } from "@/clients/backendClient/responseParsers";
+import AnchoredMenu from "@/components/report-detail/AnchoredMenu";
 
 interface UnidentifiedRowContextMenuProps {
     transaction: Transaction;

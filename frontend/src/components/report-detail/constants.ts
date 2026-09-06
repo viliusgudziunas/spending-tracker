@@ -1,5 +1,11 @@
 import { type ColDef } from "ag-grid-community";
-import { ReportFilter, RuleOperator, RuleType, Transaction } from "../../clients/backendClient/responseParsers";
+
+import {
+    type ReportFilter,
+    type RuleOperator,
+    type RuleType,
+    type Transaction,
+} from "@/clients/backendClient/responseParsers";
 
 interface FilterRow {
     id: string;
@@ -88,13 +94,13 @@ type RightPanel =
 export {
     DEFAULT_PANEL_WIDTH,
     FILTER_COLUMNS,
+    getTransactionRowClass,
+    isManualSource,
     MAX_PANEL_WIDTH,
     MIN_PANEL_WIDTH,
     OPERATOR_LABELS,
     RULE_TYPE_LABELS,
     TRANSACTION_COLUMNS,
     UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY,
-    getTransactionRowClass,
-    isManualSource,
 };
 export type { FilterRow, RightPanel };

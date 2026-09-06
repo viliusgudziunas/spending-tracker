@@ -1,5 +1,5 @@
-import { API_URL } from "../../config";
-import { createBackendClient } from "../../clients/backendClient/client";
+import { createBackendClient } from "@/clients/backendClient/client";
+import { API_URL } from "@/config";
 
 if (!API_URL) {
     throw new Error("API URL is not configured. Set VITE_API_URL in frontend env.");

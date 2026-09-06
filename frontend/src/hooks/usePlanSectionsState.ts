@@ -1,5 +1,7 @@
-import { Dispatch, FormEvent, SetStateAction, useState } from "react";
-import { PlanSection } from "../clients/backendClient/responseParsers";
+import { type Dispatch, type FormEvent, type SetStateAction, useState } from "react";
+
+import { type PlanSection } from "@/clients/backendClient/responseParsers";
+
 import {
     useCreatePlanSectionMutation,
     useDeletePlanSectionMutation,

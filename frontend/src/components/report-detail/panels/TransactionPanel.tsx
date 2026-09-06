@@ -1,9 +1,10 @@
 import { type CellContextMenuEvent, type ColDef, themeQuartz } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { useCallback, useMemo, useState } from "react";
-import { ReportFilter, Transaction } from "../../../clients/backendClient/responseParsers";
-import AnchoredMenu from "../AnchoredMenu";
-import { TRANSACTION_COLUMNS, getTransactionRowClass, isManualSource } from "../constants";
+
+import { type ReportFilter, type Transaction } from "@/clients/backendClient/responseParsers";
+import AnchoredMenu from "@/components/report-detail/AnchoredMenu";
+import { getTransactionRowClass, isManualSource, TRANSACTION_COLUMNS } from "@/components/report-detail/constants";
 
 interface TransactionPanelProps {
     filter: ReportFilter;

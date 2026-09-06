@@ -1,4 +1,10 @@
-import { ReportCategory, ReportFilter, RuleType, Transaction } from "../../clients/backendClient/responseParsers";
+import {
+    type ReportCategory,
+    type ReportFilter,
+    type RuleType,
+    type Transaction,
+} from "@/clients/backendClient/responseParsers";
+
 import type { FilterRow } from "./constants";
 
 function buildFilterRows(filters: ReportFilter[]): FilterRow[] {

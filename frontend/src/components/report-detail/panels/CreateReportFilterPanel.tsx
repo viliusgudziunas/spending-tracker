@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Transaction } from "../../../clients/backendClient/responseParsers";
-import { useCategoriesQuery } from "../../../hooks/useCategoryQueries";
-import {
-    useAssignReportTransactionMutation,
-    useCreateReportManualFilterMutation,
-} from "../../../hooks/useReportsQueries";
+
+import { type Transaction } from "@/clients/backendClient/responseParsers";
+import { useCategoriesQuery } from "@/hooks/useCategoryQueries";
+import { useAssignReportTransactionMutation, useCreateReportManualFilterMutation } from "@/hooks/useReportsQueries";
 
 interface CreateReportFilterPanelProps {
     reportId: string;

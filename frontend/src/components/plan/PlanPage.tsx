@@ -1,4 +1,5 @@
-import usePlanSectionsState from "../../hooks/usePlanSectionsState";
+import usePlanSectionsState from "@/hooks/usePlanSectionsState";
+
 import CreateSectionForm from "./CreateSectionForm";
 import SectionRow from "./SectionRow";
 

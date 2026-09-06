@@ -1,10 +1,10 @@
 import { type ColDef, type RowClickedEvent, themeQuartz } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { useCallback, useMemo, useState } from "react";
-import { ReportCategory, ReportFilter } from "../../../clients/backendClient/responseParsers";
-import { FILTER_COLUMNS } from "../constants";
-import { buildCategoryTsv, buildFilterRows } from "../helpers";
-import type { FilterRow } from "../constants";
+
+import { type ReportCategory, type ReportFilter } from "@/clients/backendClient/responseParsers";
+import { FILTER_COLUMNS, type FilterRow } from "@/components/report-detail/constants";
+import { buildCategoryTsv, buildFilterRows } from "@/components/report-detail/helpers";
 
 interface CategorySectionProps {
     category: ReportCategory;

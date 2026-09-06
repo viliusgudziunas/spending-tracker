@@ -1,43 +1,45 @@
-import { AxiosError, AxiosInstance } from "axios";
-import { createAxiosClient } from "../createAxiosClient";
-import {
-    Category,
-    Filter,
-    parseApiReport,
-    parseApiReportManualFilter,
-    parseApiReports,
-    parseApiCategories,
-    parseApiCategory,
-    parseApiFilter,
-    parseApiPlanSection,
-    parseApiPlanSections,
-    PlanSection,
-    Report,
-    ReportFull,
-    ReportManualFilter,
-    ReportSchema,
-} from "./responseParsers";
+import { AxiosError, type AxiosInstance } from "axios";
+
+import { createAxiosClient } from "@/clients/createAxiosClient";
+
 import {
     parseIntoCreateApiFilterPayload,
     parseIntoPutApiFilterRuleGroupsPayload,
     parseIntoUpdateApiFilterPayload,
 } from "./requestMappers";
 import {
-    CreateCategoryPayload,
-    CreateFilterPayload,
-    CreatePlanSectionPayload,
-    PatchReportPayload,
-    CreateReportManualFilterPayload,
-    CreateReportPayload,
-    PutFilterRuleGroupsPayload,
-    PutReportAssignmentPayload,
-    RenameFilterPayload,
-    UpdateCategoryPayload,
-    UpdateFilterPayload,
-    UpdateFilterPositionPayload,
-    UpdatePlanSectionPayload,
-} from "./types";
+    type Category,
+    type Filter,
+    parseApiCategories,
+    parseApiCategory,
+    parseApiFilter,
+    parseApiPlanSection,
+    parseApiPlanSections,
+    parseApiReport,
+    parseApiReportManualFilter,
+    parseApiReports,
+    type PlanSection,
+    type Report,
+    type ReportFull,
+    type ReportManualFilter,
+    ReportSchema,
+} from "./responseParsers";
 import { ApiErrorSchema } from "./schemas";
+import {
+    type CreateCategoryPayload,
+    type CreateFilterPayload,
+    type CreatePlanSectionPayload,
+    type CreateReportManualFilterPayload,
+    type CreateReportPayload,
+    type PatchReportPayload,
+    type PutFilterRuleGroupsPayload,
+    type PutReportAssignmentPayload,
+    type RenameFilterPayload,
+    type UpdateCategoryPayload,
+    type UpdateFilterPayload,
+    type UpdateFilterPositionPayload,
+    type UpdatePlanSectionPayload,
+} from "./types";
 
 function parseAxiosError(error: unknown, fallbackMessage: string): Error {
     if (!(error instanceof AxiosError)) {

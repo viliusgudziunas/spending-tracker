@@ -1,4 +1,5 @@
-import { ReportFilter, ReportFull, Transaction } from "../../../clients/backendClient/responseParsers";
+import { type ReportFilter, type ReportFull, type Transaction } from "@/clients/backendClient/responseParsers";
+
 import CategorySection from "./CategorySection";
 import UnidentifiedSection from "./UnidentifiedSection";
 

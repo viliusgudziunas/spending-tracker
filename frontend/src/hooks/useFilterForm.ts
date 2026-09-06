@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { Filter, Rule, RuleGroup, RuleOperator, RuleType } from "../clients/backendClient/responseParsers";
+
+import {
+    type Filter,
+    type Rule,
+    type RuleGroup,
+    type RuleOperator,
+    type RuleType,
+} from "@/clients/backendClient/responseParsers";
 
 type NewFilter = Omit<Filter, "id" | "ruleGroups" | "position"> & { ruleGroups: NewRuleGroup[] } & Partial<
         Pick<Filter, "id" | "position">

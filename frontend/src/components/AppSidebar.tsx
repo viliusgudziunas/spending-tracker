@@ -1,5 +1,6 @@
 import { Link, useMatchRoute } from "@tanstack/react-router";
-import { useReportsQuery } from "../hooks/useReportsQueries";
+
+import { useReportsQuery } from "@/hooks/useReportsQueries";
 
 interface AppSidebarProps {
     collapsed: boolean;

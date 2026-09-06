@@ -1,7 +1,9 @@
 import { closestCenter, DndContext } from "@dnd-kit/core";
 import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import useCategoriesPanelState from "../../hooks/useCategoriesPanelState";
+
+import useCategoriesPanelState from "@/hooks/useCategoriesPanelState";
+
 import CreateCategoryForm from "./CreateCategoryForm";
 import SortableCategoryCard from "./SortableCategoryCard";
 

@@ -1,5 +1,6 @@
-import { FormEvent } from "react";
-import { PlanSection } from "../../clients/backendClient/responseParsers";
+import { type FormEvent } from "react";
+
+import { type PlanSection } from "@/clients/backendClient/responseParsers";
 
 interface SectionRowProps {
     section: PlanSection;

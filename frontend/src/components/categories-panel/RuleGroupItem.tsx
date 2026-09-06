@@ -1,4 +1,4 @@
-import { RuleGroup } from "../../clients/backendClient/responseParsers";
+import { type RuleGroup } from "@/clients/backendClient/responseParsers";
 
 interface RuleGroupItemProps {
     ruleGroup: RuleGroup;

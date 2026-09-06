@@ -1,5 +1,6 @@
 import { type IHeaderParams } from "ag-grid-community";
-import { Transaction } from "../../../clients/backendClient/responseParsers";
+
+import { type Transaction } from "@/clients/backendClient/responseParsers";
 
 interface UnidentifiedInnerHeaderParams extends IHeaderParams<Transaction> {
     onOpenColumnsMenu?: () => void;

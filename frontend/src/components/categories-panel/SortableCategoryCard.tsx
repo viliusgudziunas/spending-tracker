@@ -10,13 +10,15 @@ import {
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
     SortableContext,
-    verticalListSortingStrategy,
     sortableKeyboardCoordinates,
     useSortable,
+    verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
-import { Category, Filter } from "../../clients/backendClient/responseParsers";
+
+import { type Category, type Filter } from "@/clients/backendClient/responseParsers";
+
 import CreateFilterForm from "./CreateFilterForm";
 import SortableFilterItem from "./SortableFilterItem";
 

@@ -1,12 +1,14 @@
-import { UseMutationResult, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, type UseMutationResult, useQueryClient } from "@tanstack/react-query";
+
+import { type Filter } from "@/clients/backendClient/responseParsers";
 import {
-    CreateFilterPayload,
-    PutFilterRuleGroupsPayload,
-    RenameFilterPayload,
-    UpdateFilterPositionPayload,
-} from "../clients/backendClient/types";
-import { Filter } from "../clients/backendClient/responseParsers";
-import { client } from "../shared/stores/client";
+    type CreateFilterPayload,
+    type PutFilterRuleGroupsPayload,
+    type RenameFilterPayload,
+    type UpdateFilterPositionPayload,
+} from "@/clients/backendClient/types";
+import { client } from "@/shared/stores/client";
+
 import { CATEGORIES_QUERY_KEY } from "./useCategoryQueries";
 
 export function useCreateFilterMutation(): UseMutationResult<Filter, Error, CreateFilterPayload> {

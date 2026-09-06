@@ -2,7 +2,9 @@ import { type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
-import { Filter } from "../clients/backendClient/responseParsers";
+
+import { type Filter } from "@/clients/backendClient/responseParsers";
+
 import { CATEGORIES_QUERY_KEY, useCategoriesQuery, useUpdateCategoryMutation } from "./useCategoryQueries";
 import { useDeleteFilterMutation, useUpdateFilterPositionMutation } from "./useFilterQueries";
 

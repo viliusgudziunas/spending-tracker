@@ -1,8 +1,9 @@
-import { themeQuartz, type ColDef } from "ag-grid-community";
+import { type ColDef, themeQuartz } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { ChangeEvent, DragEvent, useRef, useMemo, useState } from "react";
-import { useCreateReportMutation } from "../hooks/useReportsQueries";
-import { parseCsvContent, type PreviewRow } from "../shared/utils/csvParser";
+import { type ChangeEvent, type DragEvent, useMemo, useRef, useState } from "react";
+
+import { useCreateReportMutation } from "@/hooks/useReportsQueries";
+import { parseCsvContent, type PreviewRow } from "@/shared/utils/csvParser";
 
 export default function ReportUploadPage(): JSX.Element {
     const createReportMutation = useCreateReportMutation();

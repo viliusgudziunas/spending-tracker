@@ -1,17 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ReportFilter, Transaction } from "../../clients/backendClient/responseParsers";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { type ReportFilter, type Transaction } from "@/clients/backendClient/responseParsers";
+import CategoriesPanel from "@/components/categories-panel/CategoriesPanel";
 import {
     useDeleteReportMutation,
     useGenerateReportMutation,
     usePatchReportMutation,
     useRemoveReportTransactionAssignmentMutation,
     useReportQuery,
-} from "../../hooks/useReportsQueries";
-import CategoriesPanel from "../categories-panel/CategoriesPanel";
+} from "@/hooks/useReportsQueries";
+
 import { DEFAULT_PANEL_WIDTH, MAX_PANEL_WIDTH, MIN_PANEL_WIDTH, type RightPanel } from "./constants";
-import AddToRuleGroupPanel from "./panels/AddToRuleGroupPanel";
 import AddToReportFilterPanel from "./panels/AddToReportFilterPanel";
+import AddToRuleGroupPanel from "./panels/AddToRuleGroupPanel";
 import CreateReportFilterPanel from "./panels/CreateReportFilterPanel";
 import CreateTransactionFilterPanel from "./panels/CreateTransactionFilterPanel";
 import TransactionPanel from "./panels/TransactionPanel";

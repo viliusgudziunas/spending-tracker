@@ -1,7 +1,14 @@
-import { UseMutationResult, UseQueryResult, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PlanSection } from "../clients/backendClient/responseParsers";
-import { CreatePlanSectionPayload, UpdatePlanSectionPayload } from "../clients/backendClient/types";
-import { client } from "../shared/stores/client";
+import {
+    useMutation,
+    type UseMutationResult,
+    useQuery,
+    useQueryClient,
+    type UseQueryResult,
+} from "@tanstack/react-query";
+
+import { type PlanSection } from "@/clients/backendClient/responseParsers";
+import { type CreatePlanSectionPayload, type UpdatePlanSectionPayload } from "@/clients/backendClient/types";
+import { client } from "@/shared/stores/client";
 
 export const PLAN_SECTIONS_QUERY_KEY = ["plan", "sections"] as const;
 

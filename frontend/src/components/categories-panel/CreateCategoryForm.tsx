@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { useCreateCategoryMutation } from "../../hooks/useCategoryQueries";
+
+import { useCreateCategoryMutation } from "@/hooks/useCategoryQueries";
 
 export default function CreateCategoryForm(): JSX.Element {
     const [isOpen, setIsOpen] = useState(false);

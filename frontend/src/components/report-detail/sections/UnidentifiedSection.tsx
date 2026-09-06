@@ -1,8 +1,14 @@
 import { type CellContextMenuEvent, type ColDef, themeQuartz } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Transaction } from "../../../clients/backendClient/responseParsers";
-import { TRANSACTION_COLUMNS, UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY, getTransactionRowClass } from "../constants";
+
+import { type Transaction } from "@/clients/backendClient/responseParsers";
+import {
+    getTransactionRowClass,
+    TRANSACTION_COLUMNS,
+    UNIDENTIFIED_COLUMNS_STATE_STORAGE_KEY,
+} from "@/components/report-detail/constants";
+
 import UnidentifiedInnerHeader from "./UnidentifiedInnerHeader";
 import UnidentifiedRowContextMenu from "./UnidentifiedRowContextMenu";
 

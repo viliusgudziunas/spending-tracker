@@ -1,12 +1,19 @@
-import { UseMutationResult, UseQueryResult, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Report, ReportFull, ReportManualFilter } from "../clients/backendClient/responseParsers";
-import { client } from "../shared/stores/client";
 import {
-    PatchReportPayload,
-    CreateReportManualFilterPayload,
-    CreateReportPayload,
-    PutReportAssignmentPayload,
-} from "../clients/backendClient/types";
+    useMutation,
+    type UseMutationResult,
+    useQuery,
+    useQueryClient,
+    type UseQueryResult,
+} from "@tanstack/react-query";
+
+import { type Report, type ReportFull, type ReportManualFilter } from "@/clients/backendClient/responseParsers";
+import {
+    type CreateReportManualFilterPayload,
+    type CreateReportPayload,
+    type PatchReportPayload,
+    type PutReportAssignmentPayload,
+} from "@/clients/backendClient/types";
+import { client } from "@/shared/stores/client";
 
 export const REPORTS_QUERY_KEY = ["reports"] as const;
 
