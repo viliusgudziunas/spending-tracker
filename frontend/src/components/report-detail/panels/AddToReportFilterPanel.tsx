@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { type Transaction } from "@/clients/backendClient/responseParsers";
+import FilterSearch, { type FilterSearchOption } from "@/components/report-detail/FilterSearch";
 import { useAssignReportTransactionMutation, useReportQuery } from "@/hooks/useReportsQueries";
 
 interface AddToReportFilterPanelProps {
@@ -22,6 +23,7 @@ export default function AddToReportFilterPanel({
     const assignReportTransactionMutation = useAssignReportTransactionMutation();
     const [selectedCategoryId, setSelectedCategoryId] = useState("");
     const [selectedFilterId, setSelectedFilterId] = useState("");
+    const [searchResetKey, setSearchResetKey] = useState(0);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
     const categoriesWithAssignableFilters = useMemo(
@@ -42,6 +44,18 @@ export default function AddToReportFilterPanel({
         () => selectedCategory?.filters.find((filter) => filter.id === selectedFilterId),
         [selectedCategory, selectedFilterId],
     );
+    const searchOptions = useMemo(
+        (): FilterSearchOption[] =>
+            categoriesWithAssignableFilters.flatMap((category) =>
+                category.filters.map((filter) => ({
+                    id: filter.id,
+                    name: filter.name,
+                    categoryId: category.id,
+                    categoryName: category.name,
+                })),
+            ),
+        [categoriesWithAssignableFilters],
+    );
     const isSubmitting = assignReportTransactionMutation.isPending;
     const reportRef = useRef(report);
     reportRef.current = report;
@@ -60,10 +74,6 @@ export default function AddToReportFilterPanel({
         const hasSiblingFilter = sourceCategory?.filters.some((filter) => filter.id !== excludeFilterId) ?? false;
         setSelectedCategoryId(sourceCategory !== undefined && hasSiblingFilter ? sourceCategory.id : "");
     }, [excludeFilterId, reportId, transaction.id]);
-
-    useEffect(() => {
-        setSelectedFilterId("");
-    }, [selectedCategoryId]);
 
     const hasAnyFilters = categoriesWithAssignableFilters.length > 0;
     const isMove = excludeFilterId !== undefined;
@@ -115,6 +125,11 @@ export default function AddToReportFilterPanel({
         [assignReportTransactionMutation, excludeFilterId, onClose, reportId, selectedFilter, transaction.id],
     );
 
+    const handlePickFilter = useCallback((pick: { categoryId: string; filterId: string }): void => {
+        setSelectedCategoryId(pick.categoryId);
+        setSelectedFilterId(pick.filterId);
+    }, []);
+
     return (
         <div
             className="sticky top-4 flex max-h-[calc(100vh-2rem)] shrink-0 flex-col gap-3 self-start"
@@ -152,11 +167,22 @@ export default function AddToReportFilterPanel({
                     </div>
                 </div>
 
+                <FilterSearch
+                    key={`${transaction.id}:${searchResetKey}`}
+                    options={searchOptions}
+                    disabled={isReportLoading || isReportError || !hasAnyFilters}
+                    onPick={handlePickFilter}
+                />
+
                 <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
                     Category
                     <select
                         value={selectedCategoryId}
-                        onChange={(event): void => setSelectedCategoryId(event.target.value)}
+                        onChange={(event): void => {
+                            setSelectedCategoryId(event.target.value);
+                            setSelectedFilterId("");
+                            setSearchResetKey((key) => key + 1);
+                        }}
                         className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-normal text-slate-900 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                         disabled={isReportLoading || isReportError || !hasAnyFilters}
                         required
@@ -174,7 +200,10 @@ export default function AddToReportFilterPanel({
                     Filter
                     <select
                         value={selectedFilterId}
-                        onChange={(event): void => setSelectedFilterId(event.target.value)}
+                        onChange={(event): void => {
+                            setSelectedFilterId(event.target.value);
+                            setSearchResetKey((key) => key + 1);
+                        }}
                         className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-normal text-slate-900 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                         disabled={selectedCategory === undefined}
                         required

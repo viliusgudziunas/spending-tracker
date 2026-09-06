@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { type RuleOperator, type RuleType, type Transaction } from "@/clients/backendClient/responseParsers";
 import { RULE_OPERATORS, RULE_TYPES } from "@/clients/backendClient/schemas";
 import { OPERATOR_LABELS, RULE_TYPE_LABELS } from "@/components/report-detail/constants";
+import FilterSearch, { type FilterSearchOption } from "@/components/report-detail/FilterSearch";
 import { getTransactionRuleValue } from "@/components/report-detail/helpers";
 import { useCategoriesQuery } from "@/hooks/useCategoryQueries";
 import useFilterForm from "@/hooks/useFilterForm";
@@ -28,6 +29,7 @@ export default function AddToRuleGroupPanel({
     const generateReportMutation = useGenerateReportMutation();
     const [selectedCategoryId, setSelectedCategoryId] = useState("");
     const [selectedFilterId, setSelectedFilterId] = useState("");
+    const [searchResetKey, setSearchResetKey] = useState(0);
     const [submitError, setSubmitError] = useState<string | null>(null);
 
     const selectedCategory = useMemo(
@@ -38,6 +40,18 @@ export default function AddToRuleGroupPanel({
         () => selectedCategory?.filters.find((filter) => filter.id === selectedFilterId),
         [selectedCategory, selectedFilterId],
     );
+    const searchOptions = useMemo(
+        (): FilterSearchOption[] =>
+            (categories ?? []).flatMap((category) =>
+                category.filters.map((filter) => ({
+                    id: filter.id,
+                    name: filter.name,
+                    categoryId: category.id,
+                    categoryName: category.name,
+                })),
+            ),
+        [categories],
+    );
 
     const isSubmitting = putFilterRuleGroupsMutation.isPending || generateReportMutation.isPending;
 
@@ -47,11 +61,6 @@ export default function AddToRuleGroupPanel({
         setSelectedFilterId("");
         setSubmitError(null);
     }, [transaction.id]);
-
-    useEffect(() => {
-        filterFormStore.actions.resetFilter();
-        setSelectedFilterId("");
-    }, [selectedCategoryId]);
 
     useEffect(() => {
         if (selectedFilter === undefined) {
@@ -110,6 +119,11 @@ export default function AddToRuleGroupPanel({
         ],
     );
 
+    const handlePickFilter = useCallback((pick: { categoryId: string; filterId: string }): void => {
+        setSelectedCategoryId(pick.categoryId);
+        setSelectedFilterId(pick.filterId);
+    }, []);
+
     return (
         <div
             className="sticky top-4 flex max-h-[calc(100vh-2rem)] shrink-0 flex-col gap-3 self-start"
@@ -141,11 +155,22 @@ export default function AddToRuleGroupPanel({
                     </div>
                 </div>
 
+                <FilterSearch
+                    key={`${transaction.id}:${searchResetKey}`}
+                    options={searchOptions}
+                    disabled={isCategoriesLoading || isCategoriesError || searchOptions.length === 0}
+                    onPick={handlePickFilter}
+                />
+
                 <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
                     Category
                     <select
                         value={selectedCategoryId}
-                        onChange={(event): void => setSelectedCategoryId(event.target.value)}
+                        onChange={(event): void => {
+                            setSelectedCategoryId(event.target.value);
+                            setSelectedFilterId("");
+                            setSearchResetKey((key) => key + 1);
+                        }}
                         className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-normal text-slate-900 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                         disabled={isCategoriesLoading || isCategoriesError}
                         required
@@ -163,7 +188,10 @@ export default function AddToRuleGroupPanel({
                     Filter
                     <select
                         value={selectedFilterId}
-                        onChange={(event): void => setSelectedFilterId(event.target.value)}
+                        onChange={(event): void => {
+                            setSelectedFilterId(event.target.value);
+                            setSearchResetKey((key) => key + 1);
+                        }}
                         className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-normal text-slate-900 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
                         disabled={selectedCategory === undefined}
                         required
@@ -315,6 +343,9 @@ export default function AddToRuleGroupPanel({
                 )}
 
                 {isCategoriesError ? <div className="text-xs text-red-600">Failed to load categories.</div> : null}
+                {!isCategoriesError && !isCategoriesLoading && searchOptions.length === 0 ? (
+                    <div className="text-xs text-amber-700">No filters found. Create a filter first.</div>
+                ) : null}
                 {submitError !== null ? <div className="text-xs text-red-600">{submitError}</div> : null}
 
                 <div className="flex gap-2">
