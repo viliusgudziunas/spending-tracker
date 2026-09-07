@@ -5,6 +5,7 @@ export interface FilterSearchOption {
     name: string;
     categoryId: string;
     categoryName: string;
+    descriptionRuleValues: string[];
 }
 
 interface FilterSearchProps {
@@ -13,8 +14,17 @@ interface FilterSearchProps {
     onPick: (pick: { categoryId: string; filterId: string }) => void;
 }
 
-function filterNameMatches(name: string, query: string): boolean {
-    return name.toLowerCase().includes(query.toLowerCase());
+function includesIgnoreCase(value: string, query: string): boolean {
+    return value.toLowerCase().includes(query.toLowerCase());
+}
+
+function optionMatches(option: FilterSearchOption, query: string): boolean {
+    if (includesIgnoreCase(option.name, query)) return true;
+    return option.descriptionRuleValues.some((value) => includesIgnoreCase(value, query));
+}
+
+function matchingDescriptionRule(option: FilterSearchOption, query: string): string | undefined {
+    return option.descriptionRuleValues.find((value) => includesIgnoreCase(value, query));
 }
 
 export default function FilterSearch({ options, disabled = false, onPick }: FilterSearchProps): JSX.Element {
@@ -22,7 +32,7 @@ export default function FilterSearch({ options, disabled = false, onPick }: Filt
     const trimmedQuery = query.trim();
     const matches = useMemo(() => {
         if (trimmedQuery === "") return [];
-        return options.filter((option) => filterNameMatches(option.name, trimmedQuery));
+        return options.filter((option) => optionMatches(option, trimmedQuery));
     }, [options, trimmedQuery]);
 
     function handlePickOption(option: FilterSearchOption): void {
@@ -45,7 +55,7 @@ export default function FilterSearch({ options, disabled = false, onPick }: Filt
                         event.preventDefault();
                         handlePickOption(firstMatch);
                     }}
-                    placeholder="Type a filter name"
+                    placeholder="Type a filter name or description value"
                     disabled={disabled}
                     className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm font-normal text-slate-900 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
                 />
@@ -57,21 +67,36 @@ export default function FilterSearch({ options, disabled = false, onPick }: Filt
                 <ul className="max-h-40 overflow-y-auto rounded-md border border-slate-200 bg-white">
                     {matches.length === 0 ? (
                         <li className="px-2.5 py-1.5 text-xs text-slate-500">
-                            No filter names match. Choose a category below, or try another name.
+                            No matching filters. Choose a category below, or try another search.
                         </li>
                     ) : (
-                        matches.map((option, index) => (
-                            <li key={option.id}>
-                                <button
-                                    type="button"
-                                    onClick={(): void => handlePickOption(option)}
-                                    className={`flex w-full items-baseline justify-between gap-2 px-2.5 py-1.5 text-left transition hover:bg-slate-50 ${index === 0 ? "bg-slate-50" : ""}`}
-                                >
-                                    <span className="truncate text-sm font-normal text-slate-900">{option.name}</span>
-                                    <span className="shrink-0 text-[11px] text-slate-400">{option.categoryName}</span>
-                                </button>
-                            </li>
-                        ))
+                        matches.map((option, index) => {
+                            const nameMatched = includesIgnoreCase(option.name, trimmedQuery);
+                            const hittingRule = nameMatched ? undefined : matchingDescriptionRule(option, trimmedQuery);
+                            return (
+                                <li key={option.id}>
+                                    <button
+                                        type="button"
+                                        onClick={(): void => handlePickOption(option)}
+                                        className={`flex w-full items-baseline justify-between gap-2 px-2.5 py-1.5 text-left transition hover:bg-slate-50 ${index === 0 ? "bg-slate-50" : ""}`}
+                                    >
+                                        <span className="flex min-w-0 flex-col">
+                                            <span className="truncate text-sm font-normal text-slate-900">
+                                                {option.name}
+                                            </span>
+                                            {hittingRule !== undefined ? (
+                                                <span className="truncate text-[11px] text-slate-500">
+                                                    {hittingRule}
+                                                </span>
+                                            ) : null}
+                                        </span>
+                                        <span className="shrink-0 text-[11px] text-slate-400">
+                                            {option.categoryName}
+                                        </span>
+                                    </button>
+                                </li>
+                            );
+                        })
                     )}
                 </ul>
             ) : null}

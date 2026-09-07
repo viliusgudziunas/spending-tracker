@@ -4,7 +4,7 @@ import { type RuleOperator, type RuleType, type Transaction } from "@/clients/ba
 import { RULE_OPERATORS, RULE_TYPES } from "@/clients/backendClient/schemas";
 import { OPERATOR_LABELS, RULE_TYPE_LABELS } from "@/components/report-detail/constants";
 import FilterSearch, { type FilterSearchOption } from "@/components/report-detail/FilterSearch";
-import { getTransactionRuleValue } from "@/components/report-detail/helpers";
+import { descriptionRuleValuesForSearch, getTransactionRuleValue } from "@/components/report-detail/helpers";
 import { useCategoriesQuery } from "@/hooks/useCategoryQueries";
 import useFilterForm from "@/hooks/useFilterForm";
 import { usePutFilterRuleGroupsMutation } from "@/hooks/useFilterQueries";
@@ -48,6 +48,7 @@ export default function AddToRuleGroupPanel({
                     name: filter.name,
                     categoryId: category.id,
                     categoryName: category.name,
+                    descriptionRuleValues: descriptionRuleValuesForSearch(filter),
                 })),
             ),
         [categories],

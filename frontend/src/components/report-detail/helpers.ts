@@ -1,4 +1,5 @@
 import {
+    type Filter,
     type ReportCategory,
     type ReportFilter,
     type RuleType,
@@ -7,7 +8,7 @@ import {
 
 import type { FilterRow } from "./constants";
 
-function buildFilterRows(filters: ReportFilter[]): FilterRow[] {
+export function buildFilterRows(filters: ReportFilter[]): FilterRow[] {
     return filters
         .filter((filter) => filter.transactions.length > 0)
         .map((filter) => ({
@@ -18,7 +19,7 @@ function buildFilterRows(filters: ReportFilter[]): FilterRow[] {
         }));
 }
 
-function getTransactionRuleValue(transaction: Transaction, ruleType: RuleType): string {
+export function getTransactionRuleValue(transaction: Transaction, ruleType: RuleType): string {
     switch (ruleType) {
         case "DESCRIPTION":
             return transaction.description;
@@ -31,11 +32,17 @@ function getTransactionRuleValue(transaction: Transaction, ruleType: RuleType): 
     }
 }
 
-function buildCategoryTsv(category: ReportCategory): string {
+export function descriptionRuleValuesForSearch(filter: Pick<Filter, "ruleGroups">): string[] {
+    return filter.ruleGroups.flatMap((group) =>
+        group.rules
+            .filter((rule) => rule.type === "DESCRIPTION" && rule.operator === "EQUAL")
+            .map((rule) => rule.value),
+    );
+}
+
+export function buildCategoryTsv(category: ReportCategory): string {
     return category.filters
         .filter((filter) => filter.transactions.length > 0)
         .map((filter) => `${filter.amount}\t${filter.name}`)
         .join("\n");
 }
-
-export { buildCategoryTsv, buildFilterRows, getTransactionRuleValue };

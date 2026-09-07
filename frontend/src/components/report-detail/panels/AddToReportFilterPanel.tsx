@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { type Transaction } from "@/clients/backendClient/responseParsers";
 import FilterSearch, { type FilterSearchOption } from "@/components/report-detail/FilterSearch";
+import { descriptionRuleValuesForSearch } from "@/components/report-detail/helpers";
+import { useCategoriesQuery } from "@/hooks/useCategoryQueries";
 import { useAssignReportTransactionMutation, useReportQuery } from "@/hooks/useReportsQueries";
 
 interface AddToReportFilterPanelProps {
@@ -20,6 +22,7 @@ export default function AddToReportFilterPanel({
     width,
 }: AddToReportFilterPanelProps): JSX.Element {
     const { data: report, isLoading: isReportLoading, isError: isReportError } = useReportQuery(reportId);
+    const { data: categories } = useCategoriesQuery();
     const assignReportTransactionMutation = useAssignReportTransactionMutation();
     const [selectedCategoryId, setSelectedCategoryId] = useState("");
     const [selectedFilterId, setSelectedFilterId] = useState("");
@@ -44,18 +47,24 @@ export default function AddToReportFilterPanel({
         () => selectedCategory?.filters.find((filter) => filter.id === selectedFilterId),
         [selectedCategory, selectedFilterId],
     );
-    const searchOptions = useMemo(
-        (): FilterSearchOption[] =>
-            categoriesWithAssignableFilters.flatMap((category) =>
-                category.filters.map((filter) => ({
+    const searchOptions = useMemo((): FilterSearchOption[] => {
+        const ruleFilterById = new Map(
+            (categories ?? []).flatMap((category) => category.filters.map((filter) => [filter.id, filter])),
+        );
+        return categoriesWithAssignableFilters.flatMap((category) =>
+            category.filters.map((filter) => {
+                const ruleFilter =
+                    filter.ruleFilterId === undefined ? undefined : ruleFilterById.get(filter.ruleFilterId);
+                return {
                     id: filter.id,
                     name: filter.name,
                     categoryId: category.id,
                     categoryName: category.name,
-                })),
-            ),
-        [categoriesWithAssignableFilters],
-    );
+                    descriptionRuleValues: ruleFilter === undefined ? [] : descriptionRuleValuesForSearch(ruleFilter),
+                };
+            }),
+        );
+    }, [categories, categoriesWithAssignableFilters]);
     const isSubmitting = assignReportTransactionMutation.isPending;
     const reportRef = useRef(report);
     reportRef.current = report;
