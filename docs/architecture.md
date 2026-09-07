@@ -87,7 +87,7 @@ Four domains, all registered in `main.py`. Full request/response detail lives in
 
 ### Key Flows
 
-**CSV parsing** (`statement_service`) — The uploaded file is read into a Pandas DataFrame, column names are normalised to `snake_case`, and each row keeps its original un-normalised data in a `raw_data` dict. The report service maps rows into DTOs and persists them as transactions.
+**CSV parsing** (`statement_service`) — The uploaded file is read into a Pandas DataFrame, column names are normalised to `snake_case`, and each row keeps its original un-normalised data in a `raw_data` dict. Reverted and pending rows are stripped in the upload UI after the user confirms; they never reach the API. The report service maps remaining rows into DTOs and persists them as transactions.
 
 **Report generation** (`report_service`) — `POST /reports/{id}/generate` rebuilds the report's categorisation from scratch:
 

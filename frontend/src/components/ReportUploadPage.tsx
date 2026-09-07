@@ -3,16 +3,51 @@ import { AgGridReact } from "ag-grid-react";
 import { type ChangeEvent, type DragEvent, useMemo, useRef, useState } from "react";
 
 import { useCreateReportMutation } from "@/hooks/useReportsQueries";
-import { parseCsvContent, type PreviewRow } from "@/shared/utils/csvParser";
+import { parseCsvContent, type PreviewRow, serializePreviewCsv } from "@/shared/utils/csvParser";
+
+function previewRowField(row: PreviewRow, name: string): string {
+    const key = Object.keys(row).find((header) => header.replaceAll(" ", "_").toLowerCase() === name);
+    if (key === undefined) {
+        return "";
+    }
+    return row[key].trim();
+}
+
+function isUnsettledPreviewRow(row: PreviewRow): boolean {
+    const state = previewRowField(row, "state").toLowerCase();
+    return state === "reverted" || state === "pending";
+}
+
+function previewColumnDefs(headers: string[]): ColDef<PreviewRow>[] {
+    return headers.map((header) => ({
+        field: header,
+        headerName: header,
+        resizable: true,
+        sortable: true,
+        filter: true,
+    }));
+}
+
+function unsettledRowLabel(row: PreviewRow): string {
+    const description = previewRowField(row, "description") || "Untitled";
+    const amount = previewRowField(row, "amount");
+    const state = previewRowField(row, "state") || "unsettled";
+    if (amount.length === 0) {
+        return `${description} · ${state}`;
+    }
+    return `${description} (${amount}) · ${state}`;
+}
 
 export default function ReportUploadPage(): JSX.Element {
     const createReportMutation = useCreateReportMutation();
     const [file, setFile] = useState<File | null>(null);
     const [reportName, setReportName] = useState<string>("");
-    const [columnDefs, setColumnDefs] = useState<ColDef<PreviewRow>[]>([]);
+    const [headers, setHeaders] = useState<string[]>([]);
     const [rows, setRows] = useState<PreviewRow[]>([]);
+    const columnDefs = useMemo(() => previewColumnDefs(headers), [headers]);
     const [uploadMessage, setUploadMessage] = useState<string>("");
     const isSuccessMessage = uploadMessage.toLowerCase().includes("success");
+    const unsettledRows = useMemo(() => rows.filter(isUnsettledPreviewRow), [rows]);
 
     const defaultColDef = useMemo<ColDef<PreviewRow>>(
         () => ({
@@ -33,7 +68,7 @@ export default function ReportUploadPage(): JSX.Element {
         setUploadMessage("");
 
         if (selectedFile === null) {
-            setColumnDefs([]);
+            setHeaders([]);
             setRows([]);
             return;
         }
@@ -42,13 +77,13 @@ export default function ReportUploadPage(): JSX.Element {
         reader.onload = (loadEvent): void => {
             const csvContent = loadEvent.target?.result;
             if (typeof csvContent !== "string") {
-                setColumnDefs([]);
+                setHeaders([]);
                 setRows([]);
                 return;
             }
 
             const parsed = parseCsvContent(csvContent);
-            setColumnDefs(parsed.columnDefs);
+            setHeaders(parsed.headers);
             setRows(parsed.rows);
         };
         reader.readAsText(selectedFile);
@@ -78,11 +113,21 @@ export default function ReportUploadPage(): JSX.Element {
             setUploadMessage("Please choose a CSV file and enter report name.");
             return;
         }
+        if (unsettledRows.length > 0) {
+            setUploadMessage("Remove reverted and pending transactions before uploading.");
+            return;
+        }
+        if (rows.length === 0) {
+            setUploadMessage("No transactions left to upload.");
+            return;
+        }
 
         setUploadMessage("");
         try {
+            const csv = serializePreviewCsv(headers, rows);
+            const statementFile = new File([csv], file.name, { type: "text/csv" });
             await createReportMutation.mutateAsync({
-                bankStatement: file,
+                bankStatement: statementFile,
                 name: reportName.trim(),
             });
             setUploadMessage("Report uploaded successfully.");
@@ -93,6 +138,11 @@ export default function ReportUploadPage(): JSX.Element {
                 setUploadMessage("Failed to upload report.");
             }
         }
+    };
+
+    const handleRemoveUnsettled = (): void => {
+        setRows((currentRows) => currentRows.filter((row) => !isUnsettledPreviewRow(row)));
+        setUploadMessage("");
     };
 
     return (
@@ -155,13 +205,35 @@ export default function ReportUploadPage(): JSX.Element {
                         <button
                             type="button"
                             onClick={(): void => void handleUpload()}
-                            disabled={createReportMutation.isPending}
+                            disabled={createReportMutation.isPending || unsettledRows.length > 0}
                             className="min-h-[34px] rounded-md bg-blue-600 px-3 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                         >
                             {createReportMutation.isPending ? "Uploading..." : "Upload CSV"}
                         </button>
                     </div>
                 </div>
+
+                {unsettledRows.length > 0 ? (
+                    <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-950">
+                        <p className="font-semibold">
+                            This statement has {unsettledRows.length}{" "}
+                            {unsettledRows.length === 1 ? "transaction" : "transactions"} that never settled (reverted
+                            or pending). They are not spending. Remove them to continue.
+                        </p>
+                        <ul className="mt-2 max-h-32 list-disc overflow-y-auto pl-4 font-normal">
+                            {unsettledRows.map((row, index) => (
+                                <li key={`${unsettledRowLabel(row)}-${index}`}>{unsettledRowLabel(row)}</li>
+                            ))}
+                        </ul>
+                        <button
+                            type="button"
+                            onClick={handleRemoveUnsettled}
+                            className="mt-2 min-h-[30px] rounded-md bg-amber-700 px-2.5 text-xs font-semibold text-white transition hover:bg-amber-800"
+                        >
+                            Remove them from this statement
+                        </button>
+                    </div>
+                ) : null}
 
                 {uploadMessage.length > 0 ? (
                     <div
