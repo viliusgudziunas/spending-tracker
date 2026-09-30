@@ -1,9 +1,11 @@
 import uuid  # noqa: TC003
 from datetime import datetime  # noqa: TC003
 from decimal import Decimal  # noqa: TC003
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, StringConstraints, model_validator
+
+MonthKey = Annotated[str, StringConstraints(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")]
 
 
 class PutReportAssignmentInput(BaseModel):
@@ -21,7 +23,15 @@ class PutReportAssignmentInput(BaseModel):
 
 
 class UpdateReportInput(BaseModel):
-    name: str
+    name: str | None = None
+    month: MonthKey | None = None
+
+    @model_validator(mode="after")
+    def at_least_one_field_set(self) -> UpdateReportInput:
+        if self.name is None and self.month is None:
+            msg = "At least one of 'name' or 'month' must be provided"
+            raise ValueError(msg)
+        return self
 
 
 class CreateReportManualFilterInput(BaseModel):
@@ -33,12 +43,14 @@ class CreateReportManualFilterInput(BaseModel):
 class ReportResponse(BaseModel):
     id: uuid.UUID
     name: str
+    month: str | None
     schema_version: int
 
 
 class ReportDetailResponse(BaseModel):
     id: uuid.UUID
     name: str
+    month: str | None
     schema_version: int
     categories: list[ReportDetailCategoryResponse]
     unidentified_transactions: list[ReportDetailTransactionResponse]

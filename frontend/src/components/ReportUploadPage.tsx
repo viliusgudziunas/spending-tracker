@@ -38,10 +38,17 @@ function unsettledRowLabel(row: PreviewRow): string {
     return `${description} (${amount}) · ${state}`;
 }
 
+function previousCalendarMonth(now: Date = new Date()): string {
+    const previous = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const month = String(previous.getMonth() + 1).padStart(2, "0");
+    return `${previous.getFullYear()}-${month}`;
+}
+
 export default function ReportUploadPage(): JSX.Element {
     const createReportMutation = useCreateReportMutation();
     const [file, setFile] = useState<File | null>(null);
     const [reportName, setReportName] = useState<string>("");
+    const [reportMonth, setReportMonth] = useState<string>(previousCalendarMonth);
     const [headers, setHeaders] = useState<string[]>([]);
     const [rows, setRows] = useState<PreviewRow[]>([]);
     const columnDefs = useMemo(() => previewColumnDefs(headers), [headers]);
@@ -109,8 +116,8 @@ export default function ReportUploadPage(): JSX.Element {
     };
 
     const handleUpload = async (): Promise<void> => {
-        if (file === null || reportName.trim().length === 0) {
-            setUploadMessage("Please choose a CSV file and enter report name.");
+        if (file === null || reportName.trim().length === 0 || reportMonth.length === 0) {
+            setUploadMessage("Please choose a CSV file, enter a report name, and pick a month.");
             return;
         }
         if (unsettledRows.length > 0) {
@@ -129,6 +136,7 @@ export default function ReportUploadPage(): JSX.Element {
             await createReportMutation.mutateAsync({
                 bankStatement: statementFile,
                 name: reportName.trim(),
+                month: reportMonth,
             });
             setUploadMessage("Report uploaded successfully.");
         } catch (error: unknown) {
@@ -199,6 +207,17 @@ export default function ReportUploadPage(): JSX.Element {
                                 onChange={(event): void => setReportName(event.target.value)}
                                 placeholder="e.g. January 2026"
                                 className="min-h-[34px] rounded-md border border-slate-300 px-2 py-1.5 text-xs font-normal text-slate-900 placeholder:text-slate-400"
+                            />
+                        </label>
+
+                        <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700">
+                            Month
+                            <input
+                                type="month"
+                                required
+                                value={reportMonth}
+                                onChange={(event): void => setReportMonth(event.target.value)}
+                                className="min-h-[34px] rounded-md border border-slate-300 px-2 py-1.5 text-xs font-normal text-slate-900"
                             />
                         </label>
 

@@ -38,7 +38,7 @@ export default function AppSidebar({ collapsed, onToggle }: AppSidebarProps): JS
 
     return (
         <aside className="sticky top-4 flex h-fit flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <nav>
+            <nav className="flex flex-col gap-1">
                 <Link
                     to="/plan"
                     className={`block rounded-md px-3 py-2 text-sm font-semibold no-underline transition ${
@@ -48,6 +48,16 @@ export default function AppSidebar({ collapsed, onToggle }: AppSidebarProps): JS
                     }`}
                 >
                     Plan
+                </Link>
+                <Link
+                    to="/breakdown"
+                    className={`block rounded-md px-3 py-2 text-sm font-semibold no-underline transition ${
+                        matchRoute({ to: "/breakdown" })
+                            ? "bg-blue-50 text-blue-700"
+                            : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                >
+                    Breakdown
                 </Link>
             </nav>
 
@@ -98,13 +108,22 @@ export default function AppSidebar({ collapsed, onToggle }: AppSidebarProps): JS
                                 <Link
                                     to="/reports/$reportId"
                                     params={{ reportId: report.id }}
-                                    className={`block rounded-md px-3 py-2 text-xs font-medium no-underline transition ${
+                                    className={`flex items-center justify-between gap-2 rounded-md px-3 py-2 text-xs font-medium no-underline transition ${
                                         isActive
                                             ? "bg-blue-50 text-blue-700"
                                             : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
                                     }`}
                                 >
-                                    {report.name}
+                                    <span className="min-w-0 truncate">{report.name}</span>
+                                    {report.month !== null ? (
+                                        <span
+                                            className={`shrink-0 font-normal ${isActive ? "text-blue-500" : "text-slate-400"}`}
+                                        >
+                                            {report.month}
+                                        </span>
+                                    ) : (
+                                        <span className="shrink-0 font-normal text-amber-600">No month</span>
+                                    )}
                                 </Link>
                             </li>
                         );

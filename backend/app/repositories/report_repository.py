@@ -1,11 +1,14 @@
 import uuid
 from typing import TYPE_CHECKING, Any, TypedDict
 
+from psycopg2.errors import UniqueViolation
 from pydantic import BaseModel, ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import select
 
 from app.db.models import Report, Transaction
 from app.repositories.exceptions import (
+    DuplicateReportMonthError,
     ReportManualAssignmentNotFoundError,
     ReportManualFilterNotFoundError,
     ReportNotFoundError,
@@ -24,8 +27,19 @@ def get_reports(db: Session) -> Sequence[Report]:
     return db.scalars(select(Report).order_by(Report.created_at.desc())).all()
 
 
-def create_report(db: Session, name: str, transactions: list[CreateTransactionDto]) -> Report:
-    report = Report(name=name)
+def get_generated_monthly_reports(db: Session) -> Sequence[Report]:
+    return db.scalars(
+        select(Report).where(Report.month.is_not(None)).where(Report.data.is_not(None)).order_by(Report.month.asc()),
+    ).all()
+
+
+def create_report(
+    db: Session,
+    name: str,
+    transactions: list[CreateTransactionDto],
+    month: str | None = None,
+) -> Report:
+    report = Report(name=name, month=month)
     db.add(report)
 
     for tx_dto in transactions:
@@ -45,16 +59,34 @@ def create_report(db: Session, name: str, transactions: list[CreateTransactionDt
         )
         db.add(transaction)
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        if isinstance(exc.orig, UniqueViolation):
+            raise DuplicateReportMonthError from exc
+        raise
+
     db.refresh(report)
     return report
 
 
-def update_report(db: Session, report_id: uuid.UUID, name: str) -> Report:
+def update_report(db: Session, report_id: uuid.UUID, name: str | None = None, month: str | None = None) -> Report:
     report = get_report(db=db, report_id=report_id)
-    report.name = name
+    if name is not None:
+        report.name = name
+    if month is not None:
+        report.month = month
     db.add(report)
-    db.commit()
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        if isinstance(exc.orig, UniqueViolation):
+            raise DuplicateReportMonthError from exc
+        raise
+
     db.refresh(report)
     return report
 

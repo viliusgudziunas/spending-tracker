@@ -13,12 +13,7 @@ from app.api.schemas.report_schemas import (
     ReportDetailTransactionV2Response,
     ReportManualFilterResponse,
 )
-from app.db.models import (
-    CURRENT_TRANSACTION_SCHEMA_VERSION,
-    Category,
-    Report,
-    Transaction,
-)
+from app.db.models import CURRENT_TRANSACTION_SCHEMA_VERSION, Category, Report, Transaction
 from app.repositories import category_repository, filter_repository, report_repository
 from app.repositories.dtos import CreateTransactionDto
 from app.services import statement_service, transactions_service
@@ -33,7 +28,7 @@ def list_reports(db: Session) -> Sequence[Report]:
     return report_repository.get_reports(db=db)
 
 
-def create_report(db: Session, name: str, file_content: bytes) -> Report:
+def create_report(db: Session, name: str, month: str, file_content: bytes) -> Report:
     statement = statement_service.parse_file_content(content=file_content)
     records = statement_service.parse_statement(statement=statement)
 
@@ -54,11 +49,11 @@ def create_report(db: Session, name: str, file_content: bytes) -> Report:
         for r in records
     ]
 
-    return report_repository.create_report(db=db, name=name, transactions=transactions)
+    return report_repository.create_report(db=db, name=name, month=month, transactions=transactions)
 
 
-def update_report(db: Session, report_id: uuid.UUID, name: str) -> Report:
-    return report_repository.update_report(db=db, report_id=report_id, name=name)
+def update_report(db: Session, report_id: uuid.UUID, name: str | None = None, month: str | None = None) -> Report:
+    return report_repository.update_report(db=db, report_id=report_id, name=name, month=month)
 
 
 def get_report_detail(db: Session, report_id: uuid.UUID) -> ReportDetailResponse:
@@ -367,6 +362,7 @@ def build_report_full_response(report: Report) -> ReportDetailResponse:
     return ReportDetailResponse(
         id=report.id,
         name=report.name,
+        month=report.month,
         schema_version=report.schema_version,
         categories=categories,
         unidentified_transactions=unidentified,

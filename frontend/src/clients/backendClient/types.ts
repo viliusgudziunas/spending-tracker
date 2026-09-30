@@ -1,10 +1,12 @@
 export interface CreateReportPayload {
     bankStatement: File;
     name: string;
+    month: string;
 }
 
 export interface PatchReportPayload {
-    name: string;
+    name?: string;
+    month?: string;
 }
 
 export interface CreateCategoryPayload {

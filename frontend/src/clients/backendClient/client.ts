@@ -8,8 +8,10 @@ import {
     parseIntoUpdateApiFilterPayload,
 } from "./requestMappers";
 import {
+    type Breakdown,
     type Category,
     type Filter,
+    parseApiBreakdown,
     parseApiCategories,
     parseApiCategory,
     parseApiFilter,
@@ -67,10 +69,16 @@ class BackendClient {
         return parseApiReports(response.data);
     }
 
+    async fetchBreakdown(): Promise<Breakdown> {
+        const response = await this.http.get("/breakdown");
+        return parseApiBreakdown(response.data);
+    }
+
     async createReport(payload: CreateReportPayload): Promise<Report> {
         const formData = new FormData();
         formData.append("upload_file", payload.bankStatement);
         formData.append("name", payload.name);
+        formData.append("month", payload.month);
 
         try {
             const response = await this.http.post("/reports", formData, {
@@ -90,7 +98,8 @@ class BackendClient {
     async patchReport(reportId: string, payload: PatchReportPayload): Promise<Report> {
         try {
             const response = await this.http.patch(`/reports/${reportId}`, {
-                name: payload.name,
+                ...(payload.name !== undefined ? { name: payload.name } : {}),
+                ...(payload.month !== undefined ? { month: payload.month } : {}),
             });
             return ReportSchema.parse(response.data);
         } catch (error: unknown) {

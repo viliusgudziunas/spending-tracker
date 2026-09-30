@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { type ReportFilter, type Transaction } from "@/clients/backendClient/responseParsers";
 import CategoriesPanel from "@/components/categories-panel/CategoriesPanel";
@@ -34,6 +34,7 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
     const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
     const [isEditingName, setIsEditingName] = useState(false);
     const [editedReportName, setEditedReportName] = useState("");
+    const [editedMonth, setEditedMonth] = useState("");
     const isDragging = useRef(false);
 
     const handleFilterClick = useCallback((filter: ReportFilter): void => {
@@ -153,6 +154,26 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
         [editedReportName, patchMutation, report, reportId],
     );
 
+    const handleMonthChange = useCallback(
+        async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+            const month = event.target.value;
+            if (report === undefined) {
+                return;
+            }
+            if (month === "" || month === (report.month ?? "")) {
+                setEditedMonth(report.month ?? "");
+                return;
+            }
+
+            setEditedMonth(month);
+            await patchMutation.mutateAsync({
+                reportId,
+                payload: { month },
+            });
+        },
+        [patchMutation, report, reportId],
+    );
+
     const handleMouseDown = useCallback((e: React.MouseEvent): void => {
         e.preventDefault();
         isDragging.current = true;
@@ -185,6 +206,9 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
     useEffect(() => {
         if (!isEditingName && report !== undefined) {
             setEditedReportName(report.name);
+        }
+        if (report !== undefined) {
+            setEditedMonth(report.month ?? "");
         }
     }, [isEditingName, report]);
 
@@ -233,36 +257,51 @@ export default function ReportDetailPage({ reportId }: ReportDetailPageProps): J
         <div className="flex">
             <div className="flex min-w-0 flex-1 flex-col gap-3">
                 <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                    {isEditingName ? (
-                        <form onSubmit={(event): void => void handleSubmitReportName(event)} className="min-w-0 flex-1">
-                            <div className="flex min-w-0 items-center gap-2">
-                                <input
-                                    type="text"
-                                    value={editedReportName}
-                                    onChange={(event): void => setEditedReportName(event.target.value)}
-                                    autoFocus
-                                    className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-base font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={patchMutation.isPending || editedReportName.trim() === ""}
-                                    className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    {patchMutation.isPending ? "Saving..." : "Save"}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleCancelEditingName}
-                                    disabled={patchMutation.isPending}
-                                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
-                    ) : (
-                        <h1 className="m-0 text-2xl font-semibold text-slate-900">{report.name}</h1>
-                    )}
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                        {isEditingName ? (
+                            <form
+                                onSubmit={(event): void => void handleSubmitReportName(event)}
+                                className="min-w-0 flex-1"
+                            >
+                                <div className="flex min-w-0 items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={editedReportName}
+                                        onChange={(event): void => setEditedReportName(event.target.value)}
+                                        autoFocus
+                                        className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-base font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={patchMutation.isPending || editedReportName.trim() === ""}
+                                        className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        {patchMutation.isPending ? "Saving..." : "Save"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleCancelEditingName}
+                                        disabled={patchMutation.isPending}
+                                        className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <h1 className="m-0 min-w-0 truncate text-2xl font-semibold text-slate-900">
+                                {report.name}
+                            </h1>
+                        )}
+                        <input
+                            type="month"
+                            aria-label="Report month"
+                            value={editedMonth}
+                            onChange={(event): void => void handleMonthChange(event)}
+                            disabled={patchMutation.isPending}
+                            className="shrink-0 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        />
+                    </div>
                     <div className="flex items-center gap-2">
                         {!isEditingName ? (
                             <button

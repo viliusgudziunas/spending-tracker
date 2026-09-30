@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.breakdown_routes import router as breakdown_router
 from app.api.routes.category_routes import router as category_router
 from app.api.routes.filter_routes import router as filter_router
 from app.api.routes.plan_routes import router as plan_router
@@ -23,3 +24,4 @@ app.include_router(category_router, tags=["Categories"])
 app.include_router(filter_router, tags=["Filters"])
 app.include_router(plan_router, tags=["Plan"])
 app.include_router(report_router, tags=["Reports"])
+app.include_router(breakdown_router, tags=["Reports"])

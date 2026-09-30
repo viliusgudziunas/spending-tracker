@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppUploadRouteImport } from './routes/_app/upload'
 import { Route as AppPlanRouteImport } from './routes/_app/plan'
+import { Route as AppBreakdownRouteImport } from './routes/_app/breakdown'
 import { Route as AppReportsReportIdRouteImport } from './routes/_app/reports.$reportId'
 
 const AppRoute = AppRouteImport.update({
@@ -34,6 +35,11 @@ const AppPlanRoute = AppPlanRouteImport.update({
   path: '/plan',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBreakdownRoute = AppBreakdownRouteImport.update({
+  id: '/breakdown',
+  path: '/breakdown',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppReportsReportIdRoute = AppReportsReportIdRouteImport.update({
   id: '/reports/$reportId',
   path: '/reports/$reportId',
@@ -42,12 +48,14 @@ const AppReportsReportIdRoute = AppReportsReportIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/breakdown': typeof AppBreakdownRoute
   '/plan': typeof AppPlanRoute
   '/upload': typeof AppUploadRoute
   '/reports/$reportId': typeof AppReportsReportIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/breakdown': typeof AppBreakdownRoute
   '/plan': typeof AppPlanRoute
   '/upload': typeof AppUploadRoute
   '/reports/$reportId': typeof AppReportsReportIdRoute
@@ -56,19 +64,21 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
+  '/_app/breakdown': typeof AppBreakdownRoute
   '/_app/plan': typeof AppPlanRoute
   '/_app/upload': typeof AppUploadRoute
   '/_app/reports/$reportId': typeof AppReportsReportIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/plan' | '/upload' | '/reports/$reportId'
+  fullPaths: '/' | '/breakdown' | '/plan' | '/upload' | '/reports/$reportId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/plan' | '/upload' | '/reports/$reportId'
+  to: '/' | '/breakdown' | '/plan' | '/upload' | '/reports/$reportId'
   id:
     | '__root__'
     | '/'
     | '/_app'
+    | '/_app/breakdown'
     | '/_app/plan'
     | '/_app/upload'
     | '/_app/reports/$reportId'
@@ -109,6 +119,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPlanRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/breakdown': {
+      id: '/_app/breakdown'
+      path: '/breakdown'
+      fullPath: '/breakdown'
+      preLoaderRoute: typeof AppBreakdownRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/reports/$reportId': {
       id: '/_app/reports/$reportId'
       path: '/reports/$reportId'
@@ -120,12 +137,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppBreakdownRoute: typeof AppBreakdownRoute
   AppPlanRoute: typeof AppPlanRoute
   AppUploadRoute: typeof AppUploadRoute
   AppReportsReportIdRoute: typeof AppReportsReportIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppBreakdownRoute: AppBreakdownRoute,
   AppPlanRoute: AppPlanRoute,
   AppUploadRoute: AppUploadRoute,
   AppReportsReportIdRoute: AppReportsReportIdRoute,

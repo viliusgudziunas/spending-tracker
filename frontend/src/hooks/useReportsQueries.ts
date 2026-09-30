@@ -6,7 +6,12 @@ import {
     type UseQueryResult,
 } from "@tanstack/react-query";
 
-import { type Report, type ReportFull, type ReportManualFilter } from "@/clients/backendClient/responseParsers";
+import {
+    type Breakdown,
+    type Report,
+    type ReportFull,
+    type ReportManualFilter,
+} from "@/clients/backendClient/responseParsers";
 import {
     type CreateReportManualFilterPayload,
     type CreateReportPayload,
@@ -16,6 +21,7 @@ import {
 import { client } from "@/shared/stores/client";
 
 export const REPORTS_QUERY_KEY = ["reports"] as const;
+export const BREAKDOWN_QUERY_KEY = ["breakdown"] as const;
 
 export function useReportsQuery(): UseQueryResult<Report[]> {
     return useQuery({
@@ -31,6 +37,13 @@ export function useReportQuery(reportId: string): UseQueryResult<ReportFull> {
     });
 }
 
+export function useBreakdownQuery(): UseQueryResult<Breakdown> {
+    return useQuery({
+        queryKey: BREAKDOWN_QUERY_KEY,
+        queryFn: () => client.fetchBreakdown(),
+    });
+}
+
 export function useCreateReportMutation(): UseMutationResult<Report, Error, CreateReportPayload> {
     const queryClient = useQueryClient();
 
@@ -38,6 +51,7 @@ export function useCreateReportMutation(): UseMutationResult<Report, Error, Crea
         mutationFn: async (payload: CreateReportPayload) => await client.createReport(payload),
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: REPORTS_QUERY_KEY });
+            await queryClient.invalidateQueries({ queryKey: BREAKDOWN_QUERY_KEY });
         },
     });
 }
@@ -49,6 +63,7 @@ export function useGenerateReportMutation(): UseMutationResult<ReportFull, Error
         mutationFn: async (reportId: string) => await client.generateReport(reportId),
         onSuccess: async (_data, reportId) => {
             await queryClient.invalidateQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+            await queryClient.invalidateQueries({ queryKey: BREAKDOWN_QUERY_KEY });
         },
     });
 }
@@ -61,6 +76,7 @@ export function useDeleteReportMutation(): UseMutationResult<void, Error, string
         onSuccess: async (_data, reportId) => {
             await queryClient.invalidateQueries({ queryKey: REPORTS_QUERY_KEY });
             queryClient.removeQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+            await queryClient.invalidateQueries({ queryKey: BREAKDOWN_QUERY_KEY });
         },
     });
 }
@@ -78,6 +94,7 @@ export function usePatchReportMutation(): UseMutationResult<Report, Error, Patch
         onSuccess: async (_data, { reportId }) => {
             await queryClient.invalidateQueries({ queryKey: REPORTS_QUERY_KEY });
             await queryClient.invalidateQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+            await queryClient.invalidateQueries({ queryKey: BREAKDOWN_QUERY_KEY });
         },
     });
 }
@@ -99,6 +116,7 @@ export function useCreateReportManualFilterMutation(): UseMutationResult<
             await client.createReportManualFilter(reportId, payload),
         onSuccess: async (_data, { reportId }) => {
             await queryClient.invalidateQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+            await queryClient.invalidateQueries({ queryKey: BREAKDOWN_QUERY_KEY });
         },
     });
 }
@@ -121,6 +139,7 @@ export function useAssignReportTransactionMutation(): UseMutationResult<
             await client.assignReportTransaction(reportId, transactionId, payload),
         onSuccess: async (_data, { reportId }) => {
             await queryClient.invalidateQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+            await queryClient.invalidateQueries({ queryKey: BREAKDOWN_QUERY_KEY });
         },
     });
 }
@@ -142,6 +161,7 @@ export function useRemoveReportTransactionAssignmentMutation(): UseMutationResul
             await client.removeReportTransactionAssignment(reportId, transactionId),
         onSuccess: async (_data, { reportId }) => {
             await queryClient.invalidateQueries({ queryKey: [...REPORTS_QUERY_KEY, reportId] });
+            await queryClient.invalidateQueries({ queryKey: BREAKDOWN_QUERY_KEY });
         },
     });
 }

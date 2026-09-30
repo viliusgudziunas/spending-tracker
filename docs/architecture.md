@@ -80,7 +80,7 @@ Convention: routes stay thin and delegate to a service; services orchestrate rep
 
 Four domains, all registered in `main.py`. Full request/response detail lives in FastAPI's `/docs`; the summary:
 
-- **Reports** (`/reports`) — CRUD for reports (created by uploading a CSV), `POST /{id}/generate` to run the rules engine, `PUT`/`DELETE` on `/{id}/transactions/{tx_id}/assignment` for manual assignments, and `POST /{id}/manual-filters` for report-only filters.
+- **Reports** (`/reports`) — CRUD for reports (created by uploading a CSV; each report may have a unique `YYYY-MM` month), `POST /{id}/generate` to run the rules engine, `PUT`/`DELETE` on `/{id}/transactions/{tx_id}/assignment` for manual assignments, and `POST /{id}/manual-filters` for report-only filters. `GET /breakdown` is the same domain (not a fifth one): month-by-month actuals across generated reports that have a month, served at `/breakdown` because it is not a `/reports` path.
 - **Categories** (`/categories`) — create, list, and update (rename/reposition) rule categories.
 - **Filters** (`/filters`) — CRUD for rule filters plus `PUT /{id}/rule-groups` to replace a filter's rule groups wholesale.
 - **Plan** (`/plan/sections`) — CRUD for the ordered sections of the monthly budget waterfall.
@@ -122,7 +122,7 @@ Relationships: `category` 1→N `filter` 1→N `rule_group` 1→N `rule`, cascad
 
 | Table         | Purpose                                                                                              |
 | ------------- | ---------------------------------------------------------------------------------------------------- |
-| `report`      | A named report created from a CSV upload. Categorisation lives in a `data` JSONB column.             |
+| `report`      | A named report created from a CSV upload. Optional unique `month` (`YYYY-MM`). Categorisation lives in a `data` JSONB column. |
 | `transaction` | One bank statement row: financial fields, `raw_data` JSONB (original CSV row), `source` enum.        |
 
 Relationship: `report` 1→N `transaction` (cascade delete).
@@ -150,6 +150,7 @@ TanStack Router with file-based routes in `src/routes/` (tree auto-generated int
 | `/` and `/upload`     | `ReportUploadPage` — CSV upload with client-side AG Grid preview. |
 | `/reports/:reportId`  | `ReportDetailPage` — categorised transactions, generation, manual assignment. |
 | `/plan`               | `PlanPage` — monthly budget planning. |
+| `/breakdown`          | `BreakdownPage` — category/filter actuals by month. |
 
 ### Data Layer
 
@@ -167,6 +168,7 @@ Component → TanStack Query hooks (src/hooks/) → BackendClient (src/clients/b
 - `components/report-detail/` — report page, split into `sections/` (category and unidentified-transaction sections with AG Grid tables and context menus) and `panels/` (side panels for assigning transactions and creating filters).
 - `components/categories-panel/` — rule management UI: sortable categories and filters (dnd-kit), inline create/rename, and rule-group editing. See `.cursor/rules/categories-panel.mdc` for its internal structure.
 - `components/plan/` — monthly plan page and section-management UI.
+- `components/breakdown/` — month-by-month category/filter spending grid.
 
 ---
 

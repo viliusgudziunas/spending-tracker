@@ -22,6 +22,10 @@ class ReportNotFoundError(Exception):
     pass
 
 
+class DuplicateReportMonthError(Exception):
+    pass
+
+
 class FilterNotFoundError(Exception):
     pass
 

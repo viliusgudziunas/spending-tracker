@@ -21,7 +21,7 @@ def _create_report(client: TestClient, filename: str = "report_upload.csv") -> s
     response = client.post(
         "/reports",
         files={"upload_file": ("statement.csv", _csv_bytes(filename), "text/csv")},
-        data={"name": "Test report"},
+        data={"name": "Test report", "month": "2025-01"},
     )
     assert response.status_code == 201
     return response.json()["id"]
@@ -32,20 +32,38 @@ class TestCreateReportEndpoint:
     def test_creates_report_and_returns_201(self, client: TestClient) -> None:
         response = client.post(
             "/reports",
-            data={"name": "January 2025"},
+            data={"name": "January 2025", "month": "2025-01"},
             files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
         )
 
         assert response.status_code == 201
         payload = response.json()
         assert payload["name"] == "January 2025"
+        assert payload["month"] == "2025-01"
         assert "id" in payload
         assert "schema_version" in payload
+
+    def test_returns_400_when_month_is_already_taken(self, client: TestClient) -> None:
+        first = client.post(
+            "/reports",
+            data={"name": "First", "month": "2026-01"},
+            files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
+        )
+        assert first.status_code == 201
+
+        response = client.post(
+            "/reports",
+            data={"name": "Second", "month": "2026-01"},
+            files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "A report already exists for this month"
 
     def test_created_report_appears_in_list(self, client: TestClient) -> None:
         client.post(
             "/reports",
-            data={"name": "February 2025"},
+            data={"name": "February 2025", "month": "2025-02"},
             files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
         )
 
@@ -58,7 +76,7 @@ class TestCreateReportEndpoint:
     def test_created_report_has_parsed_transactions(self, client: TestClient) -> None:
         create_response = client.post(
             "/reports",
-            data={"name": "March 2025"},
+            data={"name": "March 2025", "month": "2025-03"},
             files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
         )
         report_id = create_response.json()["id"]
@@ -74,7 +92,7 @@ class TestCreateReportEndpoint:
     def test_persists_all_transaction_fields(self, client: TestClient) -> None:
         create_response = client.post(
             "/reports",
-            data={"name": "April 2025"},
+            data={"name": "April 2025", "month": "2025-04"},
             files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
         )
         report_id = create_response.json()["id"]
@@ -99,6 +117,16 @@ class TestCreateReportEndpoint:
     def test_returns_422_when_name_is_missing(self, client: TestClient) -> None:
         response = client.post(
             "/reports",
+            data={"month": "2025-01"},
+            files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
+        )
+
+        assert response.status_code == 422
+
+    def test_returns_422_when_month_is_missing(self, client: TestClient) -> None:
+        response = client.post(
+            "/reports",
+            data={"name": "January 2025"},
             files={"upload_file": ("statement.csv", _csv_bytes(), "text/csv")},
         )
 
@@ -123,7 +151,64 @@ class TestUpdateReportEndpoint:
         payload = response.json()
         assert payload["id"] == str(report.id)
         assert payload["name"] == "Updated report name"
+        assert payload["month"] is None
         assert "schema_version" in payload
+
+    def test_sets_report_month_and_returns_200(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        report = report_factory(name="January report")
+
+        response = client.patch(
+            f"/reports/{report.id}",
+            json={"month": "2026-01"},
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["id"] == str(report.id)
+        assert payload["name"] == "January report"
+        assert payload["month"] == "2026-01"
+
+        detail = client.get(f"/reports/{report.id}")
+        assert detail.status_code == 200
+        assert detail.json()["month"] == "2026-01"
+
+    @pytest.mark.parametrize("month", ["2026-13", "2026-1", "2026-00", "January 2026", "2026"])
+    def test_returns_422_for_invalid_month_format(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+        month: str,
+    ) -> None:
+        report = report_factory()
+
+        response = client.patch(
+            f"/reports/{report.id}",
+            json={"month": month},
+        )
+
+        assert response.status_code == 422
+
+    def test_returns_400_when_month_is_already_taken(
+        self,
+        client: TestClient,
+        report_factory: ReportFactory,
+    ) -> None:
+        first = report_factory(name="First")
+        second = report_factory(name="Second")
+        taken = client.patch(f"/reports/{first.id}", json={"month": "2026-01"})
+        assert taken.status_code == 200
+
+        response = client.patch(
+            f"/reports/{second.id}",
+            json={"month": "2026-01"},
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "A report already exists for this month"
 
     def test_returns_404_for_nonexistent_report(self, client: TestClient) -> None:
         response = client.patch(

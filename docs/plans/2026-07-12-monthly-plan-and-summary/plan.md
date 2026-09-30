@@ -1,5 +1,7 @@
 # Monthly Plan & Summary Features
 
+> **Phases 2 and 3 (steps 7–14) are superseded** by [2026-09-06-month-breakdown-mvp](../2026-09-06-month-breakdown-mvp/plan.md), which ships the month-by-month actuals view (`/breakdown`) on its own — explicit report months, always-expanded category/filter rows, automatic month columns — without the plan-vs-actual columns, month-range picker and category kinds designed here. Follow that folder for anything month-column related; the steps below are kept for the design rationale only. **Phase 1 (steps 1–6, the `/plan` grid) still stands.**
+
 Expand the spending tracker with two features: a monthly planning grid (replacing the budget Google Sheet) and a month-by-month plan-vs-actual summary grid (replacing the summary Google Sheet), built on the existing category/filter taxonomy.
 
 ## Decisions made together

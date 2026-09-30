@@ -25,6 +25,7 @@ class Report(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
+    month: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
     schema_version: Mapped[int] = mapped_column(Integer, default=CURRENT_REPORT_SCHEMA_VERSION, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=naive_utcnow, nullable=False)

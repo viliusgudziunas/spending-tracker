@@ -1,6 +1,9 @@
 import { z } from "zod";
 
 import {
+    ApiBreakdownCategorySchema,
+    ApiBreakdownFilterSchema,
+    ApiBreakdownSchema,
     ApiCategorySchema,
     ApiFilterSchema,
     ApiPlanSectionSchema,
@@ -79,6 +82,7 @@ export const parseApiPlanSection = (apiSection: unknown): PlanSection => PlanSec
 export const ReportSchema = z.object({
     id: z.string(),
     name: z.string(),
+    month: z.string().nullable(),
 });
 
 export const ReportTransactionSchema = ApiTransactionSchema.transform((transaction) => ({
@@ -114,6 +118,7 @@ export const ReportCategorySchema = ApiReportCategorySchema.transform((category)
 export const ReportFullSchema = ApiReportSchema.transform((report) => ({
     id: report.id,
     name: report.name,
+    month: report.month,
     categories: report.categories.map((category) => ReportCategorySchema.parse(category)),
     unidentifiedTransactions: report.unidentified_transactions.map((transaction) =>
         ReportTransactionSchema.parse(transaction),
@@ -140,3 +145,38 @@ export const parseApiReports = (apiReports: unknown): Report[] => z.array(Report
 export const parseApiReport = (apiReport: unknown): ReportFull => ReportFullSchema.parse(apiReport);
 export const parseApiReportManualFilter = (apiFilter: unknown): ReportManualFilter =>
     ReportManualFilterSchema.parse(apiFilter);
+
+function flipAmountMap(amounts: Record<string, string>): Record<string, string> {
+    return Object.fromEntries(Object.entries(amounts).map(([month, amount]) => [month, String(-Number(amount))]));
+}
+
+export const BreakdownFilterSchema = ApiBreakdownFilterSchema.transform((filter) => ({
+    key: filter.key,
+    name: filter.name,
+    position: filter.position,
+    amounts: flipAmountMap(filter.amounts),
+}));
+
+export const BreakdownCategorySchema = ApiBreakdownCategorySchema.transform((category) => ({
+    id: category.id,
+    name: category.name,
+    position: category.position,
+    amounts: flipAmountMap(category.amounts),
+    filters: category.filters.map((filter) => BreakdownFilterSchema.parse(filter)),
+}));
+
+export const BreakdownSchema = ApiBreakdownSchema.transform((breakdown) => ({
+    months: breakdown.months,
+    categories: breakdown.categories.map((category) => BreakdownCategorySchema.parse(category)),
+    unidentified: {
+        amounts: flipAmountMap(breakdown.unidentified.amounts),
+    },
+}));
+
+export type Breakdown = z.infer<typeof BreakdownSchema>;
+export type BreakdownCategory = z.infer<typeof BreakdownCategorySchema>;
+export type BreakdownFilter = z.infer<typeof BreakdownFilterSchema>;
+
+export function parseApiBreakdown(apiBreakdown: unknown): Breakdown {
+    return BreakdownSchema.parse(apiBreakdown);
+}

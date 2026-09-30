@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session  # noqa: TC002
 from app.api.dependencies import get_db
 from app.api.schemas.report_schemas import (
     CreateReportManualFilterInput,
+    MonthKey,
     PutReportAssignmentInput,
     ReportDetailResponse,
     ReportManualFilterResponse,
@@ -15,6 +16,7 @@ from app.api.schemas.report_schemas import (
 )
 from app.repositories.exceptions import (
     CategoryNotFoundError,
+    DuplicateReportMonthError,
     FilterNotFoundError,
     ReportManualAssignmentNotFoundError,
     ReportManualFilterNotFoundError,
@@ -40,10 +42,17 @@ def list_reports(db: Annotated[Session, Depends(get_db)]) -> Sequence[Report]:
 def create_report(
     upload_file: UploadFile,
     name: Annotated[str, Body(...)],
+    month: Annotated[MonthKey, Body(...)],
     db: Annotated[Session, Depends(get_db)],
 ) -> Report:
-    file_content = upload_file.file.read()
-    return report_service.create_report(db=db, name=name, file_content=file_content)
+    try:
+        file_content = upload_file.file.read()
+        return report_service.create_report(db=db, name=name, file_content=file_content, month=month)
+    except DuplicateReportMonthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A report already exists for this month",
+        ) from exc
 
 
 @router.get("/reports/{report_id}", response_model=ReportDetailResponse)
@@ -61,9 +70,14 @@ def update_report(
     db: Annotated[Session, Depends(get_db)],
 ) -> Report:
     try:
-        return report_service.update_report(db=db, report_id=report_id, name=form_data.name)
+        return report_service.update_report(db=db, report_id=report_id, name=form_data.name, month=form_data.month)
     except ReportNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found") from exc
+    except DuplicateReportMonthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A report already exists for this month",
+        ) from exc
 
 
 @router.delete("/reports/{report_id}", status_code=status.HTTP_204_NO_CONTENT)

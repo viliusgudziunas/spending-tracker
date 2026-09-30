@@ -95,6 +95,7 @@ export const ApiReportCategorySchema = z.object({
 export const ApiReportSchema = z.object({
     id: z.string(),
     name: z.string(),
+    month: z.string().nullable(),
     categories: z.array(ApiReportCategorySchema),
     unidentified_transactions: z.array(ApiTransactionSchema),
 });
@@ -187,6 +188,31 @@ export const PutApiReportAssignmentPayloadSchema = z
             1,
         "Exactly one assignment target must be provided",
     );
+
+export const ApiBreakdownAmountsSchema = z.record(z.string(), z.string());
+
+export const ApiBreakdownFilterSchema = z.object({
+    key: z.string(),
+    name: z.string(),
+    position: z.number(),
+    amounts: ApiBreakdownAmountsSchema,
+});
+
+export const ApiBreakdownCategorySchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    position: z.number(),
+    amounts: ApiBreakdownAmountsSchema,
+    filters: z.array(ApiBreakdownFilterSchema),
+});
+
+export const ApiBreakdownSchema = z.object({
+    months: z.array(z.string()),
+    categories: z.array(ApiBreakdownCategorySchema),
+    unidentified: z.object({
+        amounts: ApiBreakdownAmountsSchema,
+    }),
+});
 
 export type ApiReport = z.infer<typeof ApiReportSchema>;
 export type ApiReportCategory = z.infer<typeof ApiReportCategorySchema>;
