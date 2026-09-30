@@ -37,7 +37,7 @@ export default function AppSidebar({ collapsed, onToggle }: AppSidebarProps): JS
     }
 
     return (
-        <aside className="sticky top-4 flex h-fit flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <aside className="sticky top-4 flex max-h-[calc(100vh-2.5rem)] flex-col gap-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <nav className="flex flex-col gap-1">
                 <Link
                     to="/plan"
@@ -100,7 +100,7 @@ export default function AppSidebar({ collapsed, onToggle }: AppSidebarProps): JS
             ) : null}
 
             {reports !== undefined && reports.length > 0 ? (
-                <ul className="m-0 flex list-none flex-col gap-1 p-0">
+                <ul className="hidden-scrollbar m-0 flex min-h-0 list-none flex-col gap-1 overflow-y-auto p-0">
                     {reports.map((report) => {
                         const isActive = matchRoute({ to: "/reports/$reportId", params: { reportId: report.id } });
                         return (

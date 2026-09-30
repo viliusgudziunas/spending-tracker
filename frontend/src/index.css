@@ -28,12 +28,14 @@
     background-color: #f1f5f9;
 }
 
-.transaction-panel-scroll-area {
+.transaction-panel-scroll-area,
+.hidden-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
 
-.transaction-panel-scroll-area::-webkit-scrollbar {
+.transaction-panel-scroll-area::-webkit-scrollbar,
+.hidden-scrollbar::-webkit-scrollbar {
     display: none;
 }
 
