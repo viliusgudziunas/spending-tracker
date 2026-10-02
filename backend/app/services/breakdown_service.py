@@ -41,6 +41,7 @@ class _CategoryAccumulator:
 @dataclass(frozen=True)
 class _LiveTaxonomy:
     filters: dict[uuid.UUID, Filter]
+    filters_by_name: dict[str, Filter]
     categories: dict[uuid.UUID, Category]
     categories_by_name: dict[str, Category]
 
@@ -59,8 +60,10 @@ def get_breakdown(db: Session) -> BreakdownResponse:
     reports = report_repository.get_generated_monthly_reports(db=db)
     months = [report.month for report in reports if report.month is not None]
     live_categories = {category.id: category for category in category_repository.get_categories(db=db)}
+    live_filters = filter_repository.get_filters(db=db)
     live = _LiveTaxonomy(
-        filters={filter_.id: filter_ for filter_ in filter_repository.get_filters(db=db)},
+        filters={filter_.id: filter_ for filter_ in live_filters},
+        filters_by_name={filter_.name: filter_ for filter_ in live_filters},
         categories=live_categories,
         categories_by_name={category.name: category for category in live_categories.values()},
     )
@@ -174,6 +177,8 @@ def _place_rule_filter(
         raise ValueError(msg)
 
     live_filter = live.filters.get(rule_filter_id)
+    if live_filter is None and snapshot_filter.id == rule_filter_id:
+        live_filter = live.filters_by_name.get(snapshot_filter.name)
     if live_filter is not None:
         category = live.categories[live_filter.category_id]
         return _FilterPlacement(
@@ -191,10 +196,24 @@ def _place_rule_filter(
         category_id=category_id,
         category_name=category_name,
         category_position=category_position,
-        filter_key=f"rule:{rule_filter_id}",
+        filter_key=_unresolved_rule_filter_key(
+            snapshot_filter=snapshot_filter,
+            rule_filter_id=rule_filter_id,
+            category_id=category_id,
+        ),
         filter_name=snapshot_filter.name,
         filter_position=snapshot_filter.position,
     )
+
+
+def _unresolved_rule_filter_key(
+    snapshot_filter: ReportDetailFilterResponse,
+    rule_filter_id: uuid.UUID,
+    category_id: uuid.UUID,
+) -> str:
+    if snapshot_filter.id == rule_filter_id:
+        return f"legacy:{category_id}:{snapshot_filter.name}"
+    return f"rule:{rule_filter_id}"
 
 
 def _place_manual_filter(

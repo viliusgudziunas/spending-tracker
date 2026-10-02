@@ -27,14 +27,14 @@ docker compose up --build --watch
 This will start three services:
 
 - PostgreSQL database (port 5432)
-- Backend API (port 8000)
-- Frontend development server (port 5173)
+- Backend API (port 8001)
+- Frontend development server (port 5174)
 
 ## Accessing the Application
 
-- Frontend: <http://localhost:5173>
-- Backend API: <http://localhost:8000>
-- API Documentation: <http://localhost:8000/docs>
+- Frontend: <http://localhost:5174>
+- Backend API: <http://localhost:8001>
+- API Documentation: <http://localhost:8001/docs>
 
 ## Development
 

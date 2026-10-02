@@ -18,19 +18,20 @@ This supersedes **Phase 2 and Phase 3** of [2026-07-12-monthly-plan-and-summary]
 
 ## The identity problem (read this before writing the merge)
 
-`report_service._generate_report` mints **fresh UUIDs for snapshot categories and filters on every generate**, and copies category/filter *names* as they were at generate time. So neither snapshot ids nor snapshot names can be used to line a row up across months. Getting this wrong doesn't produce an error — it silently splits one row into two, or drops money off the grid.
+`report_service._generate_report` mints **fresh UUIDs for snapshot categories and filters on every generate**, and copies category/filter *names* as they were at generate time. A current snapshot id cannot line a row up across months. The exception is a legacy snapshot whose `id` and `rule_filter_id` are the same value: that id was never a live filter id, so the row is lined up by the current filter name instead. Getting this wrong doesn't produce an error — it silently splits one row into two, or drops money off the grid.
 
 Rules:
 
 | Concern | Rule |
 | --- | --- |
-| Rule-filter row identity | Merge by `rule_filter_id` (the live `Filter.id`, stable across regenerations and renames). Never by snapshot filter id or name. |
+| Rule-filter row identity | Merge by `rule_filter_id` when it is a live `Filter.id`, or a real historical id that differs from the snapshot filter id. |
+| Legacy snapshots | Reports migrated from the v1 snapshot tables stored the snapshot id in both `id` and `rule_filter_id`. Those rows merge by the current filter name, which is unique, so the money follows that live filter's id, category, and name even if the old category differed. If no live filter has the name, every month of that name shares `legacy:{resolved category id}:{snapshot name}`. |
 | Manual-filter row identity | Merge by `(report.data.manual_filters[].category_id, name)`. That `category_id` is a live `Category.id`; the manual filter's own id is per-report and cannot merge. Name alone collides across categories. |
-| Row key in the response | Namespaced so a rule filter and a manual filter with the same name stay distinct rows and both count toward the category total: `rule:{rule_filter_id}` / `manual:{category_id}:{name}`. |
+| Row key in the response | Namespaced so a rule filter and a manual filter with the same name stay distinct rows and both count toward the category total: `rule:{rule_filter_id}` / `manual:{category_id}:{name}` / `legacy:{category_id}:{name}`. |
 | Category placement | Live `Filter.category_id` when the filter still exists. Otherwise resolve the live `Category` by the snapshot's category name (for deleted filters) or by `category_id` (for manuals). |
 | Category row identity | The **live** category's `id`, `name` and `position` whenever one was matched — so a rename shows up immediately, without regenerating old reports. |
 | Deleted filters | Keep their money. The row survives under its resolved live category, labelled with the snapshot name. A ghost category row is emitted only when the category name is gone too (rename-then-delete). |
-| Recreated filters | A filter deleted and recreated under the same name has a new `Filter.id`, so it correctly gets its own row — historical money stays on the old one. |
+| Recreated filters | A filter deleted and recreated under the same name has a new `Filter.id`, and the old snapshot's `rule_filter_id` still differs from its snapshot id, so the old money keeps its own `rule:{id}` row. |
 
 `Category` has no delete endpoint today, so the common case is a deleted *filter* whose live parent category still exists. That case must produce **one** category row, not a live row plus a snapshot row.
 

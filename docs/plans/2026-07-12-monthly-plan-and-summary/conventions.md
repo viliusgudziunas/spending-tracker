@@ -6,7 +6,7 @@ Read this before implementing any step in this folder. It explains the codebase 
 
 - Each step is one commit: working app, no dead code, something visible in the UI.
 - Before starting a step, set its status in [plan.md](plan.md) to `[IN PROGRESS]`; after committing, set it to `[COMMITTED]`. If implementation deviates from the step description, add a note under the step heading in plan.md.
-- The app runs via `make up` (Docker Compose: postgres :5432, backend :8000, frontend :5173, hot reload enabled).
+- The app runs via `make up` (Docker Compose: postgres :5432, backend :8001, frontend :5174, hot reload enabled).
 - Lint with `make lint`. Tests: `make test-unit` / `make test-integration` (pytest; unit tests in `backend/tests/unit/`, integration fixtures provision a temporary PostgreSQL database or use `TEST_DATABASE_URL`, with each test rolled back). Add tests for non-trivial backend logic, mirroring existing test files.
 
 ## Backend patterns

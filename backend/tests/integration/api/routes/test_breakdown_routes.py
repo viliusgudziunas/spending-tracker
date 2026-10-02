@@ -1,11 +1,16 @@
+import uuid
 from decimal import Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
+from sqlalchemy.orm.attributes import flag_modified
+
+from app.db.models import Report
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
+    from sqlalchemy.orm import Session
 
     from tests.integration.api.routes.conftest import CategoryFactory, FilterFactory
 
@@ -60,6 +65,26 @@ def _unidentified_total(detail: dict[str, Any]) -> str:
         Decimal(0),
     )
     return str(total.quantize(Decimal("0.01")))
+
+
+def _mark_report_filters_as_legacy(db: Session, report_id: str) -> None:
+    report = db.get(Report, uuid.UUID(report_id))
+    assert report is not None
+    assert isinstance(report.data, dict)
+    categories = report.data["categories"]
+    assert isinstance(categories, list)
+    for category in categories:
+        assert isinstance(category, dict)
+        filters = category["filters"]
+        assert isinstance(filters, list)
+        for filter_row in filters:
+            assert isinstance(filter_row, dict)
+            snapshot_id = filter_row["id"]
+            assert isinstance(snapshot_id, str)
+            filter_row["rule_filter_id"] = snapshot_id
+    flag_modified(report, "data")
+    db.add(report)
+    db.commit()
 
 
 def _assign_manual_filter(
@@ -252,3 +277,143 @@ class TestGetBreakdownEndpoint:
         assert filters_by_key[f"manual:{category.id}:Groceries"]["amounts"] == {"2025-10": "118.13"}
         assert category_row["amounts"] == {"2025-10": "81.40"}
         assert payload["unidentified"]["amounts"] == {"2025-10": "0.00"}
+
+    def test_merges_legacy_snapshot_ids_into_the_live_filter_by_name(
+        self,
+        client: TestClient,
+        db: Session,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory(name="Investments")
+        rule_filter = filter_factory(
+            category_id=category.id,
+            name="Crypto",
+            description="Dummy grocery store",
+        )
+        october = _create_report(client, name="October", month="2025-10")
+        _generate_report(client, october)
+        _mark_report_filters_as_legacy(db, october)
+
+        november = _create_report(client, name="November", month="2025-11")
+        _generate_report(client, november)
+
+        payload = _get_breakdown(client)
+
+        assert payload["months"] == ["2025-10", "2025-11"]
+        assert len(payload["categories"]) == 1
+        category_row = payload["categories"][0]
+        assert category_row["id"] == str(category.id)
+        assert len(category_row["filters"]) == 1
+        filter_row = category_row["filters"][0]
+        assert filter_row["key"] == f"rule:{rule_filter.id}"
+        assert filter_row["name"] == "Crypto"
+        assert filter_row["amounts"] == {"2025-10": "-36.73", "2025-11": "-36.73"}
+
+    def test_places_legacy_name_match_on_the_live_filters_category(
+        self,
+        client: TestClient,
+        db: Session,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        investments = category_factory(name="Investments")
+        savings = category_factory(name="Savings")
+        old_reserve = filter_factory(
+            category_id=investments.id,
+            name="Reserve",
+            description="Dummy grocery store",
+        )
+        october = _create_report(client, name="October", month="2025-10")
+        _generate_report(client, october)
+        _mark_report_filters_as_legacy(db, october)
+
+        deleted = client.delete(f"/filters/{old_reserve.id}")
+        assert deleted.status_code == 204
+        live_reserve = filter_factory(
+            category_id=savings.id,
+            name="Reserve",
+            description="Dummy grocery store",
+        )
+        november = _create_report(client, name="November", month="2025-11")
+        _generate_report(client, november)
+
+        payload = _get_breakdown(client)
+
+        assert payload["months"] == ["2025-10", "2025-11"]
+        assert len(payload["categories"]) == 1
+        category_row = payload["categories"][0]
+        assert category_row["id"] == str(savings.id)
+        assert category_row["name"] == "Savings"
+        assert len(category_row["filters"]) == 1
+        filter_row = category_row["filters"][0]
+        assert filter_row["key"] == f"rule:{live_reserve.id}"
+        assert filter_row["name"] == "Reserve"
+        assert filter_row["amounts"] == {"2025-10": "-36.73", "2025-11": "-36.73"}
+
+    def test_keeps_a_recreated_filter_off_the_previous_months_row(
+        self,
+        client: TestClient,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory(name="Home")
+        mortgage = filter_factory(
+            category_id=category.id,
+            name="Mortgage",
+            description="Dummy grocery store",
+        )
+        october = _create_report(client, name="October", month="2025-10")
+        _generate_report(client, october)
+
+        deleted = client.delete(f"/filters/{mortgage.id}")
+        assert deleted.status_code == 204
+        recreated = filter_factory(
+            category_id=category.id,
+            name="Mortgage",
+            description="Dummy grocery store",
+        )
+        november = _create_report(client, name="November", month="2025-11")
+        _generate_report(client, november)
+
+        payload = _get_breakdown(client)
+
+        assert len(payload["categories"]) == 1
+        filters_by_key = {filter_row["key"]: filter_row for filter_row in payload["categories"][0]["filters"]}
+        assert set(filters_by_key) == {f"rule:{mortgage.id}", f"rule:{recreated.id}"}
+        assert filters_by_key[f"rule:{mortgage.id}"]["amounts"] == {"2025-10": "-36.73", "2025-11": "0.00"}
+        assert filters_by_key[f"rule:{recreated.id}"]["amounts"] == {"2025-10": "0.00", "2025-11": "-36.73"}
+
+    def test_collapses_legacy_snapshot_ids_for_a_deleted_filter_name(
+        self,
+        client: TestClient,
+        db: Session,
+        category_factory: CategoryFactory,
+        filter_factory: FilterFactory,
+    ) -> None:
+        category = category_factory(name="Investments")
+        savings = filter_factory(
+            category_id=category.id,
+            name="Savings",
+            description="Dummy grocery store",
+        )
+        october = _create_report(client, name="October", month="2025-10")
+        november = _create_report(client, name="November", month="2025-11")
+        _generate_report(client, october)
+        _generate_report(client, november)
+        _mark_report_filters_as_legacy(db, october)
+        _mark_report_filters_as_legacy(db, november)
+
+        deleted = client.delete(f"/filters/{savings.id}")
+        assert deleted.status_code == 204
+
+        payload = _get_breakdown(client)
+
+        assert len(payload["categories"]) == 1
+        category_row = payload["categories"][0]
+        assert category_row["id"] == str(category.id)
+        assert len(category_row["filters"]) == 1
+        filter_row = category_row["filters"][0]
+        assert filter_row["key"] == f"legacy:{category.id}:Savings"
+        assert filter_row["name"] == "Savings"
+        assert filter_row["amounts"] == {"2025-10": "-36.73", "2025-11": "-36.73"}

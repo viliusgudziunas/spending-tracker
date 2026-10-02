@@ -179,8 +179,8 @@ Component → TanStack Query hooks (src/hooks/) → BackendClient (src/clients/b
 | Service    | Port | Purpose                    |
 | ---------- | ---- | -------------------------- |
 | `postgres` | 5432 | PostgreSQL database        |
-| `backend`  | 8000 | FastAPI (Uvicorn)          |
-| `frontend` | 5173 | Vite dev server            |
+| `backend`  | 8001 | FastAPI (Uvicorn). Host port 8001, process port 8000, so another local API can keep 8000. |
+| `frontend` | 5174 | Vite dev server. Host port 5174, process port 5173. |
 
 Environment: backend gets `DATABASE_URL` and `ORIGIN_URL` (CORS origin); frontend gets `VITE_API_URL`. `docker compose watch` syncs source into the containers and rebuilds on lockfile changes.
 
