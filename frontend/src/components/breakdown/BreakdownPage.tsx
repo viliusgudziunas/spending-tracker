@@ -1,4 +1,4 @@
-import { type ColDef, type ICellRendererParams, themeQuartz } from "ag-grid-community";
+import { type ColDef, type ColGroupDef, type ICellRendererParams, themeQuartz } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { useMemo } from "react";
 
@@ -16,10 +16,10 @@ interface BreakdownGridRow {
     amounts: Record<string, string>;
 }
 
-function formatMonthHeader(month: string): string {
+function formatMonthName(month: string): string {
     const [year, monthNumber] = month.split("-");
     const date = new Date(Date.UTC(Number(year), Number(monthNumber) - 1, 1));
-    return date.toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" });
+    return date.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" });
 }
 
 function formatEur(value: string | undefined): string {
@@ -31,6 +31,32 @@ function formatEur(value: string | undefined): string {
         return "";
     }
     return EUR_FORMAT.format(amount);
+}
+
+function buildMonthGroups(months: string[]): ColGroupDef<BreakdownGridRow>[] {
+    const groups: ColGroupDef<BreakdownGridRow>[] = [];
+    for (const month of months) {
+        const year = month.slice(0, 4);
+        const column: ColDef<BreakdownGridRow> = {
+            colId: month,
+            headerName: formatMonthName(month),
+            valueGetter: (params): string => params.data?.amounts[month] ?? "0",
+            valueFormatter: (params): string => formatEur(params.value),
+            type: "rightAligned",
+            width: 110,
+        };
+        const currentGroup = groups.at(-1);
+        if (currentGroup !== undefined && currentGroup.headerName === year) {
+            currentGroup.children.push(column);
+            continue;
+        }
+        groups.push({
+            headerName: year,
+            marryChildren: true,
+            children: [column],
+        });
+    }
+    return groups;
 }
 
 function buildBreakdownRows(breakdown: Breakdown): BreakdownGridRow[] {
@@ -88,16 +114,7 @@ export default function BreakdownPage(): JSX.Element {
         return buildBreakdownRows(breakdown);
     }, [breakdown]);
 
-    const columnDefs = useMemo<ColDef<BreakdownGridRow>[]>(() => {
-        const months = breakdown?.months ?? [];
-        const monthColumns: ColDef<BreakdownGridRow>[] = months.map((month) => ({
-            colId: month,
-            headerName: formatMonthHeader(month),
-            valueGetter: (params): string => params.data?.amounts[month] ?? "0",
-            valueFormatter: (params): string => formatEur(params.value),
-            type: "rightAligned",
-            width: 130,
-        }));
+    const columnDefs = useMemo<(ColDef<BreakdownGridRow> | ColGroupDef<BreakdownGridRow>)[]>(() => {
         return [
             {
                 field: "label",
@@ -108,7 +125,7 @@ export default function BreakdownPage(): JSX.Element {
                 width: 260,
                 cellRenderer: LabelCell,
             },
-            ...monthColumns,
+            ...buildMonthGroups(breakdown?.months ?? []),
         ];
     }, [breakdown?.months]);
 
@@ -159,7 +176,7 @@ export default function BreakdownPage(): JSX.Element {
                 <p className="mb-0 mt-1 text-sm text-slate-500">Spending by category across months.</p>
             </section>
 
-            <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <section className="breakdown-grid overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                 <AgGridReact<BreakdownGridRow>
                     theme={themeQuartz}
                     columnDefs={columnDefs}

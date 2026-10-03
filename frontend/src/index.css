@@ -39,6 +39,11 @@
     display: none;
 }
 
+.breakdown-grid .ag-header-group-cell-label,
+.breakdown-grid .ag-header-cell-label {
+    justify-content: center;
+}
+
 .ag-body-horizontal-scroll-viewport {
     -ms-overflow-style: none;
     scrollbar-width: none;
