@@ -1,9 +1,17 @@
 import { type ColDef, type ColGroupDef, type ICellRendererParams, themeQuartz } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { type Breakdown } from "@/clients/backendClient/responseParsers";
 import { useBreakdownQuery } from "@/hooks/useReportsQueries";
+
+import { formatBreakdownMonthName, visibleBreakdownMonths } from "./breakdownPeriods";
+import BreakdownPeriodsControl from "./BreakdownPeriodsControl";
+import {
+    dropUnavailableHiddenMonths,
+    readHiddenBreakdownMonths,
+    writeHiddenBreakdownMonths,
+} from "./hiddenBreakdownMonths";
 
 const EUR_FORMAT = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
 
@@ -14,12 +22,6 @@ interface BreakdownGridRow {
     label: string;
     kind: BreakdownRowKind;
     amounts: Record<string, string>;
-}
-
-function formatMonthName(month: string): string {
-    const [year, monthNumber] = month.split("-");
-    const date = new Date(Date.UTC(Number(year), Number(monthNumber) - 1, 1));
-    return date.toLocaleDateString("en-GB", { month: "short", timeZone: "UTC" });
 }
 
 function formatEur(value: string | undefined): string {
@@ -39,7 +41,7 @@ function buildMonthGroups(months: string[]): ColGroupDef<BreakdownGridRow>[] {
         const year = month.slice(0, 4);
         const column: ColDef<BreakdownGridRow> = {
             colId: month,
-            headerName: formatMonthName(month),
+            headerName: formatBreakdownMonthName(month),
             valueGetter: (params): string => params.data?.amounts[month] ?? "0",
             valueFormatter: (params): string => formatEur(params.value),
             type: "rightAligned",
@@ -104,15 +106,40 @@ function breakdownRowClass(params: { data?: BreakdownGridRow }): string {
     return "text-slate-600";
 }
 
+function readStoredHiddenBreakdownMonths(): string[] {
+    if (typeof window === "undefined") {
+        return [];
+    }
+    return readHiddenBreakdownMonths(window.localStorage);
+}
+
 export default function BreakdownPage(): JSX.Element {
     const { data: breakdown, isLoading, isError } = useBreakdownQuery();
+    const [hiddenMonths, setHiddenMonths] = useState<string[]>(readStoredHiddenBreakdownMonths);
+    const [trackedMonths, setTrackedMonths] = useState<readonly string[] | undefined>(undefined);
+    if (breakdown !== undefined && breakdown.months.length > 0 && breakdown.months !== trackedMonths) {
+        setTrackedMonths(breakdown.months);
+        setHiddenMonths((current) => dropUnavailableHiddenMonths(current, breakdown.months));
+    }
+
+    useEffect(() => {
+        if (typeof window === "undefined") {
+            return;
+        }
+        writeHiddenBreakdownMonths(window.localStorage, hiddenMonths);
+    }, [hiddenMonths]);
+
+    const visibleMonths = useMemo(
+        () => visibleBreakdownMonths(breakdown?.months ?? [], hiddenMonths),
+        [breakdown?.months, hiddenMonths],
+    );
 
     const rows = useMemo(() => {
-        if (breakdown === undefined || breakdown.months.length === 0) {
+        if (breakdown === undefined || visibleMonths.length === 0) {
             return [];
         }
         return buildBreakdownRows(breakdown);
-    }, [breakdown]);
+    }, [breakdown, visibleMonths.length]);
 
     const columnDefs = useMemo<(ColDef<BreakdownGridRow> | ColGroupDef<BreakdownGridRow>)[]>(() => {
         return [
@@ -125,9 +152,9 @@ export default function BreakdownPage(): JSX.Element {
                 width: 260,
                 cellRenderer: LabelCell,
             },
-            ...buildMonthGroups(breakdown?.months ?? []),
+            ...buildMonthGroups(visibleMonths),
         ];
-    }, [breakdown?.months]);
+    }, [visibleMonths]);
 
     const defaultColDef = useMemo<ColDef<BreakdownGridRow>>(
         () => ({
@@ -172,23 +199,40 @@ export default function BreakdownPage(): JSX.Element {
     return (
         <main className="flex flex-col gap-4">
             <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h1 className="m-0 text-2xl font-semibold text-slate-900">Breakdown</h1>
-                <p className="mb-0 mt-1 text-sm text-slate-500">Spending by category across months.</p>
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <h1 className="m-0 text-2xl font-semibold text-slate-900">Breakdown</h1>
+                        <p className="mb-0 mt-1 text-sm text-slate-500">Spending by category across months.</p>
+                    </div>
+                    <BreakdownPeriodsControl
+                        months={breakdown.months}
+                        hiddenMonths={hiddenMonths}
+                        onHiddenMonthsChange={setHiddenMonths}
+                    />
+                </div>
             </section>
 
-            <section className="breakdown-grid overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                <AgGridReact<BreakdownGridRow>
-                    theme={themeQuartz}
-                    columnDefs={columnDefs}
-                    rowData={rows}
-                    defaultColDef={defaultColDef}
-                    domLayout="autoHeight"
-                    getRowId={(params): string => params.data.id}
-                    getRowClass={breakdownRowClass}
-                    enableCellTextSelection={true}
-                    ensureDomOrder={true}
-                />
-            </section>
+            {visibleMonths.length === 0 ? (
+                <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <p className="m-0 text-sm text-slate-600">
+                        Every period is hidden. Open Periods to show a month again.
+                    </p>
+                </section>
+            ) : (
+                <section className="breakdown-grid overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <AgGridReact<BreakdownGridRow>
+                        theme={themeQuartz}
+                        columnDefs={columnDefs}
+                        rowData={rows}
+                        defaultColDef={defaultColDef}
+                        domLayout="autoHeight"
+                        getRowId={(params): string => params.data.id}
+                        getRowClass={breakdownRowClass}
+                        enableCellTextSelection={true}
+                        ensureDomOrder={true}
+                    />
+                </section>
+            )}
         </main>
     );
 }
