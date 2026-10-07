@@ -1,6 +1,6 @@
 import { type ColDef, type ColGroupDef, type ICellRendererParams, themeQuartz } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { type Breakdown } from "@/clients/backendClient/responseParsers";
 import { useBreakdownQuery } from "@/hooks/useReportsQueries";
@@ -55,6 +55,8 @@ function buildMonthGroups(months: string[]): ColGroupDef<BreakdownGridRow>[] {
         groups.push({
             headerName: year,
             marryChildren: true,
+            // Keep the year centered over its months while the header scrolls.
+            suppressStickyLabel: true,
             children: [column],
         });
     }
@@ -106,6 +108,32 @@ function breakdownRowClass(params: { data?: BreakdownGridRow }): string {
     return "text-slate-600";
 }
 
+function handleBreakdownHorizontalWheel(event: WheelEvent): void {
+    const grid = event.currentTarget;
+    if (!(grid instanceof HTMLElement)) {
+        return;
+    }
+    const { deltaX, deltaY, shiftKey } = event;
+    const horizontal = shiftKey || Math.abs(deltaX) > Math.abs(deltaY);
+    if (!horizontal) {
+        return;
+    }
+    const center = grid.querySelector(".ag-center-cols-viewport");
+    if (!(center instanceof HTMLElement) || center.scrollWidth <= center.clientWidth) {
+        return;
+    }
+    event.preventDefault();
+    center.scrollLeft += deltaX !== 0 ? deltaX : deltaY;
+    const header = grid.querySelector(".ag-header-viewport");
+    if (header instanceof HTMLElement) {
+        header.scrollLeft = center.scrollLeft;
+    }
+    const scrollbar = grid.querySelector(".ag-body-horizontal-scroll-viewport");
+    if (scrollbar instanceof HTMLElement) {
+        scrollbar.scrollLeft = center.scrollLeft;
+    }
+}
+
 function readStoredHiddenBreakdownMonths(): string[] {
     if (typeof window === "undefined") {
         return [];
@@ -155,6 +183,20 @@ export default function BreakdownPage(): JSX.Element {
             ...buildMonthGroups(visibleMonths),
         ];
     }, [visibleMonths]);
+
+    const showGrid = visibleMonths.length > 0;
+    const gridRef = useRef<HTMLElement | null>(null);
+
+    useEffect(() => {
+        const grid = gridRef.current;
+        if (!showGrid || grid === null) {
+            return;
+        }
+        grid.addEventListener("wheel", handleBreakdownHorizontalWheel, { capture: true, passive: false });
+        return (): void => {
+            grid.removeEventListener("wheel", handleBreakdownHorizontalWheel, { capture: true });
+        };
+    }, [showGrid]);
 
     const defaultColDef = useMemo<ColDef<BreakdownGridRow>>(
         () => ({
@@ -212,14 +254,17 @@ export default function BreakdownPage(): JSX.Element {
                 </div>
             </section>
 
-            {visibleMonths.length === 0 ? (
+            {!showGrid ? (
                 <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
                     <p className="m-0 text-sm text-slate-600">
                         Every period is hidden. Open Periods to show a month again.
                     </p>
                 </section>
             ) : (
-                <section className="breakdown-grid overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <section
+                    ref={gridRef}
+                    className="breakdown-grid overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+                >
                     <AgGridReact<BreakdownGridRow>
                         theme={themeQuartz}
                         columnDefs={columnDefs}

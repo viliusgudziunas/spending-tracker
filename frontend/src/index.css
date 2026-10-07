@@ -44,6 +44,12 @@
     justify-content: center;
 }
 
+/* Native overflow scrolling paints the rows before the header catches up. */
+.breakdown-grid .ag-header-viewport,
+.breakdown-grid .ag-center-cols-viewport {
+    overflow-x: hidden !important;
+}
+
 .ag-body-horizontal-scroll-viewport {
     -ms-overflow-style: none;
     scrollbar-width: none;
