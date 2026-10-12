@@ -39,6 +39,7 @@ Spending Tracker is a full-stack web application for analysing bank statement CS
 | HTTP Client      | Axios                          |
 | Build Tool       | Vite 5                         |
 | Linting / Format | ESLint, Prettier               |
+| Testing          | Vitest                         |
 
 ### Infrastructure
 
@@ -150,7 +151,7 @@ TanStack Router with file-based routes in `src/routes/` (tree auto-generated int
 | `/` and `/upload`     | `ReportUploadPage` — CSV upload with client-side AG Grid preview. |
 | `/reports/:reportId`  | `ReportDetailPage` — categorised transactions, generation, manual assignment. |
 | `/plan`               | `PlanPage` — monthly budget planning. |
-| `/breakdown`          | `BreakdownPage` — category/filter actuals by month. |
+| `/breakdown`          | `BreakdownPage` — category/filter actuals by month. Filter rows can be hidden in this browser; category totals stay as the API returned them. |
 
 ### Data Layer
 
@@ -168,7 +169,7 @@ Component → TanStack Query hooks (src/hooks/) → BackendClient (src/clients/b
 - `components/report-detail/` — report page, split into `sections/` (category and unidentified-transaction sections with AG Grid tables and context menus) and `panels/` (side panels for assigning transactions and creating filters).
 - `components/categories-panel/` — rule management UI: sortable categories and filters (dnd-kit), inline create/rename, and rule-group editing. See `.cursor/rules/categories-panel.mdc` for its internal structure.
 - `components/plan/` — monthly plan page and section-management UI.
-- `components/breakdown/` — month-by-month category/filter spending grid.
+- `components/breakdown/` — month-by-month category/filter spending grid. Hidden months and hidden filter rows are display preferences in `localStorage`.
 
 ---
 
@@ -196,7 +197,7 @@ Environment: backend gets `DATABASE_URL` and `ORIGIN_URL` (CORS origin); fronten
 
 ### Testing
 
-Backend tests live in `backend/tests/` — `unit/` for services, `integration/` for API routes, separated by pytest markers. By default, integration sessions create a temporary PostgreSQL database, migrate it to head, isolate each test in a rolled-back transaction, then drop the temporary database. `TEST_DATABASE_URL` can point to a dedicated, pre-provisioned test database when the database user cannot create databases. The application database is never migrated or modified by tests. The frontend has no test suite.
+Backend tests live in `backend/tests/` — `unit/` for services, `integration/` for API routes, separated by pytest markers. By default, integration sessions create a temporary PostgreSQL database, migrate it to head, isolate each test in a rolled-back transaction, then drop the temporary database. `TEST_DATABASE_URL` can point to a dedicated, pre-provisioned test database when the database user cannot create databases. The application database is never migrated or modified by tests. Frontend pure helpers are checked with Vitest (`npm test` in `frontend/`).
 
 ### Alembic
 

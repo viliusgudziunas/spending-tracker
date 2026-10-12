@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
@@ -10,5 +11,9 @@ export default defineConfig({
         alias: {
             "@": new URL("./src", import.meta.url).pathname,
         },
+    },
+    test: {
+        environment: "node",
+        include: ["src/**/*.test.ts"],
     },
 });

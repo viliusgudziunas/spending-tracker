@@ -2,27 +2,21 @@ import { type ColDef, type ColGroupDef, type ICellRendererParams, themeQuartz } 
 import { AgGridReact } from "ag-grid-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { type Breakdown } from "@/clients/backendClient/responseParsers";
 import { useBreakdownQuery } from "@/hooks/useReportsQueries";
 
 import { formatBreakdownMonthName, visibleBreakdownMonths } from "./breakdownPeriods";
 import BreakdownPeriodsControl from "./BreakdownPeriodsControl";
+import { type BreakdownGridRow, visibleBreakdownRows } from "./breakdownRows";
+import BreakdownRowsControl, { HIDDEN_BREAKDOWN_ROWS_NOTE } from "./BreakdownRowsControl";
+import { breakdownFilterKeys, hiddenBreakdownRowCount } from "./breakdownRowVisibility";
 import {
     dropUnavailableHiddenMonths,
     readHiddenBreakdownMonths,
     writeHiddenBreakdownMonths,
 } from "./hiddenBreakdownMonths";
+import { dropUnavailableHiddenRows, readHiddenBreakdownRows, writeHiddenBreakdownRows } from "./hiddenBreakdownRows";
 
 const EUR_FORMAT = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
-
-type BreakdownRowKind = "category" | "filter" | "unidentified";
-
-interface BreakdownGridRow {
-    id: string;
-    label: string;
-    kind: BreakdownRowKind;
-    amounts: Record<string, string>;
-}
 
 function formatEur(value: string | undefined): string {
     if (value === undefined || value === "") {
@@ -61,33 +55,6 @@ function buildMonthGroups(months: string[]): ColGroupDef<BreakdownGridRow>[] {
         });
     }
     return groups;
-}
-
-function buildBreakdownRows(breakdown: Breakdown): BreakdownGridRow[] {
-    const rows: BreakdownGridRow[] = [];
-    for (const category of breakdown.categories) {
-        rows.push({
-            id: `category:${category.id}`,
-            label: category.name,
-            kind: "category",
-            amounts: category.amounts,
-        });
-        for (const filter of category.filters) {
-            rows.push({
-                id: filter.key,
-                label: filter.name,
-                kind: "filter",
-                amounts: filter.amounts,
-            });
-        }
-    }
-    rows.push({
-        id: "unidentified",
-        label: "Unidentified",
-        kind: "unidentified",
-        amounts: breakdown.unidentified.amounts,
-    });
-    return rows;
 }
 
 function LabelCell(params: ICellRendererParams<BreakdownGridRow, string>): JSX.Element {
@@ -141,13 +108,35 @@ function readStoredHiddenBreakdownMonths(): string[] {
     return readHiddenBreakdownMonths(window.localStorage);
 }
 
+function readStoredHiddenBreakdownRows(): string[] {
+    if (typeof window === "undefined") {
+        return [];
+    }
+    return readHiddenBreakdownRows(window.localStorage);
+}
+
 export default function BreakdownPage(): JSX.Element {
     const { data: breakdown, isLoading, isError } = useBreakdownQuery();
     const [hiddenMonths, setHiddenMonths] = useState<string[]>(readStoredHiddenBreakdownMonths);
+    const [hiddenFilterKeys, setHiddenFilterKeys] = useState<string[]>(readStoredHiddenBreakdownRows);
     const [trackedMonths, setTrackedMonths] = useState<readonly string[] | undefined>(undefined);
+    const [trackedFilterKeys, setTrackedFilterKeys] = useState<readonly string[] | undefined>(undefined);
+    const filterKeys = useMemo(
+        () => (breakdown === undefined ? undefined : breakdownFilterKeys(breakdown.categories)),
+        [breakdown],
+    );
     if (breakdown !== undefined && breakdown.months.length > 0 && breakdown.months !== trackedMonths) {
         setTrackedMonths(breakdown.months);
         setHiddenMonths((current) => dropUnavailableHiddenMonths(current, breakdown.months));
+    }
+    if (
+        breakdown !== undefined &&
+        breakdown.months.length > 0 &&
+        filterKeys !== undefined &&
+        filterKeys !== trackedFilterKeys
+    ) {
+        setTrackedFilterKeys(filterKeys);
+        setHiddenFilterKeys((current) => dropUnavailableHiddenRows(current, filterKeys));
     }
 
     useEffect(() => {
@@ -156,6 +145,13 @@ export default function BreakdownPage(): JSX.Element {
         }
         writeHiddenBreakdownMonths(window.localStorage, hiddenMonths);
     }, [hiddenMonths]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") {
+            return;
+        }
+        writeHiddenBreakdownRows(window.localStorage, hiddenFilterKeys);
+    }, [hiddenFilterKeys]);
 
     const visibleMonths = useMemo(
         () => visibleBreakdownMonths(breakdown?.months ?? [], hiddenMonths),
@@ -166,8 +162,8 @@ export default function BreakdownPage(): JSX.Element {
         if (breakdown === undefined || visibleMonths.length === 0) {
             return [];
         }
-        return buildBreakdownRows(breakdown);
-    }, [breakdown, visibleMonths.length]);
+        return visibleBreakdownRows(breakdown, hiddenFilterKeys);
+    }, [breakdown, hiddenFilterKeys, visibleMonths.length]);
 
     const columnDefs = useMemo<(ColDef<BreakdownGridRow> | ColGroupDef<BreakdownGridRow>)[]>(() => {
         return [
@@ -245,12 +241,22 @@ export default function BreakdownPage(): JSX.Element {
                     <div>
                         <h1 className="m-0 text-2xl font-semibold text-slate-900">Breakdown</h1>
                         <p className="mb-0 mt-1 text-sm text-slate-500">Spending by category across months.</p>
+                        {hiddenBreakdownRowCount(breakdown.categories, hiddenFilterKeys) > 0 ? (
+                            <p className="mb-0 mt-1 text-sm text-slate-500">{HIDDEN_BREAKDOWN_ROWS_NOTE}</p>
+                        ) : null}
                     </div>
-                    <BreakdownPeriodsControl
-                        months={breakdown.months}
-                        hiddenMonths={hiddenMonths}
-                        onHiddenMonthsChange={setHiddenMonths}
-                    />
+                    <div className="flex shrink-0 items-start gap-2">
+                        <BreakdownRowsControl
+                            categories={breakdown.categories}
+                            hiddenFilterKeys={hiddenFilterKeys}
+                            onHiddenFilterKeysChange={setHiddenFilterKeys}
+                        />
+                        <BreakdownPeriodsControl
+                            months={breakdown.months}
+                            hiddenMonths={hiddenMonths}
+                            onHiddenMonthsChange={setHiddenMonths}
+                        />
+                    </div>
                 </div>
             </section>
 
