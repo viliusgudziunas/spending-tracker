@@ -94,11 +94,11 @@ Migration: `plan_section` (name, position, is_income). CRUD API + new `/plan` pa
 
 Deferred by choice: `update_plan_section` taking an entity instead of an id (avoids a double fetch for position validation); plan's `APIRouter(prefix="/plan")` style vs siblings' bare routers (forward-compatible with `GET /plan?from&to`).
 
-#### [Step 2 — Plan lines](step-02-plan-lines.md) [IMPLEMENTED]
+#### [Step 2 — Plan lines](step-02-plan-lines.md) [COMMITTED]
 
 Migration: `plan_line` (section FK, name, position). CRUD API + UI to manage lines within sections on the plan page.
 
-Completed locally on 2026-10-28; not yet committed. Row add/rename/reorder/delete and persistence are user-verified. Creation forms for both sections and rows open from “+ Add” buttons and close on save or cancel. Reordering stays within a section, and deleting a section cascades to its rows.
+Committed and pushed on 2026-10-29 in `8f082e2` (Add editable rows within plan sections). Row add/rename/reorder/delete and persistence are user-verified. Creation forms for both sections and rows open from “+ Add” buttons and close on save or cancel. Reordering stays within a section, and deleting a section cascades to its rows.
 
 Verification: 46 plan API tests (24 row cases plus 22 section regressions) and 2 frontend response-parser tests passed, along with backend/frontend lint, formatting, type checks, and the frontend build. The existing bundle-size warning remains. See [step 2 verification](step-02-plan-lines.md#verification) for the focused commands. Next feature slice: step 3, month columns and fixed defaults.
 

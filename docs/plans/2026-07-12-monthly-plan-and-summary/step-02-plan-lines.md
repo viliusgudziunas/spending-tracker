@@ -2,7 +2,7 @@
 
 Read [conventions.md](conventions.md) first. Requires step 1 (plan sections).
 
-**Status: implemented and verified locally on 2026-10-28; not yet committed.**
+**Status: committed and pushed on 2026-10-29 in `8f082e2` (Add editable rows within plan sections).**
 
 ## Goal
 
