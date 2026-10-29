@@ -18,6 +18,14 @@ class InvalidPlanSectionPositionError(Exception):
     pass
 
 
+class PlanLineNotFoundError(Exception):
+    pass
+
+
+class InvalidPlanLinePositionError(Exception):
+    pass
+
+
 class ReportNotFoundError(Exception):
     pass
 

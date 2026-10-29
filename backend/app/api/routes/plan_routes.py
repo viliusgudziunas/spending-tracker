@@ -5,14 +5,26 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from app.api.dependencies import get_db
-from app.api.schemas.plan_schemas import CreatePlanSectionInput, PlanSectionResponse, UpdatePlanSectionInput
-from app.repositories.exceptions import InvalidPlanSectionPositionError, PlanSectionNotFoundError
+from app.api.schemas.plan_schemas import (
+    CreatePlanLineInput,
+    CreatePlanSectionInput,
+    PlanLineResponse,
+    PlanSectionResponse,
+    UpdatePlanLineInput,
+    UpdatePlanSectionInput,
+)
+from app.repositories.exceptions import (
+    InvalidPlanLinePositionError,
+    InvalidPlanSectionPositionError,
+    PlanLineNotFoundError,
+    PlanSectionNotFoundError,
+)
 from app.services import plan_service
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from app.db.models import PlanSection
+    from app.db.models import PlanLine, PlanSection
 
 router = APIRouter(prefix="/plan")
 
@@ -28,6 +40,40 @@ def create_plan_section(
     db: Annotated[Session, Depends(get_db)],
 ) -> PlanSection:
     return plan_service.create_plan_section(db=db, name=form_data.name, is_income=form_data.is_income)
+
+
+@router.post("/sections/{section_id}/lines", response_model=PlanLineResponse, status_code=status.HTTP_201_CREATED)
+def create_plan_line(
+    section_id: uuid.UUID,
+    form_data: CreatePlanLineInput,
+    db: Annotated[Session, Depends(get_db)],
+) -> PlanLine:
+    try:
+        return plan_service.create_plan_line(db=db, section_id=section_id, name=form_data.name)
+    except PlanSectionNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan section not found") from exc
+
+
+@router.patch("/lines/{line_id}", response_model=PlanLineResponse, status_code=status.HTTP_200_OK)
+def update_plan_line(
+    line_id: uuid.UUID,
+    form_data: UpdatePlanLineInput,
+    db: Annotated[Session, Depends(get_db)],
+) -> PlanLine:
+    try:
+        return plan_service.update_plan_line(db=db, line_id=line_id, name=form_data.name, position=form_data.position)
+    except PlanLineNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan line not found") from exc
+    except InvalidPlanLinePositionError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid plan line position") from exc
+
+
+@router.delete("/lines/{line_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_plan_line(line_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> None:
+    try:
+        plan_service.delete_plan_line(db=db, line_id=line_id)
+    except PlanLineNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan line not found") from exc
 
 
 @router.patch(

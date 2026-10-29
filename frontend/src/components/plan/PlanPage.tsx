@@ -8,13 +8,10 @@ export default function PlanPage(): JSX.Element {
         sections,
         isLoading,
         isError,
-        newName,
-        setNewName,
-        newIsIncome,
-        setNewIsIncome,
+        isCreatingSection,
+        startCreatingSection,
+        cancelCreatingSection,
         editingId,
-        editedName,
-        setEditedName,
         cancelEditing,
         mutationError,
         isCreatePending,
@@ -72,10 +69,8 @@ export default function PlanPage(): JSX.Element {
                                 isFirst={index === 0}
                                 isLast={index === sections.length - 1}
                                 isEditing={editingId === section.id}
-                                editedName={editedName}
                                 isUpdatePending={isUpdatePending}
                                 isDeletePending={isDeletePending}
-                                onEditedNameChange={setEditedName}
                                 onCancelEditing={cancelEditing}
                                 onStartEditing={handleStartEditing}
                                 onRename={handleRename}
@@ -86,14 +81,21 @@ export default function PlanPage(): JSX.Element {
                     </ol>
                 )}
 
-                <CreateSectionForm
-                    name={newName}
-                    isIncome={newIsIncome}
-                    isPending={isCreatePending}
-                    onNameChange={setNewName}
-                    onIsIncomeChange={setNewIsIncome}
-                    onSubmit={handleCreate}
-                />
+                {isCreatingSection ? (
+                    <CreateSectionForm
+                        isPending={isCreatePending}
+                        onSubmit={handleCreate}
+                        onCancel={cancelCreatingSection}
+                    />
+                ) : (
+                    <button
+                        type="button"
+                        onClick={startCreatingSection}
+                        className="rounded-md px-2 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                    >
+                        + Add section
+                    </button>
+                )}
             </section>
         </main>
     );

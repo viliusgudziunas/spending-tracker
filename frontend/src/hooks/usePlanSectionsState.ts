@@ -1,6 +1,7 @@
-import { type Dispatch, type FormEvent, type SetStateAction, useState } from "react";
+import { useState } from "react";
 
 import { type PlanSection } from "@/clients/backendClient/responseParsers";
+import { type CreatePlanSectionPayload } from "@/clients/backendClient/types";
 
 import {
     useCreatePlanSectionMutation,
@@ -13,21 +14,18 @@ interface UsePlanSectionsStateResult {
     sections: PlanSection[] | undefined;
     isLoading: boolean;
     isError: boolean;
-    newName: string;
-    setNewName: Dispatch<SetStateAction<string>>;
-    newIsIncome: boolean;
-    setNewIsIncome: Dispatch<SetStateAction<boolean>>;
+    isCreatingSection: boolean;
+    startCreatingSection: () => void;
+    cancelCreatingSection: () => void;
     editingId: string | null;
-    editedName: string;
-    setEditedName: Dispatch<SetStateAction<string>>;
     cancelEditing: () => void;
     mutationError: Error | null;
     isCreatePending: boolean;
     isUpdatePending: boolean;
     isDeletePending: boolean;
-    handleCreate: (event: FormEvent) => Promise<void>;
+    handleCreate: (payload: CreatePlanSectionPayload) => Promise<void>;
     handleStartEditing: (section: PlanSection) => void;
-    handleRename: (event: FormEvent, section: PlanSection) => Promise<void>;
+    handleRename: (section: PlanSection, draftName: string) => Promise<void>;
     handleMove: (section: PlanSection, position: number) => void;
     handleDelete: (section: PlanSection) => void;
 }
@@ -37,10 +35,8 @@ function usePlanSectionsState(): UsePlanSectionsStateResult {
     const createMutation = useCreatePlanSectionMutation();
     const updateMutation = useUpdatePlanSectionMutation();
     const deleteMutation = useDeletePlanSectionMutation();
-    const [newName, setNewName] = useState("");
-    const [newIsIncome, setNewIsIncome] = useState(false);
+    const [isCreatingSection, setIsCreatingSection] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [editedName, setEditedName] = useState("");
 
     const resetMutationErrors = (): void => {
         if (createMutation.isError) createMutation.reset();
@@ -48,30 +44,35 @@ function usePlanSectionsState(): UsePlanSectionsStateResult {
         if (deleteMutation.isError) deleteMutation.reset();
     };
 
-    const handleCreate = async (event: FormEvent): Promise<void> => {
-        event.preventDefault();
-        const name = newName.trim();
-        if (name === "") return;
+    function startCreatingSection(): void {
+        setIsCreatingSection(true);
+    }
+
+    function cancelCreatingSection(): void {
+        setIsCreatingSection(false);
+        createMutation.reset();
+    }
+
+    async function handleCreate(payload: CreatePlanSectionPayload): Promise<void> {
+        const name = payload.name.trim();
+        if (name === "" || createMutation.isPending) return;
 
         resetMutationErrors();
         try {
-            await createMutation.mutateAsync({ name, isIncome: newIsIncome });
-            setNewName("");
-            setNewIsIncome(false);
+            await createMutation.mutateAsync({ ...payload, name });
+            setIsCreatingSection(false);
         } catch {
             return;
         }
-    };
+    }
 
-    const handleStartEditing = (section: PlanSection): void => {
+    function handleStartEditing(section: PlanSection): void {
         resetMutationErrors();
         setEditingId(section.id);
-        setEditedName(section.name);
-    };
+    }
 
-    const handleRename = async (event: FormEvent, section: PlanSection): Promise<void> => {
-        event.preventDefault();
-        const name = editedName.trim();
+    async function handleRename(section: PlanSection, draftName: string): Promise<void> {
+        const name = draftName.trim();
         if (name === "") return;
         if (name === section.name) {
             setEditingId(null);
@@ -85,31 +86,33 @@ function usePlanSectionsState(): UsePlanSectionsStateResult {
         } catch {
             return;
         }
-    };
+    }
 
     const handleMove = (section: PlanSection, position: number): void => {
         resetMutationErrors();
         updateMutation.mutate({ sectionId: section.id, payload: { position } });
     };
 
-    const handleDelete = (section: PlanSection): void => {
-        if (window.confirm(`Delete plan section "${section.name}"?`)) {
+    function handleDelete(section: PlanSection): void {
+        const rowCount = section.lines.length;
+        const message =
+            rowCount === 0
+                ? `Delete plan section "${section.name}"?`
+                : `Delete plan section "${section.name}" and its ${rowCount} ${rowCount === 1 ? "row" : "rows"}? This cannot be undone.`;
+        if (window.confirm(message)) {
             resetMutationErrors();
             deleteMutation.mutate(section.id);
         }
-    };
+    }
 
     return {
         sections,
         isLoading,
         isError,
-        newName,
-        setNewName,
-        newIsIncome,
-        setNewIsIncome,
+        isCreatingSection,
+        startCreatingSection,
+        cancelCreatingSection,
         editingId,
-        editedName,
-        setEditedName,
         cancelEditing: (): void => setEditingId(null),
         mutationError: createMutation.error ?? updateMutation.error ?? deleteMutation.error,
         isCreatePending: createMutation.isPending,

@@ -15,11 +15,13 @@ import {
     parseApiCategories,
     parseApiCategory,
     parseApiFilter,
+    parseApiPlanLine,
     parseApiPlanSection,
     parseApiPlanSections,
     parseApiReport,
     parseApiReportManualFilter,
     parseApiReports,
+    type PlanLine,
     type PlanSection,
     type Report,
     type ReportFull,
@@ -30,13 +32,16 @@ import { ApiErrorSchema } from "./schemas";
 import {
     type CreateCategoryPayload,
     type CreateFilterPayload,
+    type CreatePlanLinePayload,
     type CreatePlanSectionPayload,
     type CreateReportManualFilterPayload,
     type CreateReportPayload,
+    type MovePlanLinePayload,
     type PatchReportPayload,
     type PutFilterRuleGroupsPayload,
     type PutReportAssignmentPayload,
     type RenameFilterPayload,
+    type RenamePlanLinePayload,
     type UpdateCategoryPayload,
     type UpdateFilterPayload,
     type UpdateFilterPositionPayload,
@@ -179,6 +184,41 @@ class BackendClient {
     async fetchPlanSections(): Promise<PlanSection[]> {
         const response = await this.http.get("/plan/sections");
         return parseApiPlanSections(response.data);
+    }
+
+    async createPlanLine(sectionId: string, payload: CreatePlanLinePayload): Promise<PlanLine> {
+        try {
+            const response = await this.http.post(`/plan/sections/${sectionId}/lines`, payload);
+            return parseApiPlanLine(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while creating plan row.");
+        }
+    }
+
+    async renamePlanLine(lineId: string, payload: RenamePlanLinePayload): Promise<PlanLine> {
+        try {
+            const response = await this.http.patch(`/plan/lines/${lineId}`, payload);
+            return parseApiPlanLine(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while renaming plan row.");
+        }
+    }
+
+    async movePlanLine(lineId: string, payload: MovePlanLinePayload): Promise<PlanLine> {
+        try {
+            const response = await this.http.patch(`/plan/lines/${lineId}`, payload);
+            return parseApiPlanLine(response.data);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while moving plan row.");
+        }
+    }
+
+    async deletePlanLine(lineId: string): Promise<void> {
+        try {
+            await this.http.delete(`/plan/lines/${lineId}`);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while deleting plan row.");
+        }
     }
 
     async createPlanSection(payload: CreatePlanSectionPayload): Promise<PlanSection> {

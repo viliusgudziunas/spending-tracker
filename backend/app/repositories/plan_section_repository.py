@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from app.db.models import PlanSection
 from app.repositories.exceptions import PlanSectionNotFoundError
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def get_plan_sections(db: Session) -> Sequence[PlanSection]:
-    return db.scalars(select(PlanSection).order_by(PlanSection.position)).all()
+    return db.scalars(select(PlanSection).options(selectinload(PlanSection.lines)).order_by(PlanSection.position)).all()
 
 
 def create_plan_section(*, db: Session, name: str, is_income: bool) -> PlanSection:

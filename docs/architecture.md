@@ -84,7 +84,7 @@ Four domains, all registered in `main.py`. Full request/response detail lives in
 - **Reports** (`/reports`) — CRUD for reports (created by uploading a CSV; each report may have a unique `YYYY-MM` month), `POST /{id}/generate` to run the rules engine, `PUT`/`DELETE` on `/{id}/transactions/{tx_id}/assignment` for manual assignments, and `POST /{id}/manual-filters` for report-only filters. `GET /breakdown` is the same domain (not a fifth one): month-by-month actuals across generated reports that have a month, served at `/breakdown` because it is not a `/reports` path.
 - **Categories** (`/categories`) — create, list, and update (rename/reposition) rule categories.
 - **Filters** (`/filters`) — CRUD for rule filters plus `PUT /{id}/rule-groups` to replace a filter's rule groups wholesale.
-- **Plan** (`/plan/sections`) — CRUD for the ordered sections of the monthly budget waterfall.
+- **Plan** (`/plan/sections`) — CRUD for the ordered sections of the monthly budget waterfall. Section responses include ordered plan lines; `POST /plan/sections/{id}/lines` appends a named line within a section. `PATCH` and `DELETE /plan/lines/{id}` rename, reorder, or remove a line, keeping positions contiguous within its section.
 
 ### Key Flows
 
@@ -106,7 +106,7 @@ Because generation snapshots rule *results* (not references), historical reports
 
 ## Database
 
-Single PostgreSQL database, single (public) schema, seven tables:
+Single PostgreSQL database, single (public) schema, eight tables:
 
 **Rules domain** — reusable rule definitions, independent of any report:
 
@@ -133,6 +133,9 @@ Relationship: `report` 1→N `transaction` (cascade delete).
 | Table          | Purpose                                                                  |
 | -------------- | ------------------------------------------------------------------------ |
 | `plan_section` | Named, ordered groups in the budget waterfall; income groups are marked. |
+| `plan_line` | Named budget rows, ordered within their section. |
+
+Relationship: `plan_section` 1→N `plan_line` (cascade delete).
 
 **Key design choice:** report categorisation is stored as a JSON snapshot in `report.data` — `{categories: [{name, filters: [{name, rule_filter_id, transaction_ids}]}], manual_filters, manual_assignments}` — not as foreign keys into the rules tables. Earlier versions used dedicated snapshot tables (`report.category`, `report.filter`, `override` in a separate `report` schema); those were migrated into the JSONB structure and dropped.
 
@@ -168,7 +171,8 @@ Component → TanStack Query hooks (src/hooks/) → BackendClient (src/clients/b
 
 - `components/report-detail/` — report page, split into `sections/` (category and unidentified-transaction sections with AG Grid tables and context menus) and `panels/` (side panels for assigning transactions and creating filters).
 - `components/categories-panel/` — rule management UI: sortable categories and filters (dnd-kit), inline create/rename, and rule-group editing. See `.cursor/rules/categories-panel.mdc` for its internal structure.
-- `components/plan/` — monthly plan page and section-management UI.
+- `components/plan/` — ordered sections and their named budget rows. `PlanPage` and `usePlanSectionsState` manage sections; `PlanSectionLines` manages row creation, reordering, and deletion within a section; `PlanLineRow` owns inline renaming. “+ Add section” and “+ Add row” reveal focused forms that close on save or cancel. Rows have up/down controls and deletion confirmation. Failed mutations display errors; failed saves retain the entered name.
+- `usePlanQueries` reads nested rows through `GET /plan/sections` (`PLAN_SECTIONS_QUERY_KEY`). Every section/row mutation invalidates that query; row add/move/delete controls stay disabled within their section until the mutation and refresh finish. Plan rows currently have names and positions only; amounts, month columns, totals, and percentage defaults remain future work.
 - `components/breakdown/` — month-by-month category/filter spending grid. Hidden months and hidden filter rows are display preferences in `localStorage`.
 
 ---

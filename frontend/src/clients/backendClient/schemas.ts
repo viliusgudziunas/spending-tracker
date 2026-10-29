@@ -55,11 +55,18 @@ export const ApiCategorySchema = z.object({
     filters: z.array(ApiFilterSchema),
 });
 
+export const ApiPlanLineSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    position: z.number().int().positive(),
+});
+
 export const ApiPlanSectionSchema = z.object({
     id: z.string(),
     name: z.string(),
     position: z.number(),
     is_income: z.boolean(),
+    lines: z.array(ApiPlanLineSchema),
 });
 
 export const ApiTransactionSchema = z.object({

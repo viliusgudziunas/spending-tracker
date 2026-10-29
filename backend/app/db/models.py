@@ -117,9 +117,28 @@ class PlanSection(Base):
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     is_income: Mapped[bool] = mapped_column(Boolean, default=False, server_default=sa.false(), nullable=False)
 
+    lines: Mapped[list[PlanLine]] = relationship(
+        back_populates="section",
+        order_by="PlanLine.position",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
     @override
     def __repr__(self) -> str:
         return f"PlanSection({self.name=})"
+
+
+class PlanLine(Base):
+    __tablename__ = "plan_line"
+
+    id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    section_id: Mapped[uuid.UUID] = mapped_column(
+        sa.UUID(), ForeignKey("plan_section.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    section: Mapped[PlanSection] = relationship(back_populates="lines")
 
 
 class Filter(Base):

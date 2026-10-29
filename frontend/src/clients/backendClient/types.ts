@@ -23,6 +23,18 @@ export interface CreatePlanSectionPayload {
     isIncome?: boolean;
 }
 
+export interface CreatePlanLinePayload {
+    name: string;
+}
+
+export interface RenamePlanLinePayload {
+    name: string;
+}
+
+export interface MovePlanLinePayload {
+    position: number;
+}
+
 export interface UpdatePlanSectionPayload {
     name?: string;
     position?: number;

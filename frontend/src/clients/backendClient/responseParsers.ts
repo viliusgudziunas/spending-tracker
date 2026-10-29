@@ -6,6 +6,7 @@ import {
     ApiBreakdownSchema,
     ApiCategorySchema,
     ApiFilterSchema,
+    ApiPlanLineSchema,
     ApiPlanSectionSchema,
     ApiReportCategorySchema,
     ApiReportFilterSchema,
@@ -70,9 +71,15 @@ const PlanSectionSchema = ApiPlanSectionSchema.transform((section) => ({
     name: section.name,
     position: section.position,
     isIncome: section.is_income,
+    lines: section.lines,
 }));
 
+export type PlanLine = z.infer<typeof ApiPlanLineSchema>;
 export type PlanSection = z.infer<typeof PlanSectionSchema>;
+
+export function parseApiPlanLine(apiLine: unknown): PlanLine {
+    return ApiPlanLineSchema.parse(apiLine);
+}
 
 export const parseApiPlanSections = (apiSections: unknown): PlanSection[] =>
     z.array(PlanSectionSchema).parse(apiSections);

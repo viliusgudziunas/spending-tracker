@@ -76,7 +76,7 @@ Migrations are created incrementally, one per build step that needs new schema (
 
 Vertical slices: every step is committable, introduces no dead code, and ends with something visible in the UI. Migrations are added only in the step that first uses the schema. Plan feature first, then report months, then summary.
 
-**Tracking progress:** each step heading carries a status tag — `[PENDING]`, `[IN PROGRESS]`, or `[COMMITTED]` (same convention as the 2026-03-02 plan). Update the tag when starting or committing a step, and append notes under a step if the implementation deviated from the description.
+**Tracking progress:** each step heading carries a status tag — `[PENDING]`, `[IN PROGRESS]`, `[IMPLEMENTED]` (verified locally, not yet committed), or `[COMMITTED]`. Update the tag when starting, completing verification, or committing a step, and append notes under a step if the implementation deviated from the description. Status updates do not authorize staging or committing.
 
 **For implementers:** each step links to a self-contained spec file in this folder. Read [conventions.md](conventions.md) (codebase patterns, workflow) plus the step file before starting; the step files assume no other context.
 
@@ -88,15 +88,19 @@ Migration: `plan_section` (name, position, is_income). CRUD API + new `/plan` pa
 
 **Post-step refactor** (do before or alongside Step 2):
 
-- [ ] Split `PlanPage.tsx` (~250 lines) into `SectionRow` + `CreateSectionForm` components with a `usePlanSectionsState` hook — Step 2 nests lines inside sections and will fight the monolith; mirror the categories-panel decomposition (`CreateCategoryForm`, `SortableCategoryCard`, `useCategoriesPanelState`).
+- [x] Split `PlanPage.tsx` into `SectionRow` + `CreateSectionForm` components with a `usePlanSectionsState` hook.
 - [ ] (BEHAVIOR CHANGE) Backport plan's stricter input validation to category/filter schemas (trimmed non-empty names, `position >= 1` + upper-bound check) — siblings can still persist blank names and position gaps that plan rejects. Separate commit.
 - [ ] (BEHAVIOR CHANGE) Route category/filter client mutations through `parseAxiosError` — they surface raw Axios messages while report/plan mutations show the backend `detail`. Separate commit.
 
 Deferred by choice: `update_plan_section` taking an entity instead of an id (avoids a double fetch for position validation); plan's `APIRouter(prefix="/plan")` style vs siblings' bare routers (forward-compatible with `GET /plan?from&to`).
 
-#### [Step 2 — Plan lines](step-02-plan-lines.md) [PENDING]
+#### [Step 2 — Plan lines](step-02-plan-lines.md) [IMPLEMENTED]
 
 Migration: `plan_line` (section FK, name, position). CRUD API + UI to manage lines within sections on the plan page.
+
+Completed locally on 2026-10-28; not yet committed. Row add/rename/reorder/delete and persistence are user-verified. Creation forms for both sections and rows open from “+ Add” buttons and close on save or cancel. Reordering stays within a section, and deleting a section cascades to its rows.
+
+Verification: 46 plan API tests (24 row cases plus 22 section regressions) and 2 frontend response-parser tests passed, along with backend/frontend lint, formatting, type checks, and the frontend build. The existing bundle-size warning remains. See [step 2 verification](step-02-plan-lines.md#verification) for the focused commands. Next feature slice: step 3, month columns and fixed defaults.
 
 #### [Step 3 — Month columns + fixed defaults](step-03-month-columns-fixed-defaults.md) [PENDING]
 
