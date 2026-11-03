@@ -1,6 +1,6 @@
 # Step 4 — Per-month overrides
 
-Read [conventions.md](conventions.md) first. Requires step 3 (grid + fixed defaults).
+Read [conventions.md](conventions.md) first. Requires step 3b (month grid); step 3a alone is insufficient.
 
 ## Goal
 
@@ -9,9 +9,9 @@ Make individual cells editable. A cell edit creates a **per-month override** tha
 ## Backend
 
 1. New model `PlanValue` in `backend/app/db/models.py`:
-   - `id` (UUID pk), `line_id` (UUID FK → `plan_line.id`, `ondelete="CASCADE"`, not null), `month` (str `YYYY-MM`, not null), `amount` (float, not null).
+   - `id` (UUID pk), `line_id` (UUID FK → `plan_line.id`, `ondelete="CASCADE"`, not null), `month` (str `YYYY-MM`, not null), `amount` (`NUMERIC(12,2)`, not null; Python `Decimal` and decimal-string JSON per conventions).
    - Unique constraint on `(line_id, month)`.
-   - Only overrides/manual entries are stored — defaults are never persisted.
+   - Only overrides/manual entries are stored in `plan_value`; recurring values are resolved from the saved row default rather than copied into each month.
 2. Migration.
 3. Endpoints (validate the `{month}` path param with the shared month helper — never persist a malformed month key):
    - `PUT /plan/lines/{line_id}/values/{month}` — body `{ amount }`; upsert the override.

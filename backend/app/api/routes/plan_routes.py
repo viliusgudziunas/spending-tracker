@@ -58,7 +58,7 @@ def update_plan_line(
     db: Annotated[Session, Depends(get_db)],
 ) -> PlanLine:
     try:
-        return plan_service.update_plan_line(db=db, line_id=line_id, name=form_data.name, position=form_data.position)
+        return plan_service.update_plan_line(db=db, line_id=line_id, updates=form_data.to_updates())
     except PlanLineNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan line not found") from exc
     except InvalidPlanLinePositionError as exc:

@@ -1,6 +1,7 @@
 import { AxiosError, type AxiosInstance } from "axios";
 
 import { createAxiosClient } from "@/clients/createAxiosClient";
+import { serializePlanAmount } from "@/shared/utils/planAmounts";
 
 import {
     parseIntoCreateApiFilterPayload,
@@ -41,10 +42,10 @@ import {
     type PutFilterRuleGroupsPayload,
     type PutReportAssignmentPayload,
     type RenameFilterPayload,
-    type RenamePlanLinePayload,
     type UpdateCategoryPayload,
     type UpdateFilterPayload,
     type UpdateFilterPositionPayload,
+    type UpdatePlanLinePayload,
     type UpdatePlanSectionPayload,
 } from "./types";
 
@@ -195,12 +196,17 @@ class BackendClient {
         }
     }
 
-    async renamePlanLine(lineId: string, payload: RenamePlanLinePayload): Promise<PlanLine> {
+    async updatePlanLine(lineId: string, payload: UpdatePlanLinePayload): Promise<PlanLine> {
+        const updates = {
+            name: payload.name,
+            fixed_amount:
+                payload.fixedAmountCents === undefined ? undefined : serializePlanAmount(payload.fixedAmountCents),
+        };
         try {
-            const response = await this.http.patch(`/plan/lines/${lineId}`, payload);
+            const response = await this.http.patch(`/plan/lines/${lineId}`, updates);
             return parseApiPlanLine(response.data);
         } catch (error: unknown) {
-            throw parseAxiosError(error, "Request failed while renaming plan row.");
+            throw parseAxiosError(error, "Request failed while updating plan row.");
         }
     }
 

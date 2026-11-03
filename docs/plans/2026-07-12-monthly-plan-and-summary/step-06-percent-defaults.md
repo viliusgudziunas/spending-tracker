@@ -8,8 +8,8 @@ Some budget lines are defined as a percentage instead of a fixed amount — e.g.
 
 ## Backend
 
-1. The `percent` enum value already exists in the DB (created in step 3) — no migration needed. When `default_kind = percent`, `default_value` holds the percentage (e.g. `12` for 12%).
-2. `PATCH /plan/lines/{id}` now accepts `percent` (remove the step 3 rejection; validate: `percent` requires a value).
+1. Design percentage storage and its migration in this step. Step 3a only adds nullable `fixed_amount NUMERIC(12,2)`; it creates no kind enum or generic value column. Preserve existing fixed defaults and agree percentage precision and computed-money rounding before implementation.
+2. Extend `PATCH /plan/lines/{id}` for percentage defaults with a required percentage value and an explicit choice between fixed and percent. The exact fields and validation belong to this later step.
 3. Resolution order in `plan_service.py` per cell: override → percent (base × value / 100) → fixed → null. The base for a line = the running left-over *before* its section is subtracted (i.e. income total for the first non-income section, previous section's left-over otherwise).
    - Note the interdependence: percent lines contribute to their own section's total, which feeds the next left-over. Compute sections strictly in position order — the base for a section is fully known before its lines resolve. Percent lines in an income section have no base; resolve them as null.
 4. Extend the waterfall unit test with a percent line (e.g. income 1,000; first section has a 12% line → 120; left-over 880; next section a 50% line → 440).

@@ -1,4 +1,5 @@
 import {
+    useIsMutating,
     useMutation,
     type UseMutationResult,
     useQuery,
@@ -11,12 +12,13 @@ import {
     type CreatePlanLinePayload,
     type CreatePlanSectionPayload,
     type MovePlanLinePayload,
-    type RenamePlanLinePayload,
+    type UpdatePlanLinePayload,
     type UpdatePlanSectionPayload,
 } from "@/clients/backendClient/types";
 import { client } from "@/shared/stores/client";
 
 export const PLAN_SECTIONS_QUERY_KEY = ["plan", "sections"] as const;
+const PLAN_LINE_UPDATE_MUTATION_KEY = ["plan", "line", "update"] as const;
 
 export function usePlanSectionsQuery(): UseQueryResult<PlanSection[]> {
     return useQuery({
@@ -41,16 +43,23 @@ export function useCreatePlanLineMutation(): UseMutationResult<PlanLine, Error, 
     });
 }
 
-interface RenamePlanLineVariables {
+interface UpdatePlanLineVariables {
     lineId: string;
-    payload: RenamePlanLinePayload;
+    payload: UpdatePlanLinePayload;
 }
 
-export function useRenamePlanLineMutation(): UseMutationResult<PlanLine, Error, RenamePlanLineVariables> {
+export function useIsPlanSectionSaving(sectionId: string): boolean {
+    return useIsMutating({ mutationKey: [...PLAN_LINE_UPDATE_MUTATION_KEY, sectionId] }) > 0;
+}
+
+export function useUpdatePlanLineMutation(
+    sectionId: string,
+): UseMutationResult<PlanLine, Error, UpdatePlanLineVariables> {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ lineId, payload }: RenamePlanLineVariables) => client.renamePlanLine(lineId, payload),
+        mutationKey: [...PLAN_LINE_UPDATE_MUTATION_KEY, sectionId],
+        mutationFn: ({ lineId, payload }: UpdatePlanLineVariables) => client.updatePlanLine(lineId, payload),
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: PLAN_SECTIONS_QUERY_KEY });
         },

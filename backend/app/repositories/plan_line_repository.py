@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
     from sqlalchemy.orm import Session
 
+    from app.repositories.dtos import UpdatePlanLineDto
+
 
 def create_plan_line(*, db: Session, section_id: uuid.UUID, name: str) -> PlanLine:
     max_position = db.scalar(select(func.max(PlanLine.position)).where(PlanLine.section_id == section_id))
@@ -36,7 +38,8 @@ def get_plan_line_count(db: Session, section_id: uuid.UUID) -> int:
     return db.scalar(select(func.count(PlanLine.id)).where(PlanLine.section_id == section_id)) or 0
 
 
-def update_plan_line(*, db: Session, line: PlanLine, name: str, position: int) -> PlanLine:
+def update_plan_line(*, db: Session, line: PlanLine, updates: UpdatePlanLineDto) -> PlanLine:
+    position = updates.get("position", line.position)
     try:
         if position != line.position:
             shift = -1 if line.position < position else 1
@@ -50,7 +53,10 @@ def update_plan_line(*, db: Session, line: PlanLine, name: str, position: int) -
                 .values(position=PlanLine.position + shift),
             )
             line.position = position
-        line.name = name
+        if "name" in updates:
+            line.name = updates["name"]
+        if "fixed_amount" in updates:
+            line.fixed_amount = updates["fixed_amount"]
         db.commit()
     except SQLAlchemyError:
         db.rollback()

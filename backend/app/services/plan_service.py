@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
     from app.db.models import PlanLine, PlanSection
+    from app.repositories.dtos import UpdatePlanLineDto
 
 
 def get_plan_sections(db: Session) -> Sequence[PlanSection]:
@@ -25,19 +26,14 @@ def create_plan_line(*, db: Session, section_id: uuid.UUID, name: str) -> PlanLi
     return plan_line_repository.create_plan_line(db=db, section_id=section.id, name=name)
 
 
-def update_plan_line(*, db: Session, line_id: uuid.UUID, name: str | None, position: int | None) -> PlanLine:
+def update_plan_line(*, db: Session, line_id: uuid.UUID, updates: UpdatePlanLineDto) -> PlanLine:
     line = plan_line_repository.get_plan_line(db=db, line_id=line_id)
-    resolved_position = line.position if position is None else position
+    resolved_position = updates.get("position", line.position)
     if resolved_position != line.position and resolved_position > plan_line_repository.get_plan_line_count(
         db=db, section_id=line.section_id
     ):
         raise InvalidPlanLinePositionError
-    return plan_line_repository.update_plan_line(
-        db=db,
-        line=line,
-        name=line.name if name is None else name,
-        position=resolved_position,
-    )
+    return plan_line_repository.update_plan_line(db=db, line=line, updates=updates)
 
 
 def delete_plan_line(db: Session, line_id: uuid.UUID) -> None:

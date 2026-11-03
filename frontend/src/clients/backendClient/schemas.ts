@@ -59,6 +59,10 @@ export const ApiPlanLineSchema = z.object({
     id: z.string(),
     name: z.string(),
     position: z.number().int().positive(),
+    fixed_amount: z
+        .string()
+        .regex(/^[0-9]{1,10}\.[0-9]{2}(?![\s\S])/)
+        .nullable(),
 });
 
 export const ApiPlanSectionSchema = z.object({

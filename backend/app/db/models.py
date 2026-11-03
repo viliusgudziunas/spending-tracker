@@ -3,6 +3,7 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any, Final, override
 
 import sqlalchemy as sa
@@ -135,6 +136,7 @@ class PlanLine(Base):
     id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
+    fixed_amount: Mapped[Decimal | None] = mapped_column(sa.Numeric(12, 2), nullable=True)
     section_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(), ForeignKey("plan_section.id", ondelete="CASCADE"), nullable=False, index=True
     )

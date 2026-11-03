@@ -1,6 +1,8 @@
 # Monthly Plan & Summary Features
 
-> **Phases 2 and 3 (steps 7–14) are superseded** by [2026-09-06-month-breakdown-mvp](../2026-09-06-month-breakdown-mvp/plan.md), which ships the month-by-month actuals view (`/breakdown`) on its own — explicit report months, always-expanded category/filter rows, automatic month columns — without the plan-vs-actual columns, month-range picker and category kinds designed here. Follow that folder for anything month-column related; the steps below are kept for the design rationale only. **Phase 1 (steps 1–6, the `/plan` grid) still stands.**
+> **Phases 2 and 3 (steps 7–14) are superseded** by [2026-09-06-month-breakdown-mvp](../2026-09-06-month-breakdown-mvp/plan.md), which ships the month-by-month actuals view (`/breakdown`) on its own — explicit report months, always-expanded category/filter rows, automatic month columns — without the plan-vs-actual columns, month-range picker and category kinds designed here. Follow that folder for actuals month columns; the steps below retain the original reporting design rationale. **Phase 1 (steps 1–6, the `/plan` grid) still stands.**
+
+> **Current scope:** Step 3 is split into 3a (optional fixed monthly euro amounts and section totals on the current page) and 3b (month columns later). The [Step 3 spec](step-03-month-columns-fixed-defaults.md) defines the active contract; later grid, override, and percentage work below is roadmap context, not part of 3a.
 
 Expand the spending tracker with two features: a monthly planning grid (replacing the budget Google Sheet) and a month-by-month plan-vs-actual summary grid (replacing the summary Google Sheet), built on the existing category/filter taxonomy.
 
@@ -41,8 +43,7 @@ erDiagram
         string name
         uuid category_id "nullable"
         uuid filter_id "nullable"
-        string default_kind "fixed|percent|none"
-        numeric default_value
+        numeric fixed_amount "nullable, NUMERIC(12,2), step 3a"
         int position
     }
     PLAN_VALUE {
@@ -52,13 +53,14 @@ erDiagram
     }
 ```
 
-Migrations are created incrementally, one per build step that needs new schema (see build order below). `plan_value` stores only manual entries/overrides — defaults are computed, never persisted. `category.kind` defaults on migration: Income → income, Ignore → ignore, Investments/Savings → allocation, rest → spending.
+Migrations are created incrementally, one per build step that needs new schema (see build order below). Step 3a stores only `fixed_amount`; it does not introduce `default_kind` or `default_value`. Percentage storage and its migration are deferred to step 6. The other future relationships in this sketch are not added by step 3a. `plan_value` stores only manual entries/overrides — recurring amounts are resolved from the saved row default, not copied into every month. The historical `category.kind` proposal belongs to the superseded reporting phases.
 
 ## Backend (follow existing repository/service/route layering)
 
 - **Reports**: accept `month` on create and PATCH; expose in responses.
 - **Categories**: accept `kind` on create/PATCH.
 - **Plan** (new `plan_routes.py`, `plan_service.py`, repository):
+  - Step 3a retains `GET /plan/sections` and extends line responses and `PATCH /plan/lines/{id}` with nullable `fixed_amount`; frontend totals sum saved amounts in integer cents.
   - CRUD for sections and lines (name, position, link, default).
   - `PUT /plan/lines/{id}/values/{month}` set override; `DELETE` to revert to default.
   - `GET /plan?from=YYYY-MM&to=YYYY-MM` returns the computed grid: per month per line the resolved amount (override or default), `is_override` flag, and computed left-over per section. Waterfall logic lives in `plan_service` — single source of truth.
@@ -100,11 +102,15 @@ Migration: `plan_line` (section FK, name, position). CRUD API + UI to manage lin
 
 Committed and pushed on 2026-10-29 in `8f082e2` (Add editable rows within plan sections). Row add/rename/reorder/delete and persistence are user-verified. Creation forms for both sections and rows open from “+ Add” buttons and close on save or cancel. Reordering stays within a section, and deleting a section cascades to its rows.
 
-Verification: 46 plan API tests (24 row cases plus 22 section regressions) and 2 frontend response-parser tests passed, along with backend/frontend lint, formatting, type checks, and the frontend build. The existing bundle-size warning remains. See [step 2 verification](step-02-plan-lines.md#verification) for the focused commands. Next feature slice: step 3, month columns and fixed defaults.
+Verification: 46 plan API tests (24 row cases plus 22 section regressions) and 2 frontend response-parser tests passed, along with backend/frontend lint, formatting, type checks, and the frontend build. The existing bundle-size warning remains. See [step 2 verification](step-02-plan-lines.md#verification) for the focused commands. Next feature slice: step 3a, fixed amounts and section totals.
 
-#### [Step 3 — Month columns + fixed defaults](step-03-month-columns-fixed-defaults.md) [PENDING]
+#### [Step 3a — Fixed amounts + section totals](step-03-month-columns-fixed-defaults.md#step-3a--fixed-amounts-and-section-totals-implemented) [IMPLEMENTED]
 
-Migration: add `default_kind` (`none | fixed | percent` — full enum created now, `percent` enabled in step 6) and `default_value` to `plan_line`. UI to set a fixed default on a line; the page becomes a real grid — month range as columns, default values filling cells, per-section totals.
+Migration: add nullable `fixed_amount NUMERIC(12,2)` to `plan_line`, preserving existing rows as unset. Edit or clear the amount in the existing row form and show section totals from saved amounts. Keep `GET /plan/sections` and `PLAN_SECTIONS_QUERY_KEY`. Storage migration `892cb40c7a90` and the backend contract are implemented: all 69 Plan API tests pass. The frontend amount boundary, row editor, section totals, and shared pending guard for row saves are implemented; all 52 frontend contract tests pass. The user confirmed the row editor, total, and placement below the add-row controls. The automated checkpoint passes: 216 backend tests, 59 frontend tests, root `make lint`, and the frontend build. No formatting changes were needed; the existing bundle-size warning remains. Final browser checks for drafts, Cancel, clear/zero, reload, and invalid input passed. The user explicitly waived slow-network, failed-save recovery, and narrow-screen checks; these remain unverified rather than passed. User acceptance is complete; changes are not committed. Migration round-trips were verified on a disposable database; the local development database was upgraded to `892cb40c7a90` on 2026-11-03 and `GET /plan/sections` returned 200 with amount fields present.
+
+#### [Step 3b — Month columns](step-03-month-columns-fixed-defaults.md#step-3b--month-columns-pending) [PENDING]
+
+Add the month range and computed grid endpoint; show each row's recurring fixed amount in each month. Move totals into the backend grid calculation and switch the page to its single grid query. Complete this slice before step 4.
 
 #### [Step 4 — Per-month overrides](step-04-per-month-overrides.md) [PENDING]
 
@@ -116,7 +122,7 @@ Computed "Left over" row after each non-income section (income total minus secti
 
 #### [Step 6 — Percent defaults](step-06-percent-defaults.md) [PENDING]
 
-Enable the `percent` default kind (enum value already exists): line default computes live as % of the left-over row above its section (total income for the first section after income). Overrides from step 4 still win. No migration.
+Design percentage storage and migrate existing fixed amounts without changing their meaning. A percentage default computes live from the left-over amount before its section (total income for the first section after income). Overrides from step 4 still win; no percentage enum or value column is pre-created in step 3a.
 
 ### Phase 2 — Report months
 

@@ -27,8 +27,9 @@ export interface CreatePlanLinePayload {
     name: string;
 }
 
-export interface RenamePlanLinePayload {
-    name: string;
+export interface UpdatePlanLinePayload {
+    name?: string;
+    fixedAmountCents?: number | null;
 }
 
 export interface MovePlanLinePayload {

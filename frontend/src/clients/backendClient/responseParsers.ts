@@ -66,19 +66,26 @@ export const parseApiCategory = (category: unknown): Category => CategorySchema.
 
 export const parseApiFilter = (apiFilter: unknown): Filter => FilterSchema.parse(apiFilter);
 
+const PlanLineSchema = ApiPlanLineSchema.transform((line) => ({
+    id: line.id,
+    name: line.name,
+    position: line.position,
+    fixedAmountCents: line.fixed_amount === null ? null : Number(line.fixed_amount.replace(".", "")),
+}));
+
 const PlanSectionSchema = ApiPlanSectionSchema.transform((section) => ({
     id: section.id,
     name: section.name,
     position: section.position,
     isIncome: section.is_income,
-    lines: section.lines,
+    lines: section.lines.map((line) => PlanLineSchema.parse(line)),
 }));
 
-export type PlanLine = z.infer<typeof ApiPlanLineSchema>;
+export type PlanLine = z.infer<typeof PlanLineSchema>;
 export type PlanSection = z.infer<typeof PlanSectionSchema>;
 
 export function parseApiPlanLine(apiLine: unknown): PlanLine {
-    return ApiPlanLineSchema.parse(apiLine);
+    return PlanLineSchema.parse(apiLine);
 }
 
 export const parseApiPlanSections = (apiSections: unknown): PlanSection[] =>

@@ -1,41 +1,49 @@
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
 
 import { type PlanLine, type PlanSection } from "@/clients/backendClient/responseParsers";
-import { useCreatePlanLineMutation, useDeletePlanLineMutation, useMovePlanLineMutation } from "@/hooks/usePlanQueries";
+import {
+    useCreatePlanLineMutation,
+    useDeletePlanLineMutation,
+    useIsPlanSectionSaving,
+    useMovePlanLineMutation,
+} from "@/hooks/usePlanQueries";
+import { sumPlanAmounts } from "@/shared/utils/planAmounts";
 
+import CreatePlanLineForm from "./CreatePlanLineForm";
 import PlanLineRow from "./PlanLineRow";
 
+const EUR_FORMAT = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
+
 export default function PlanSectionLines({ section }: { section: PlanSection }): JSX.Element {
-    const [name, setName] = useState("");
     const [isCreating, setIsCreating] = useState(false);
     const createMutation = useCreatePlanLineMutation();
     const moveMutation = useMovePlanLineMutation();
     const deleteMutation = useDeletePlanLineMutation();
-    const isOrderPending = createMutation.isPending || moveMutation.isPending || deleteMutation.isPending;
+    const isSaving = useIsPlanSectionSaving(section.id);
+    const isPending = createMutation.isPending || moveMutation.isPending || deleteMutation.isPending || isSaving;
     const orderError = moveMutation.error ?? deleteMutation.error;
+    const totalCents = sumPlanAmounts(section.lines.map((line) => line.fixedAmountCents));
 
     function handleMove(lineId: string, position: number): void {
-        if (isOrderPending || position < 1 || position > section.lines.length) return;
+        if (isPending || position < 1 || position > section.lines.length) return;
         deleteMutation.reset();
         moveMutation.mutate({ lineId, payload: { position } });
     }
 
     function handleDelete(line: PlanLine): void {
-        if (isOrderPending || !window.confirm(`Delete plan row "${line.name}"?`)) return;
+        if (isPending || !window.confirm(`Delete plan row "${line.name}"?`)) return;
         moveMutation.reset();
         deleteMutation.mutate(line.id);
     }
 
     function closeForm(): void {
-        setName("");
         setIsCreating(false);
         createMutation.reset();
     }
 
-    function handleCreate(event: FormEvent): void {
-        event.preventDefault();
+    function handleCreate(name: string): void {
         const trimmedName = name.trim();
-        if (trimmedName === "" || isOrderPending) return;
+        if (trimmedName === "" || isPending) return;
         createMutation.mutate({ sectionId: section.id, payload: { name: trimmedName } }, { onSuccess: closeForm });
     }
 
@@ -45,9 +53,10 @@ export default function PlanSectionLines({ section }: { section: PlanSection }):
                 {section.lines.map((line) => (
                     <PlanLineRow
                         key={line.id}
+                        sectionId={section.id}
                         line={line}
                         lineCount={section.lines.length}
-                        isOrderPending={isOrderPending}
+                        disabled={isPending}
                         onMove={handleMove}
                         onDelete={handleDelete}
                     />
@@ -59,38 +68,20 @@ export default function PlanSectionLines({ section }: { section: PlanSection }):
                 </p>
             ) : null}
             {isCreating ? (
-                <form onSubmit={handleCreate} className="mt-2 flex flex-wrap items-center gap-2">
-                    <input
-                        autoFocus
-                        value={name}
-                        onChange={(event): void => setName(event.target.value)}
-                        disabled={isOrderPending}
-                        aria-label={`New row in ${section.name}`}
-                        placeholder="New row name"
-                        className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-                    />
-                    <button
-                        type="submit"
-                        disabled={name.trim() === "" || isOrderPending}
-                        className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        {createMutation.isPending ? "Adding..." : "Add row"}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={closeForm}
-                        disabled={createMutation.isPending}
-                        className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                    >
-                        Cancel
-                    </button>
-                </form>
+                <CreatePlanLineForm
+                    sectionName={section.name}
+                    isPending={isPending}
+                    isCreatePending={createMutation.isPending}
+                    onSubmit={handleCreate}
+                    onCancel={closeForm}
+                />
             ) : (
                 <button
                     type="button"
                     onClick={() => setIsCreating(true)}
+                    disabled={isPending}
                     aria-label={`Add row to ${section.name}`}
-                    className="mt-2 rounded-md px-2 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                    className="mt-2 rounded-md px-2 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     + Add row
                 </button>
@@ -100,6 +91,10 @@ export default function PlanSectionLines({ section }: { section: PlanSection }):
                     {createMutation.error.message}
                 </p>
             ) : null}
+            <div className="flex items-center justify-between gap-2 px-2 py-2 text-sm font-semibold text-slate-700">
+                <span>Monthly total</span>
+                <span className="text-right tabular-nums">{EUR_FORMAT.format(totalCents / 100)}</span>
+            </div>
         </div>
     );
 }

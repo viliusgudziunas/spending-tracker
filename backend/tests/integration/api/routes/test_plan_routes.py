@@ -446,6 +446,147 @@ class TestUpdatePlanLineEndpoint:
 
 
 @pytest.mark.integration
+class TestPlanLineFixedAmount:
+    def test_new_line_has_unset_fixed_amount(
+        self, client: TestClient, db: Session, plan_section_factory: PlanSectionFactory
+    ) -> None:
+        section = plan_section_factory()
+        created = client.post(f"/plan/sections/{section.id}/lines", json={"name": "Mortgage"})
+
+        assert created.status_code == 201
+        line = created.json()
+        assert "fixed_amount" in line
+        assert line["fixed_amount"] is None
+        db.expire_all()
+        sections = client.get("/plan/sections")
+        assert sections.status_code == 200
+        assert sections.json()[0]["lines"] == [line]
+
+    @pytest.mark.parametrize("replacement", ["700.00", "0.00", "9999999999.99"])
+    def test_sets_and_replaces_fixed_amount(
+        self, client: TestClient, db: Session, plan_section_factory: PlanSectionFactory, replacement: str
+    ) -> None:
+        section = plan_section_factory()
+        created = client.post(f"/plan/sections/{section.id}/lines", json={"name": "Mortgage"})
+        assert created.status_code == 201
+        line = created.json()
+
+        for amount in ["1034.89", replacement]:
+            response = client.patch(f"/plan/lines/{line['id']}", json={"fixed_amount": amount})
+
+            assert response.status_code == 200
+            expected = {**line, "fixed_amount": amount}
+            assert response.json() == expected
+            db.expire_all()
+            sections = client.get("/plan/sections")
+            assert sections.status_code == 200
+            assert sections.json()[0]["lines"] == [expected]
+
+    @pytest.mark.parametrize("initial_amount", ["1034.89", "0.00"])
+    def test_clears_fixed_amount(
+        self, client: TestClient, db: Session, plan_section_factory: PlanSectionFactory, initial_amount: str
+    ) -> None:
+        section = plan_section_factory()
+        created = client.post(f"/plan/sections/{section.id}/lines", json={"name": "Mortgage"})
+        assert created.status_code == 201
+        line = created.json()
+        saved = client.patch(f"/plan/lines/{line['id']}", json={"fixed_amount": initial_amount})
+        assert saved.status_code == 200
+        assert saved.json()["fixed_amount"] == initial_amount
+
+        response = client.patch(f"/plan/lines/{line['id']}", json={"fixed_amount": None})
+
+        assert response.status_code == 200
+        expected = {**line, "fixed_amount": None}
+        assert response.json() == expected
+        db.expire_all()
+        sections = client.get("/plan/sections")
+        assert sections.status_code == 200
+        assert sections.json()[0]["lines"] == [expected]
+
+    def test_rename_and_reorder_preserve_fixed_amount(
+        self, client: TestClient, db: Session, plan_section_factory: PlanSectionFactory
+    ) -> None:
+        section = plan_section_factory()
+        created = client.post(f"/plan/sections/{section.id}/lines", json={"name": "Mortgage"})
+        sibling = client.post(f"/plan/sections/{section.id}/lines", json={"name": "Utilities"})
+        assert created.status_code == sibling.status_code == 201
+        line = created.json()
+        saved = client.patch(f"/plan/lines/{line['id']}", json={"fixed_amount": "1034.89"})
+        assert saved.status_code == 200
+        expected = {**line, "fixed_amount": "1034.89"}
+        assert saved.json() == expected
+
+        renamed = client.patch(f"/plan/lines/{line['id']}", json={"name": "Housing"})
+        expected = {**expected, "name": "Housing"}
+        assert renamed.status_code == 200
+        assert renamed.json() == expected
+        moved = client.patch(f"/plan/lines/{line['id']}", json={"position": 2})
+        expected = {**expected, "position": 2}
+        assert moved.status_code == 200
+        assert moved.json() == expected
+        db.expire_all()
+        sections = client.get("/plan/sections")
+        assert sections.status_code == 200
+        assert sections.json()[0]["lines"] == [{**sibling.json(), "position": 1}, expected]
+
+    @pytest.mark.parametrize("invalid_position", [False, True])
+    def test_updates_name_and_fixed_amount_together(
+        self, client: TestClient, db: Session, plan_section_factory: PlanSectionFactory, *, invalid_position: bool
+    ) -> None:
+        section = plan_section_factory()
+        created = client.post(f"/plan/sections/{section.id}/lines", json={"name": "Mortgage"})
+        assert created.status_code == 201
+        line = created.json()
+        saved = client.patch(f"/plan/lines/{line['id']}", json={"fixed_amount": "1034.89"})
+        assert saved.status_code == 200
+        assert saved.json() == {**line, "fixed_amount": "1034.89"}
+        payload: dict[str, object] = {"name": "Housing", "fixed_amount": "700.00"}
+        if invalid_position:
+            payload["position"] = 2
+
+        response = client.patch(f"/plan/lines/{line['id']}", json=payload)
+
+        if invalid_position:
+            assert response.status_code == 400
+            expected = saved.json()
+        else:
+            assert response.status_code == 200
+            expected = {**line, **payload}
+            assert response.json() == expected
+        db.expire_all()
+        sections = client.get("/plan/sections")
+        assert sections.status_code == 200
+        assert sections.json()[0]["lines"] == [expected]
+
+    @pytest.mark.parametrize(
+        "amount",
+        ["-0.01", "1.001", "1.230", "10000000000.00", "bad", "", "NaN", "Infinity", "1e2", "1,00", 700, 1.25, True],
+    )
+    def test_rejects_invalid_fixed_amount_without_changes(
+        self, client: TestClient, db: Session, plan_section_factory: PlanSectionFactory, amount: object
+    ) -> None:
+        section = plan_section_factory()
+        created = client.post(f"/plan/sections/{section.id}/lines", json={"name": "Mortgage"})
+        assert created.status_code == 201
+        line = created.json()
+
+        response = client.patch(f"/plan/lines/{line['id']}", json={"name": "Must not persist", "fixed_amount": amount})
+
+        assert response.status_code == 422
+        db.expire_all()
+        sections = client.get("/plan/sections")
+        assert sections.status_code == 200
+        assert sections.json()[0]["lines"] == [line]
+
+    def test_amount_patch_returns_404_for_unknown_line(self, client: TestClient) -> None:
+        response = client.patch(f"/plan/lines/{uuid.uuid4()}", json={"fixed_amount": "1034.89"})
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Plan line not found"
+
+
+@pytest.mark.integration
 class TestDeletePlanLineEndpoint:
     def test_deletes_line_and_compacts_positions(
         self, client: TestClient, db: Session, plan_section_factory: PlanSectionFactory

@@ -1,8 +1,15 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 if TYPE_CHECKING:
     import uuid
+    from decimal import Decimal
+
+
+class UpdatePlanLineDto(TypedDict, total=False):
+    name: str
+    position: int
+    fixed_amount: Decimal | None
 
 
 @dataclass(frozen=True, kw_only=True)

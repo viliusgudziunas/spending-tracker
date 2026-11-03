@@ -19,7 +19,8 @@ Layering: route → service → repository. Routes never touch the DB directly.
 - Services: `backend/app/services/` — business logic (see `category_service.py`, `report_service.py`).
 - API schemas: `backend/app/api/schemas/` — Pydantic request/response models, snake_case JSON (see `category_schemas.py`).
 - Routes: `backend/app/api/routes/` — FastAPI routers (see `category_routes.py`), DB session via `Depends(get_db)` from `backend/app/api/dependencies.py`. Register new routers in `backend/app/main.py`.
-- Money math: compute aggregations with `Decimal` (mirror `Decimal(str(tx.amount))` in `report_service.py`), round to 2 decimals only at the JSON serialization boundary. Amounts stay in DB sign (debits negative) in API responses.
+- Report money math: compute aggregations with `Decimal` (mirror `Decimal(str(tx.amount))` in `report_service.py`), round to 2 decimals only at the JSON serialization boundary. Report amounts stay in DB sign (debits negative) in API responses.
+- Plan money: store fixed euro amounts as nullable `NUMERIC(12,2)` and use Python `Decimal`. Accept decimal strings or null in the API; emit two-decimal strings or null. Reject negative, non-finite, malformed, out-of-range, or more-than-two-decimal inputs rather than rounding. Income and expense budgets are both non-negative. Null means unset, not zero; see the [Step 3 contract](step-03-month-columns-fixed-defaults.md#money-and-patch-contract).
 - Month strings: one shared validator/helper for `YYYY-MM` keys and month ranges (regex `^\d{4}-(0[1-9]|1[0-2])$`; reject `from > to`; clamp range length to e.g. 120 months). Every endpoint taking a month or range uses it and returns 400 on invalid input.
 
 ## Frontend patterns
@@ -31,8 +32,9 @@ Stack: React 18 + TypeScript, TanStack Router (file-based), TanStack Query, AG G
 - Routes/pages: new pages go under `frontend/src/routes/_app/` (e.g. `plan.tsx`) so they get the shared sidebar layout from `_app.tsx`. Route files are thin — they render a page component from `frontend/src/components/`. `routeTree.gen.ts` regenerates automatically via the Vite plugin.
 - Sidebar: `frontend/src/components/AppSidebar.tsx` — add nav links for new pages here.
 - Styling: Tailwind utility classes, no inline styles. Uniform-row tables use AG Grid Community only (no Enterprise features: no row grouping / tree data / master-detail). The `/plan` grid is hand-rolled (see step 3); `/summary` uses AG Grid.
-- Query invalidation: define one query key per computed grid (`PLAN_QUERY_KEY`, `SUMMARY_QUERY_KEY`). Any mutation that affects a grid's computation (sections, lines, defaults, overrides, links, report month, report generate, category kind) must invalidate the relevant key in its `onSuccess`.
-- Sign convention: bank debits are negative in the DB and in API responses; the frontend flips to positive-spending at parse time (see `responseParsers.ts` — report detail and summary both follow this; never flip in the backend).
+- Query invalidation: step 3a retains `PLAN_SECTIONS_QUERY_KEY`; await invalidation after mutations so pending guards cover the refresh. Step 3b introduces the single `PLAN_QUERY_KEY` for its computed grid. Later mutations that affect that grid invalidate its key in `onSuccess`.
+- Plan amounts: validate API responses and convert decimal strings into `fixedAmountCents: number | null` at the parser boundary. Keep input drafts local, serialize cents back into decimal strings, and sum saved amounts in integer cents for step 3a section totals. Never sum binary floating-point euro values; do not persist totals. Step 3b moves computed monthly totals into the backend.
+- Report sign convention: bank debits are negative in the DB and in API responses; the frontend flips to positive-spending at parse time (see `responseParsers.ts` — report detail and summary both follow this; never flip in the backend). Plan amounts do not use this sign flip.
 
 ## Domain vocabulary
 
