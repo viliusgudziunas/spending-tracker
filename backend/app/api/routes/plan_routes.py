@@ -1,8 +1,9 @@
-import uuid  # noqa: TC003
-from typing import TYPE_CHECKING, Annotated
+import uuid
+from collections.abc import Sequence
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session  # noqa: TC002
+from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
 from app.api.schemas.plan_schemas import (
@@ -13,6 +14,7 @@ from app.api.schemas.plan_schemas import (
     UpdatePlanLineInput,
     UpdatePlanSectionInput,
 )
+from app.db.models import PlanLine, PlanSection
 from app.repositories.exceptions import (
     InvalidPlanLinePositionError,
     InvalidPlanSectionPositionError,
@@ -20,11 +22,6 @@ from app.repositories.exceptions import (
     PlanSectionNotFoundError,
 )
 from app.services import plan_service
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from app.db.models import PlanLine, PlanSection
 
 router = APIRouter(prefix="/plan")
 

@@ -1,9 +1,9 @@
-import uuid  # noqa: TC003
+import uuid
 from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints, model_validator
 
-from app.api.schemas.rule_group_schemas import CreateRuleGroupInput, PutRuleGroupInput, RuleGroupResponse  # noqa: TC001
+from app.api.schemas.rule_group_schemas import CreateRuleGroupInput, PutRuleGroupInput, RuleGroupResponse
 
 FilterName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 FilterPosition = Annotated[int, Field(ge=1)]

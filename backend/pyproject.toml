@@ -123,6 +123,22 @@ ignore = [
     "PLR2004", # magic-value-comparison
 ]
 
+[tool.ruff.lint.flake8-type-checking]
+# Pydantic resolves model annotations at runtime.
+runtime-evaluated-base-classes = [
+    "pydantic.BaseModel",
+    "pydantic_settings.BaseSettings",
+]
+
+# FastAPI resolves endpoint annotations at runtime.
+runtime-evaluated-decorators = [
+    "fastapi.APIRouter.get",
+    "fastapi.APIRouter.post",
+    "fastapi.APIRouter.put",
+    "fastapi.APIRouter.patch",
+    "fastapi.APIRouter.delete",
+]
+
 [tool.ruff.lint.pep8-naming]
 classmethod-decorators = ["pydantic.field_validator"]
 

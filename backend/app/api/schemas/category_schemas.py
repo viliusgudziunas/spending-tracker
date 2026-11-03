@@ -1,9 +1,9 @@
-import uuid  # noqa: TC003
+import uuid
 from typing import Annotated
 
 from pydantic import BaseModel, Field, StringConstraints, model_validator
 
-from app.api.schemas.filter_schemas import FilterResponse  # noqa: TC001
+from app.api.schemas.filter_schemas import FilterResponse
 
 CategoryName = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 CategoryPosition = Annotated[int, Field(ge=1)]

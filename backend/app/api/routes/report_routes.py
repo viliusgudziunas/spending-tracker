@@ -1,8 +1,9 @@
-import uuid  # noqa: TC003
-from typing import TYPE_CHECKING, Annotated
+import uuid
+from collections.abc import Sequence
+from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, HTTPException, UploadFile, status
-from sqlalchemy.orm import Session  # noqa: TC002
+from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
 from app.api.schemas.report_schemas import (
@@ -14,6 +15,7 @@ from app.api.schemas.report_schemas import (
     ReportResponse,
     UpdateReportInput,
 )
+from app.db.models import Report
 from app.repositories.exceptions import (
     CategoryNotFoundError,
     DuplicateReportMonthError,
@@ -24,11 +26,6 @@ from app.repositories.exceptions import (
     TransactionNotFoundError,
 )
 from app.services import report_service
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from app.db.models import Report
 
 router = APIRouter()
 

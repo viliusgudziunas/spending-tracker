@@ -1,5 +1,5 @@
-import uuid  # noqa: TC003
-from decimal import Decimal  # noqa: TC003
+import uuid
+from decimal import Decimal
 
 from pydantic import BaseModel
 

@@ -1,4 +1,4 @@
-import uuid  # noqa: TC003
+import uuid
 from typing import Annotated
 
 from pydantic import BaseModel, Field, StrictBool, StringConstraints, model_validator

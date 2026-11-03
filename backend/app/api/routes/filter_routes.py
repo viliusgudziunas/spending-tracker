@@ -1,8 +1,9 @@
-import uuid  # noqa: TC003
-from typing import TYPE_CHECKING, Annotated
+import uuid
+from collections.abc import Sequence
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session  # noqa: TC002
+from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
 from app.api.schemas.filter_schemas import (
@@ -11,6 +12,7 @@ from app.api.schemas.filter_schemas import (
     PutFilterRuleGroupsInput,
     UpdateFilterInput,
 )
+from app.db.models import Filter
 from app.repositories.exceptions import (
     DuplicateFilterError,
     FilterNotFoundError,
@@ -18,11 +20,6 @@ from app.repositories.exceptions import (
     InvalidFilterRulesPayloadError,
 )
 from app.services import filter_service
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
-
-    from app.db.models import Filter
 
 router = APIRouter()
 
