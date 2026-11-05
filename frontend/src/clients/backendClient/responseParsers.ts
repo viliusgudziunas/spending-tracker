@@ -6,6 +6,7 @@ import {
     ApiBreakdownSchema,
     ApiCategorySchema,
     ApiFilterSchema,
+    ApiPlanGridSchema,
     ApiPlanLineSchema,
     ApiPlanSectionSchema,
     ApiReportCategorySchema,
@@ -84,12 +85,39 @@ const PlanSectionSchema = ApiPlanSectionSchema.transform((section) => ({
 export type PlanLine = z.infer<typeof PlanLineSchema>;
 export type PlanSection = z.infer<typeof PlanSectionSchema>;
 
+const PlanGridSchema = ApiPlanGridSchema.transform((grid) => ({
+    months: grid.months,
+    sections: grid.sections.map((section) => ({
+        id: section.id,
+        name: section.name,
+        position: section.position,
+        isIncome: section.is_income,
+        lines: section.lines.map((line) => ({
+            ...PlanLineSchema.parse(line),
+            amountsCents: Object.fromEntries(
+                Object.entries(line.amounts).map(([month, amount]) => [
+                    month,
+                    amount === null ? null : Number(amount.replace(".", "")),
+                ]),
+            ),
+        })),
+        totalsCents: Object.fromEntries(
+            Object.entries(section.totals).map(([month, amount]) => [month, Number(amount.replace(".", ""))]),
+        ),
+    })),
+}));
+
+export type PlanGrid = z.infer<typeof PlanGridSchema>;
+export type PlanGridSection = PlanGrid["sections"][number];
+export type PlanGridLine = PlanGridSection["lines"][number];
+
 export function parseApiPlanLine(apiLine: unknown): PlanLine {
     return PlanLineSchema.parse(apiLine);
 }
 
-export const parseApiPlanSections = (apiSections: unknown): PlanSection[] =>
-    z.array(PlanSectionSchema).parse(apiSections);
+export function parseApiPlanGrid(apiGrid: unknown): PlanGrid {
+    return PlanGridSchema.parse(apiGrid);
+}
 
 export const parseApiPlanSection = (apiSection: unknown): PlanSection => PlanSectionSchema.parse(apiSection);
 

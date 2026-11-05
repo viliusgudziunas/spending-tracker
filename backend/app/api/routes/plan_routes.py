@@ -2,13 +2,15 @@ import uuid
 from collections.abc import Sequence
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
+from app.api.schemas.month_schemas import parse_month_range
 from app.api.schemas.plan_schemas import (
     CreatePlanLineInput,
     CreatePlanSectionInput,
+    PlanGridResponse,
     PlanLineResponse,
     PlanSectionResponse,
     UpdatePlanLineInput,
@@ -24,6 +26,19 @@ from app.repositories.exceptions import (
 from app.services import plan_service
 
 router = APIRouter(prefix="/plan")
+
+
+@router.get("", response_model=PlanGridResponse, status_code=status.HTTP_200_OK)
+def get_plan_grid(
+    first_month: Annotated[str, Query(alias="from")],
+    last_month: Annotated[str, Query(alias="to")],
+    db: Annotated[Session, Depends(get_db)],
+) -> PlanGridResponse:
+    try:
+        months = parse_month_range(first_month, last_month)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return plan_service.get_plan_grid(db=db, months=months)
 
 
 @router.get("/sections", response_model=list[PlanSectionResponse], status_code=status.HTTP_200_OK)

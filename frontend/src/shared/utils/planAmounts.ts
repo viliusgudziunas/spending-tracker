@@ -23,7 +23,3 @@ export function serializePlanAmount(amountCents: number | null): string | null {
     const fraction = String(amountCents % 100).padStart(2, "0");
     return `${whole}.${fraction}`;
 }
-
-export function sumPlanAmounts(amountsCents: readonly (number | null)[]): number {
-    return amountsCents.reduce<number>((total, amount) => total + (amount ?? 0), 0);
-}

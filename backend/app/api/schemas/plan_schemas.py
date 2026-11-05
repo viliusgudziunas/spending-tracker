@@ -71,3 +71,29 @@ class PlanSectionResponse(BaseModel):
     position: int
     is_income: bool
     lines: list[PlanLineResponse]
+
+
+class PlanGridLineResponse(PlanLineResponse):
+    amounts: dict[str, Decimal | None]
+
+    @field_serializer("amounts")
+    def serialize_amounts(self, values: dict[str, Decimal | None]) -> dict[str, str | None]:
+        return {month: None if amount is None else format(amount, ".2f") for month, amount in values.items()}
+
+
+class PlanGridSectionResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    position: int
+    is_income: bool
+    lines: list[PlanGridLineResponse]
+    totals: dict[str, Decimal]
+
+    @field_serializer("totals")
+    def serialize_totals(self, values: dict[str, Decimal]) -> dict[str, str]:
+        return {month: format(amount, ".2f") for month, amount in values.items()}
+
+
+class PlanGridResponse(BaseModel):
+    months: list[str]
+    sections: list[PlanGridSectionResponse]

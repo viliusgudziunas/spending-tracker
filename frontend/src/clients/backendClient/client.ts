@@ -2,6 +2,7 @@ import { AxiosError, type AxiosInstance } from "axios";
 
 import { createAxiosClient } from "@/clients/createAxiosClient";
 import { serializePlanAmount } from "@/shared/utils/planAmounts";
+import { parsePlanMonthRange, type PlanMonthRange } from "@/shared/utils/planMonthRange";
 
 import {
     parseIntoCreateApiFilterPayload,
@@ -16,12 +17,13 @@ import {
     parseApiCategories,
     parseApiCategory,
     parseApiFilter,
+    parseApiPlanGrid,
     parseApiPlanLine,
     parseApiPlanSection,
-    parseApiPlanSections,
     parseApiReport,
     parseApiReportManualFilter,
     parseApiReports,
+    type PlanGrid,
     type PlanLine,
     type PlanSection,
     type Report,
@@ -182,9 +184,9 @@ class BackendClient {
         return parseApiCategories(response.data);
     }
 
-    async fetchPlanSections(): Promise<PlanSection[]> {
-        const response = await this.http.get("/plan/sections");
-        return parseApiPlanSections(response.data);
+    async fetchPlan(range: PlanMonthRange): Promise<PlanGrid> {
+        const response = await this.http.get("/plan", { params: parsePlanMonthRange(range) });
+        return parseApiPlanGrid(response.data);
     }
 
     async createPlanLine(sectionId: string, payload: CreatePlanLinePayload): Promise<PlanLine> {

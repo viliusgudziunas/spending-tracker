@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { PlanMonthsSchema } from "@/shared/utils/planMonthRange";
+
 export const TRANSACTION_SOURCES = ["generated", "manual", "override", null] as const;
 export const RULE_GROUP_OPERATORS = ["AND"] as const;
 export const RULE_TYPES = ["DESCRIPTION", "AMOUNT", "PRODUCT"] as const;
@@ -72,6 +74,38 @@ export const ApiPlanSectionSchema = z.object({
     is_income: z.boolean(),
     lines: z.array(ApiPlanLineSchema),
 });
+
+const ApiPlanTotalSchema = z
+    .string()
+    .regex(/^[0-9]+\.[0-9]{2}(?![\s\S])/)
+    .refine(
+        (amount) => Number.isSafeInteger(Number(amount.replace(".", ""))),
+        "Plan total exceeds safe integer cents.",
+    );
+
+export const ApiPlanGridSchema = z
+    .object({
+        months: PlanMonthsSchema,
+        sections: z.array(
+            ApiPlanSectionSchema.extend({
+                lines: z.array(
+                    ApiPlanLineSchema.extend({ amounts: z.record(z.string(), ApiPlanLineSchema.shape.fixed_amount) }),
+                ),
+                totals: z.record(z.string(), ApiPlanTotalSchema),
+            }),
+        ),
+    })
+    .refine((grid) => {
+        const amountsByMonth = grid.sections.flatMap((section) => [
+            section.totals,
+            ...section.lines.map((line) => line.amounts),
+        ]);
+        return amountsByMonth.every(
+            (amounts) =>
+                Object.keys(amounts).length === grid.months.length &&
+                grid.months.every((month) => Object.hasOwn(amounts, month)),
+        );
+    }, "Monthly values must match the grid's months.");
 
 export const ApiTransactionSchema = z.object({
     id: z.string(),

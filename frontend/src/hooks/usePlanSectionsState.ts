@@ -1,19 +1,22 @@
 import { useState } from "react";
 
-import { type PlanSection } from "@/clients/backendClient/responseParsers";
+import { type PlanGrid, type PlanSection } from "@/clients/backendClient/responseParsers";
 import { type CreatePlanSectionPayload } from "@/clients/backendClient/types";
+import { type PlanMonthRange } from "@/shared/utils/planMonthRange";
 
 import {
     useCreatePlanSectionMutation,
     useDeletePlanSectionMutation,
-    usePlanSectionsQuery,
+    usePlanQuery,
     useUpdatePlanSectionMutation,
 } from "./usePlanQueries";
 
 interface UsePlanSectionsStateResult {
-    sections: PlanSection[] | undefined;
+    plan: PlanGrid | undefined;
     isLoading: boolean;
     isError: boolean;
+    isFetching: boolean;
+    retryPlan: () => void;
     isCreatingSection: boolean;
     startCreatingSection: () => void;
     cancelCreatingSection: () => void;
@@ -30,13 +33,17 @@ interface UsePlanSectionsStateResult {
     handleDelete: (section: PlanSection) => void;
 }
 
-function usePlanSectionsState(): UsePlanSectionsStateResult {
-    const { data: sections, isLoading, isError } = usePlanSectionsQuery();
+function usePlanSectionsState(range: PlanMonthRange): UsePlanSectionsStateResult {
+    const { data: plan, isLoading, isError, isFetching, refetch } = usePlanQuery(range);
     const createMutation = useCreatePlanSectionMutation();
     const updateMutation = useUpdatePlanSectionMutation();
     const deleteMutation = useDeletePlanSectionMutation();
     const [isCreatingSection, setIsCreatingSection] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+
+    function retryPlan(): void {
+        void refetch();
+    }
 
     const resetMutationErrors = (): void => {
         if (createMutation.isError) createMutation.reset();
@@ -106,9 +113,11 @@ function usePlanSectionsState(): UsePlanSectionsStateResult {
     }
 
     return {
-        sections,
+        plan,
         isLoading,
         isError,
+        isFetching,
+        retryPlan,
         isCreatingSection,
         startCreatingSection,
         cancelCreatingSection,

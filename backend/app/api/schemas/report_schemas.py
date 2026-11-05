@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated, Literal
+from typing import Literal
 
-from pydantic import BaseModel, StringConstraints, model_validator
+from pydantic import BaseModel, model_validator
 
-MonthKey = Annotated[str, StringConstraints(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")]
+from app.api.schemas.month_schemas import MonthKey
 
 
 class PutReportAssignmentInput(BaseModel):

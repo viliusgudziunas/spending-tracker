@@ -14,6 +14,242 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.integration
+class TestGetPlanGridEndpoint:
+    @pytest.mark.parametrize(
+        ("first", "last", "months"),
+        [
+            ("2026-11", "2026-11", ["2026-11"]),
+            ("2026-11", "2027-02", ["2026-11", "2026-12", "2027-01", "2027-02"]),
+            ("0000-12", "0001-01", ["0000-12", "0001-01"]),
+            ("9999-12", "9999-12", ["9999-12"]),
+            ("2020-01", "2029-12", [f"{year}-{month:02}" for year in range(2020, 2030) for month in range(1, 13)]),
+        ],
+    )
+    def test_returns_inclusive_month_range(self, client: TestClient, first: str, last: str, months: list[str]) -> None:
+        response = client.get("/plan", params={"from": first, "to": last})
+
+        assert response.status_code == 200
+        assert response.json() == {"months": months, "sections": []}
+
+    @pytest.mark.parametrize(
+        ("params", "expected_status"),
+        [
+            ({}, 422),
+            ({"from": "2026-11"}, 422),
+            ({"to": "2026-11"}, 422),
+            ({"from": "", "to": "2026-11"}, 400),
+            ({"from": "2026-1", "to": "2026-11"}, 400),
+            ({"from": "2026-00", "to": "2026-11"}, 400),
+            ({"from": "2026-11", "to": "2026-13"}, 400),
+            ({"from": "2026-11-01", "to": "2026-12"}, 400),
+            ({"from": "2026-11", "to": "bad"}, 400),
+            ({"from": "2026-11", "to": "2026-12\n"}, 400),
+            ({"from": "2027-01", "to": "2026-12"}, 400),
+            ({"from": "2020-01", "to": "2030-01"}, 400),
+        ],
+    )
+    def test_rejects_invalid_month_range(
+        self, client: TestClient, params: dict[str, str], expected_status: int
+    ) -> None:
+        response = client.get("/plan", params=params)
+
+        assert response.status_code == expected_status
+
+    def test_returns_ordered_sections_and_lines(
+        self, client: TestClient, db: Session, plan_section_factory: PlanSectionFactory
+    ) -> None:
+        home = plan_section_factory(name="Home")
+        income = plan_section_factory(name="Income", is_income=True)
+        mortgage = client.post(f"/plan/sections/{home.id}/lines", json={"name": "Mortgage"})
+        utilities = client.post(f"/plan/sections/{home.id}/lines", json={"name": "Utilities"})
+        assert mortgage.status_code == utilities.status_code == 201
+        mortgage_id = mortgage.json()["id"]
+        saved = client.patch(f"/plan/lines/{mortgage_id}", json={"fixed_amount": "1034.89"})
+        moved_line = client.patch(f"/plan/lines/{mortgage_id}", json={"position": 2})
+        moved_section = client.patch(f"/plan/sections/{income.id}", json={"position": 1})
+        assert saved.status_code == moved_line.status_code == moved_section.status_code == 200
+        home_id, income_id = str(home.id), str(income.id)
+        db.expire_all()
+
+        response = client.get("/plan", params={"from": "2026-11", "to": "2026-11"})
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "months": ["2026-11"],
+            "sections": [
+                {
+                    "id": income_id,
+                    "name": "Income",
+                    "position": 1,
+                    "is_income": True,
+                    "lines": [],
+                    "totals": {"2026-11": "0.00"},
+                },
+                {
+                    "id": home_id,
+                    "name": "Home",
+                    "position": 2,
+                    "is_income": False,
+                    "lines": [
+                        {**utilities.json(), "position": 1, "amounts": {"2026-11": None}},
+                        {**moved_line.json(), "amounts": {"2026-11": "1034.89"}},
+                    ],
+                    "totals": {"2026-11": "1034.89"},
+                },
+            ],
+        }
+
+    def test_resolves_fixed_amounts_and_section_totals(
+        self, client: TestClient, plan_section_factory: PlanSectionFactory
+    ) -> None:
+        mixed = plan_section_factory(name="Mixed")
+        plan_section_factory(name="Empty")
+        unset = plan_section_factory(name="Unset")
+        separate = plan_section_factory(name="Separate", is_income=True)
+        for section, amounts in [(mixed, ["0.10", "0.20", None, "0.00"]), (unset, [None]), (separate, ["5.00"])]:
+            for index, amount in enumerate(amounts):
+                created = client.post(f"/plan/sections/{section.id}/lines", json={"name": f"Row {index}"})
+                assert created.status_code == 201
+                if amount is not None:
+                    saved = client.patch(f"/plan/lines/{created.json()['id']}", json={"fixed_amount": amount})
+                    assert saved.status_code == 200
+
+        response = client.get("/plan", params={"from": "2026-12", "to": "2027-01"})
+
+        assert response.status_code == 200
+        grid = response.json()
+        assert grid["months"] == ["2026-12", "2027-01"]
+        sections = grid["sections"]
+        assert [section["name"] for section in sections] == ["Mixed", "Empty", "Unset", "Separate"]
+        for section, expected in zip(sections, ["0.30", "0.00", "0.00", "5.00"], strict=True):
+            assert section["totals"] == {"2026-12": expected, "2027-01": expected}
+        for line, expected in zip(sections[0]["lines"], ["0.10", "0.20", None, "0.00"], strict=True):
+            assert line["fixed_amount"] == expected
+            assert line["amounts"] == {"2026-12": expected, "2027-01": expected}
+        assert sections[1]["lines"] == []
+        assert sections[2]["lines"][0]["amounts"] == {"2026-12": None, "2027-01": None}
+        assert sections[3]["lines"][0]["amounts"] == {"2026-12": "5.00", "2027-01": "5.00"}
+
+    def test_totals_can_exceed_one_line_amount_limit(
+        self, client: TestClient, plan_section_factory: PlanSectionFactory
+    ) -> None:
+        section = plan_section_factory()
+        for name in ["First", "Second"]:
+            created = client.post(f"/plan/sections/{section.id}/lines", json={"name": name})
+            assert created.status_code == 201
+            saved = client.patch(f"/plan/lines/{created.json()['id']}", json={"fixed_amount": "9999999999.99"})
+            assert saved.status_code == 200
+
+        response = client.get("/plan", params={"from": "2026-11", "to": "2026-12"})
+
+        assert response.status_code == 200
+        assert response.json()["sections"][0]["totals"] == {
+            "2026-11": "19999999999.98",
+            "2026-12": "19999999999.98",
+        }
+
+    @pytest.mark.parametrize(
+        "change",
+        [
+            (None, "700.00", "700.10"),
+            ("1034.89", "700.00", "700.10"),
+            ("700.00", None, "0.10"),
+            ("700.00", "0.00", "0.10"),
+            ("0.00", None, "0.10"),
+        ],
+    )
+    def test_grid_reflects_saved_changes(
+        self,
+        client: TestClient,
+        db: Session,
+        plan_section_factory: PlanSectionFactory,
+        change: tuple[str | None, str | None, str],
+    ) -> None:
+        initial_amount, replacement, expected_total = change
+        home = plan_section_factory(name="Home")
+        savings = plan_section_factory(name="Savings")
+        created = client.post(f"/plan/sections/{home.id}/lines", json={"name": "Mortgage"})
+        sibling = client.post(f"/plan/sections/{home.id}/lines", json={"name": "Utilities"})
+        reserve = client.post(f"/plan/sections/{savings.id}/lines", json={"name": "Reserve"})
+        assert created.status_code == sibling.status_code == reserve.status_code == 201
+        line_id = created.json()["id"]
+        for row_id, amount in [
+            (line_id, initial_amount),
+            (sibling.json()["id"], "0.10"),
+            (reserve.json()["id"], "500.00"),
+        ]:
+            saved = client.patch(f"/plan/lines/{row_id}", json={"fixed_amount": amount})
+            assert saved.status_code == 200
+
+        ranges = [["2025-12", "2026-01"], ["2027-03", "2027-04"]]
+        for months in ranges:
+            before = client.get("/plan", params={"from": months[0], "to": months[-1]})
+            assert before.status_code == 200
+            assert before.json()["sections"][0]["lines"][0]["amounts"] == dict.fromkeys(months, initial_amount)
+
+        updated = client.patch(f"/plan/lines/{line_id}", json={"fixed_amount": replacement})
+        assert updated.status_code == 200
+        assert updated.json()["fixed_amount"] == replacement
+        db.expire_all()
+
+        for months in ranges:
+            response = client.get("/plan", params={"from": months[0], "to": months[-1]})
+            assert response.status_code == 200
+            grid = response.json()
+            assert grid["months"] == months
+            assert [section["name"] for section in grid["sections"]] == ["Home", "Savings"]
+            home_section, savings_section = grid["sections"]
+            assert home_section["lines"] == [
+                {**updated.json(), "amounts": dict.fromkeys(months, replacement)},
+                {**sibling.json(), "fixed_amount": "0.10", "amounts": dict.fromkeys(months, "0.10")},
+            ]
+            assert home_section["totals"] == dict.fromkeys(months, expected_total)
+            assert savings_section["lines"] == [
+                {**reserve.json(), "fixed_amount": "500.00", "amounts": dict.fromkeys(months, "500.00")},
+            ]
+            assert savings_section["totals"] == dict.fromkeys(months, "500.00")
+
+    def test_grid_reflects_line_deletion_after_reload(
+        self, client: TestClient, db: Session, plan_section_factory: PlanSectionFactory
+    ) -> None:
+        home = plan_section_factory(name="Home")
+        deleted_row = client.post(f"/plan/sections/{home.id}/lines", json={"name": "Mortgage"})
+        remaining_row = client.post(f"/plan/sections/{home.id}/lines", json={"name": "Utilities"})
+        assert deleted_row.status_code == remaining_row.status_code == 201
+        deleted_id = deleted_row.json()["id"]
+        for row_id, amount in [(deleted_id, "700.00"), (remaining_row.json()["id"], "0.10")]:
+            saved = client.patch(f"/plan/lines/{row_id}", json={"fixed_amount": amount})
+            assert saved.status_code == 200
+
+        ranges = [["2025-12", "2026-01"], ["2027-03", "2027-04"]]
+        for months in ranges:
+            before = client.get("/plan", params={"from": months[0], "to": months[-1]})
+            assert before.status_code == 200
+            assert before.json()["sections"][0]["totals"] == dict.fromkeys(months, "700.10")
+
+        deleted = client.delete(f"/plan/lines/{deleted_id}")
+        assert deleted.status_code == 204
+        db.expire_all()
+
+        for months in ranges:
+            response = client.get("/plan", params={"from": months[0], "to": months[-1]})
+            assert response.status_code == 200
+            grid = response.json()
+            assert grid["months"] == months
+            assert len(grid["sections"]) == 1
+            section = grid["sections"][0]
+            assert section["lines"] == [
+                {
+                    **remaining_row.json(),
+                    "position": 1,
+                    "fixed_amount": "0.10",
+                    "amounts": dict.fromkeys(months, "0.10"),
+                },
+            ]
+            assert section["totals"] == dict.fromkeys(months, "0.10")
+
+
+@pytest.mark.integration
 class TestCreatePlanSectionEndpoint:
     def test_creates_and_persists_section(self, client: TestClient, db: Session) -> None:
         response = client.post("/plan/sections", json={"name": "  Profit  ", "is_income": True})

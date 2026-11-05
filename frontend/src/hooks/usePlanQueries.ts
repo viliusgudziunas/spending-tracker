@@ -1,4 +1,6 @@
 import {
+    keepPreviousData,
+    useIsFetching,
     useIsMutating,
     useMutation,
     type UseMutationResult,
@@ -7,7 +9,7 @@ import {
     type UseQueryResult,
 } from "@tanstack/react-query";
 
-import { type PlanLine, type PlanSection } from "@/clients/backendClient/responseParsers";
+import { type PlanGrid, type PlanLine, type PlanSection } from "@/clients/backendClient/responseParsers";
 import {
     type CreatePlanLinePayload,
     type CreatePlanSectionPayload,
@@ -16,15 +18,23 @@ import {
     type UpdatePlanSectionPayload,
 } from "@/clients/backendClient/types";
 import { client } from "@/shared/stores/client";
+import { type PlanMonthRange } from "@/shared/utils/planMonthRange";
 
-export const PLAN_SECTIONS_QUERY_KEY = ["plan", "sections"] as const;
+export const PLAN_QUERY_KEY = ["plan"] as const;
 const PLAN_LINE_UPDATE_MUTATION_KEY = ["plan", "line", "update"] as const;
 
-export function usePlanSectionsQuery(): UseQueryResult<PlanSection[]> {
+export function usePlanQuery(range: PlanMonthRange): UseQueryResult<PlanGrid> {
     return useQuery({
-        queryKey: PLAN_SECTIONS_QUERY_KEY,
-        queryFn: () => client.fetchPlanSections(),
+        queryKey: [...PLAN_QUERY_KEY, range.from, range.to],
+        queryFn: () => client.fetchPlan(range),
+        placeholderData: keepPreviousData,
     });
+}
+
+export function useIsPlanPending(): boolean {
+    const fetching = useIsFetching({ queryKey: PLAN_QUERY_KEY });
+    const saving = useIsMutating({ mutationKey: PLAN_QUERY_KEY });
+    return fetching > 0 || saving > 0;
 }
 
 interface CreatePlanLineVariables {
@@ -36,9 +46,10 @@ export function useCreatePlanLineMutation(): UseMutationResult<PlanLine, Error, 
     const queryClient = useQueryClient();
 
     return useMutation({
+        mutationKey: PLAN_QUERY_KEY,
         mutationFn: ({ sectionId, payload }: CreatePlanLineVariables) => client.createPlanLine(sectionId, payload),
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: PLAN_SECTIONS_QUERY_KEY });
+            await queryClient.invalidateQueries({ queryKey: PLAN_QUERY_KEY });
         },
     });
 }
@@ -61,7 +72,7 @@ export function useUpdatePlanLineMutation(
         mutationKey: [...PLAN_LINE_UPDATE_MUTATION_KEY, sectionId],
         mutationFn: ({ lineId, payload }: UpdatePlanLineVariables) => client.updatePlanLine(lineId, payload),
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: PLAN_SECTIONS_QUERY_KEY });
+            await queryClient.invalidateQueries({ queryKey: PLAN_QUERY_KEY });
         },
     });
 }
@@ -75,9 +86,10 @@ export function useMovePlanLineMutation(): UseMutationResult<PlanLine, Error, Mo
     const queryClient = useQueryClient();
 
     return useMutation({
+        mutationKey: PLAN_QUERY_KEY,
         mutationFn: ({ lineId, payload }: MovePlanLineVariables) => client.movePlanLine(lineId, payload),
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: PLAN_SECTIONS_QUERY_KEY });
+            await queryClient.invalidateQueries({ queryKey: PLAN_QUERY_KEY });
         },
     });
 }
@@ -86,9 +98,10 @@ export function useDeletePlanLineMutation(): UseMutationResult<void, Error, stri
     const queryClient = useQueryClient();
 
     return useMutation({
+        mutationKey: PLAN_QUERY_KEY,
         mutationFn: (lineId: string) => client.deletePlanLine(lineId),
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: PLAN_SECTIONS_QUERY_KEY });
+            await queryClient.invalidateQueries({ queryKey: PLAN_QUERY_KEY });
         },
     });
 }
@@ -97,9 +110,10 @@ export function useCreatePlanSectionMutation(): UseMutationResult<PlanSection, E
     const queryClient = useQueryClient();
 
     return useMutation({
+        mutationKey: PLAN_QUERY_KEY,
         mutationFn: async (payload: CreatePlanSectionPayload) => await client.createPlanSection(payload),
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: PLAN_SECTIONS_QUERY_KEY });
+            await queryClient.invalidateQueries({ queryKey: PLAN_QUERY_KEY });
         },
     });
 }
@@ -113,10 +127,11 @@ export function useUpdatePlanSectionMutation(): UseMutationResult<PlanSection, E
     const queryClient = useQueryClient();
 
     return useMutation({
+        mutationKey: PLAN_QUERY_KEY,
         mutationFn: async ({ sectionId, payload }: UpdatePlanSectionVariables) =>
             await client.updatePlanSection(sectionId, payload),
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: PLAN_SECTIONS_QUERY_KEY });
+            await queryClient.invalidateQueries({ queryKey: PLAN_QUERY_KEY });
         },
     });
 }
@@ -125,9 +140,10 @@ export function useDeletePlanSectionMutation(): UseMutationResult<void, Error, s
     const queryClient = useQueryClient();
 
     return useMutation({
+        mutationKey: PLAN_QUERY_KEY,
         mutationFn: async (sectionId: string) => await client.deletePlanSection(sectionId),
         onSuccess: async () => {
-            await queryClient.invalidateQueries({ queryKey: PLAN_SECTIONS_QUERY_KEY });
+            await queryClient.invalidateQueries({ queryKey: PLAN_QUERY_KEY });
         },
     });
 }

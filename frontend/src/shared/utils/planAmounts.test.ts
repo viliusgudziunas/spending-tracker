@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parsePlanAmountInput, serializePlanAmount, sumPlanAmounts } from "./planAmounts";
+import { parsePlanAmountInput, serializePlanAmount } from "./planAmounts";
 
 describe("plan amount input", () => {
     it.each([
@@ -47,29 +47,5 @@ describe("plan amount serialization", () => {
         [999999999999, "9999999999.99"],
     ])("serializes %s cents as %s", (cents, amount) => {
         expect(serializePlanAmount(cents)).toBe(amount);
-    });
-});
-
-describe("plan section totals", () => {
-    it("adds Mortgage and Groceries while ignoring unset rows", () => {
-        expect(sumPlanAmounts([103489, null, 70000, 0])).toBe(173489);
-    });
-
-    it("adds ten and twenty cents exactly", () => {
-        expect(sumPlanAmounts([10, 20])).toBe(30);
-    });
-
-    it("totals empty, unset, and zero-only sections as zero", () => {
-        expect(sumPlanAmounts([])).toBe(0);
-        expect(sumPlanAmounts([null, null])).toBe(0);
-        expect(sumPlanAmounts([0])).toBe(0);
-    });
-
-    it("keeps section totals independent and recomputes after edit, clear, or deletion", () => {
-        expect(sumPlanAmounts([103489, 70000])).toBe(173489);
-        expect(sumPlanAmounts([50000])).toBe(50000);
-        expect(sumPlanAmounts([103489, 60000])).toBe(163489);
-        expect(sumPlanAmounts([103489, null])).toBe(103489);
-        expect(sumPlanAmounts([60000])).toBe(60000);
     });
 });

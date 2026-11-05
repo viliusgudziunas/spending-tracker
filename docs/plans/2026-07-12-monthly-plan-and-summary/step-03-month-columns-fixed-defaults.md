@@ -2,9 +2,11 @@
 
 Read [conventions.md](conventions.md) first. Requires step 2 (plan lines), committed in `8f082e2`.
 
-The original combined step is split into two reviewable feature slices. Only **3a** is currently authorized for implementation; **3b** remains later work.
+The original combined step is split into two reviewable feature slices. Step **3b** is now authorized one checklist item at a time through `/do-next`; the active checklist lives in the conversation.
 
-## Step 3a — Fixed amounts and section totals [IMPLEMENTED]
+## Step 3a — Fixed amounts and section totals [COMMITTED]
+
+Committed and pushed in `0d5dc98` (Add fixed monthly plan amounts and section totals). This section records the delivered 3a contract and verification; 3b below supersedes its frontend total calculation and sections query.
 
 Let the current `/plan` page hold an optional fixed monthly euro amount for each row. Mortgage can hold €1,034.89 and Groceries €700.00; if both belong to one section, its total is €1,734.89. Existing rows remain unset until edited.
 
@@ -44,11 +46,46 @@ Let the current `/plan` page hold an optional fixed monthly euro amount for each
 
 Out of scope for 3a: month columns/range controls, month overrides, left-over calculations, percentage defaults, category/filter links, plan-versus-actual reporting, and broad architecture refactoring.
 
-## Step 3b — Month columns [PENDING]
+## Step 3b — Month columns [COMMITTED]
 
-1. Add `GET /plan?from=YYYY-MM&to=YYYY-MM` with validated month ranges and one grid builder in `plan_service.py`. Resolve each row/month from its fixed amount or null. Return months, ordered sections/lines, and per-month values; later overrides and waterfall calculations extend this builder.
-2. Compute per-section monthly totals with `Decimal` in the backend, treating null as zero. Replace the frontend-only totals from 3a when this grid becomes the page's data source; do not maintain competing calculations.
-3. Render a plain table/CSS grid with a sticky name column, section headers, rows, totals, and a month-range control. Preserve row management and fixed-amount editing; month cells remain read-only in this slice.
-4. Switch the page to only the computed grid query (`PLAN_QUERY_KEY`) and invalidate it for all section/row mutations. Choose the initial month range during this later slice; range persistence is not required.
+The month-grid implementation is committed, including range-error draft recovery and the compact Add row control beside Monthly total. The final automated checkpoint passed on 2026-11-04; the narrow-screen defect found during browser verification was fixed on 2026-11-05. User acceptance is complete as of 2026-11-05: deletion passed; slow-request guards and failed-save recovery were explicitly skipped by the user.
+
+### Computed grid contract
+
+- `GET /plan?from=YYYY-MM&to=YYYY-MM` requires both bounds. The inclusive range must contain 1–120 months in ascending order. Missing bounds return 422; malformed, reversed, or oversized ranges return 400. Oversized ranges are rejected, never clamped.
+- `month_schemas.py` shares `MonthKey` with report schemas and builds ranges with pandas monthly `Period` / `period_range`. Four-digit years are preserved, including `0000` and `9999`.
+- `plan_service.get_plan_grid` reads ordered sections and lines through the repository once. It returns `months` and `sections`; each section includes its metadata, `lines`, and `totals` keyed by month. Each line includes its metadata, `fixed_amount`, and `amounts` keyed by month. Every map contains exactly the returned months.
+- A line resolves to its saved fixed amount or null in every requested month, including past months. Totals use Python `Decimal`, treating null as zero; empty/all-unset sections total `"0.00"`. Amounts and totals serialize as two-decimal strings, with null preserved only for unset line amounts.
+- There is no new migration, persisted total, or duplicated monthly copy of a recurring amount. Existing section/line write endpoints remain; `GET /plan/sections` also remains available, but the page no longer uses it.
+
+### Frontend behavior
+
+- The initial range is the browser's current local month plus the next five. From/To inputs hold local drafts; Apply validates and selects the inclusive range. Invalid or incomplete ranges show an error and keep the displayed grid. Reload resets to the initial range; no range preference is persisted.
+- One query, keyed by `[...PLAN_QUERY_KEY, from, to]`, supplies the grid. Every section/line mutation invalidates all cached Plan ranges and awaits the active refresh. Apply is disabled during Plan fetches or mutations. The last displayed grid remains mounted during a range fetch and after a fetch error, preserving open row drafts. A failed fetch shows an inline error with Retry; success replaces the displayed range without discarding drafts.
+- Zod validates consecutive months and complete amount/total maps, then the parser converts decimal strings to integer cents (`fixedAmountCents`, `amountsCents`, `totalsCents`). Totals must fit safe integer cents. The superseded frontend total calculation and sections-list query/parser are removed.
+- A plain CSS grid/subgrid renders month headers, ordered sections, rows, and per-month totals. At grid-container widths of at least `36rem`, horizontal scrolling keeps the name/actions column sticky. Narrower grids scroll the entire row so the name column cannot hide the months. Tailwind handles styling except the runtime `gridTemplateColumns` value derived from the month count.
+- Month cells remain read-only and show saved values even while a row is being edited. Unset displays `—`; explicit zero displays `€0.00`. Editing the recurring amount changes the row default and therefore every month. Section/row creation, rename, ordering, deletion, local drafts, and mutation errors remain in place.
+
+### Verification so far
+
+- **Named feature tests: 68/68 green, no expected red:** 26 real API/database integration cases, 27 new frontend grid-boundary cases, and 15 month-range cases. The frontend focused run also includes 19 existing parser regressions (61 frontend tests total). Coverage includes range boundaries, ordering, exact totals, null/zero, saved mutations and reload, response validation, and safe integer cents. No service/repository mocks.
+- **Automated checkpoint passed (2026-11-04):** all 242 backend tests and 97 frontend tests pass, including all 68 named feature tests. Root `make lint` (Ruff, formatting, ty, ESLint, Prettier) and the frontend production build (`tsc -b` + Vite) pass. Formatting made no changes; the existing bundle-size warning remains. Integration tests used a disposable database, verified removed afterward. No test containers were started; existing development services were preserved.
+- **Browser checks completed with explicit user authorization:** six month headers, recurring values and totals, unset/zero/clear, saved amount reload, Cancel, horizontal scrolling with sticky names, applying one- and two-month ranges, invalid/reversed/oversized range errors, open row draft preservation across a successful range change, and default range reset on reload.
+- Temporary browser-check records were removed through the API after the browser's native delete confirmation could not be exercised. Deletion was subsequently verified by the user; the final outcomes below record separate, explicit 3b decisions.
+- **Final browser check, 2026-11-04 — narrow-screen failure:** at a 390×844 viewport, collapse the sidebar and scroll the Plan grid horizontally. The grid viewport is 242px wide, but the sticky name/actions column has a `20rem` minimum. Scrolling moves month cells underneath that column, so month amounts remain hidden; some actions are clipped too. The failure persists with the sidebar collapsed and is therefore not solely an app-shell issue. No console warnings/errors were captured. The viewport and sidebar were restored; no Plan records were changed.
+- **Narrow-screen fix verified (2026-11-05):** a named Tailwind container query enables sticky positioning only at `36rem` and above, consistently for headers, row names/editors, add-row forms, and total labels. At 390×844 with the sidebar collapsed, horizontal scrolling now reveals the last month and totals; row Edit, amount input, Save focus, and Cancel remain reachable. At the default desktop viewport, names remain sticky while months scroll. No Plan records changed; viewport/sidebar restored. Frontend tests, touched-file lint/format checks, and the type/build check passed; backend results from the automated checkpoint are reused because this change only affects CSS classes.
+- **Management checks passed (2026-11-05):** created two temporary sections, reordered them, renamed one, created two rows, reordered the rows, and renamed/set a row to €1.23. Reload preserved section/row names and order, all six amounts, and section totals. Cleanup removed exactly those two sections and their rows through the API; the full sections response matched the pre-check baseline afterward, and the browser showed the original Plan again.
+- **Tool limitations:** row Delete timed out at the native confirmation, and the Browser dialog API exposed no dialog; the row remained. Browser capabilities provide no network throttling or request blocking, so slow-request and failed-save checks could not be completed safely through those tools. The user subsequently resolved these checks as recorded below.
+- **User acceptance complete (2026-11-05):** all required checks are resolved. Prior automated results are reused for this documentation-only update; no product source, tests, dependencies, or configuration changed.
+
+### QA follow-up verification
+
+- **Range-load error recovery (2026-11-05):** QA found that an unsuccessful range fetch unmounted row editors and lost unsaved drafts. The page now retains the last displayed grid and offers inline Retry. An isolated local preview returned HTTP 503 for the range read: both unsaved name/amount fields survived the error and successful Retry, while saved cells stayed unchanged until the new range loaded. The draft was canceled without saving; the owned preview process was stopped. No development service was restarted. This verifies range-load recovery, not the separately skipped failed-save scenario.
+
+### Final browser outcomes
+
+1. **Slow-request guards — explicitly skipped by the user.** Not browser-verified; do not count as passed or reopen automatically.
+2. **Failed-save recovery — explicitly skipped by the user.** Not browser-verified; do not count as passed or reopen automatically.
+3. **Deletion confirmation — user-verified passed.** The user confirmed the requested row cancel/confirm, total update, section deletion, and reload scenario works.
 
 Done when recurring fixed amounts appear in every selected month, totals update, and changing the range re-fetches. Step 4 then adds per-month overrides, step 5 adds left-over rows, and step 6 introduces percentage storage and resolution.
