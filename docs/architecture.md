@@ -37,7 +37,7 @@ Spending Tracker is a full-stack web application for analysing bank statement CS
 | Data Grid        | AG Grid (Community)            |
 | Drag & Drop      | dnd-kit                        |
 | HTTP Client      | Axios                          |
-| Build Tool       | Vite 5                         |
+| Build Tool       | Vite 6                         |
 | Linting / Format | ESLint, Prettier               |
 | Testing          | Vitest                         |
 
