@@ -192,6 +192,10 @@ Component → TanStack Query hooks (src/hooks/) → BackendClient (src/clients/b
 | `backend`  | 8001 | FastAPI (Uvicorn). Host port 8001, process port 8000, so another local API can keep 8000. |
 | `frontend` | 5174 | Vite dev server. Host port 5174, process port 5173. |
 
+All three ports bind to `127.0.0.1` on the host. The backend connects to PostgreSQL at `postgres:5432` on the Compose network.
+
+The backup and restore scripts both accept an archive path and default to `db.backup` in the repository root. Restore reads the archive into a temporary database, checks that its schema and data can be dumped, then disconnects clients and swaps databases in a transaction.
+
 Environment: backend gets `DATABASE_URL` and `ORIGIN_URL` (CORS origin); frontend gets `VITE_API_URL`. `docker compose watch` syncs source into the containers and rebuilds on lockfile changes.
 
 ### Make Targets

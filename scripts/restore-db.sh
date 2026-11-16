@@ -1,27 +1,38 @@
 #!/bin/sh
+set -eu
 
-CONTAINER_ID=$(docker ps | grep "postgres" | awk '{print $1}')
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+archive=${1:-"$repo_dir/db.backup"}
+if [ "$#" -gt 1 ] || [ ! -f "$archive" ] || [ ! -r "$archive" ]; then
+    echo "Usage: $0 [readable-archive-file] (default: $repo_dir/db.backup)" >&2
+    exit 2
+fi
 
-# Ensure the /backup directory exists in the container
-docker exec "$CONTAINER_ID" mkdir -p /backup
-# on Windows you will need to use
-# docker exec "$CONTAINER_ID" sh -c "mkdir -p /backup"
+unset COMPOSE_PROJECT_NAME
+postgres() {
+    docker compose -f "$repo_dir/compose.yaml" exec -T postgres "$@"
+}
 
-# Copy the backup file from host to the container's /backup directory
-docker cp ./db.backup "$CONTAINER_ID":/backup/db.backup
+staging="restore_$$"
+previous="previous_$$"
+postgres createdb -U postgres -T template0 "$staging"
+trap 'postgres dropdb -U postgres --if-exists "$staging"' EXIT
+trap 'exit 1' HUP INT TERM
 
-# Disconnect all users from the target database
-docker exec "$CONTAINER_ID" psql -U postgres -d postgres -c \
-"SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = 'spending-tracker' AND pid <> pg_backend_pid();" \
-> /dev/null
-echo "Disconnected all users from the 'spending-tracker' database"
+postgres pg_restore -U postgres --exit-on-error -d "$staging" < "$archive"
+# Read back the restored schema and data before disconnecting any clients.
+postgres pg_dump -U postgres -Fc --no-sync -f /dev/null "$staging"
 
-# Drop the 'spending-tracker' database
-docker exec "$CONTAINER_ID" psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS \"spending-tracker\";" > /dev/null
-echo "Dropped the 'spending-tracker' database"
-
-# Execute the pg_restore command inside the container to the newly created 'spending-tracker' database
-docker exec "$CONTAINER_ID" pg_restore -U postgres -d postgres -C /backup/db.backup
-# on Windows you will need to use
-# docker exec "$CONTAINER_ID" sh -c "pg_restore -U postgres -d postgres -C /backup/db.backup"
-echo "Restored the 'spending-tracker' database"
+# Both renames commit together. A failed rename leaves the original in place.
+postgres psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
+    -v staging="$staging" -v previous="$previous" <<'SQL'
+BEGIN;
+SELECT pg_terminate_backend(pid, 5000)
+FROM pg_stat_activity WHERE datname = 'spending-tracker';
+ALTER DATABASE "spending-tracker" RENAME TO :"previous";
+ALTER DATABASE :"staging" RENAME TO "spending-tracker";
+COMMIT;
+SQL
+trap - EXIT
+postgres dropdb -U postgres --if-exists "$previous"
+echo "Restored spending-tracker from $archive"

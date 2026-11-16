@@ -7,7 +7,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -20,7 +20,7 @@ services:
     container_name: backend
     restart: unless-stopped
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8000"
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/spending-tracker
       - ORIGIN_URL=http://localhost:5174
@@ -43,7 +43,7 @@ services:
     container_name: frontend
     restart: unless-stopped
     ports:
-      - "5174:5173"
+      - "127.0.0.1:5174:5173"
     environment:
       - VITE_API_URL=http://localhost:8001
     depends_on:
