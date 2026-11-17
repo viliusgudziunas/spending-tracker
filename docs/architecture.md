@@ -190,7 +190,7 @@ Component → TanStack Query hooks (src/hooks/) → BackendClient (src/clients/b
 | ---------- | ---- | -------------------------- |
 | `postgres` | 5432 | PostgreSQL database        |
 | `backend`  | 8001 | FastAPI (Uvicorn). Host port 8001, process port 8000, so another local API can keep 8000. |
-| `frontend` | 5174 | Vite dev server. Host port 5174, process port 5173. |
+| `frontend` | 5174 | Vite dev server. Host and process port 5174. |
 
 All three ports bind to `127.0.0.1` on the host. The backend connects to PostgreSQL at `postgres:5432` on the Compose network.
 
