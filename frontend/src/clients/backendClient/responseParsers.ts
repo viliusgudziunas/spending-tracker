@@ -94,10 +94,13 @@ const PlanGridSchema = ApiPlanGridSchema.transform((grid) => ({
         isIncome: section.is_income,
         lines: section.lines.map((line) => ({
             ...PlanLineSchema.parse(line),
-            amountsCents: Object.fromEntries(
-                Object.entries(line.amounts).map(([month, amount]) => [
+            amounts: Object.fromEntries(
+                Object.entries(line.amounts).map(([month, cell]) => [
                     month,
-                    amount === null ? null : Number(amount.replace(".", "")),
+                    {
+                        amountCents: cell.amount === null ? null : Number(cell.amount.replace(".", "")),
+                        isOverride: cell.is_override,
+                    },
                 ]),
             ),
         })),

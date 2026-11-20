@@ -3,7 +3,7 @@ from typing import Annotated
 import pandas as pd
 from pydantic import StringConstraints, TypeAdapter, ValidationError
 
-MonthKey = Annotated[str, StringConstraints(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")]
+MonthKey = Annotated[str, StringConstraints(pattern=r"^[0-9]{4}-(0[1-9]|1[0-2])$")]
 
 _MONTH_KEY_ADAPTER = TypeAdapter(MonthKey)
 _MAX_RANGE_MONTHS = 120

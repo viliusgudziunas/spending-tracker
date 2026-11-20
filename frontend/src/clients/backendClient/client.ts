@@ -44,6 +44,7 @@ import {
     type PutFilterRuleGroupsPayload,
     type PutReportAssignmentPayload,
     type RenameFilterPayload,
+    type SetPlanValuePayload,
     type UpdateCategoryPayload,
     type UpdateFilterPayload,
     type UpdateFilterPositionPayload,
@@ -209,6 +210,23 @@ class BackendClient {
             return parseApiPlanLine(response.data);
         } catch (error: unknown) {
             throw parseAxiosError(error, "Request failed while updating plan row.");
+        }
+    }
+
+    async setPlanValue(lineId: string, month: string, payload: SetPlanValuePayload): Promise<void> {
+        const amount = serializePlanAmount(payload.amountCents);
+        try {
+            await this.http.put(`/plan/lines/${lineId}/values/${month}`, { amount });
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while saving monthly amount.");
+        }
+    }
+
+    async deletePlanValue(lineId: string, month: string): Promise<void> {
+        try {
+            await this.http.delete(`/plan/lines/${lineId}/values/${month}`);
+        } catch (error: unknown) {
+            throw parseAxiosError(error, "Request failed while reverting monthly amount.");
         }
     }
 

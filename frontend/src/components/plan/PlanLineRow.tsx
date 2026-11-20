@@ -3,8 +3,7 @@ import { useState } from "react";
 import { type PlanGridLine, type PlanLine } from "@/clients/backendClient/responseParsers";
 
 import EditPlanLineForm from "./EditPlanLineForm";
-
-const EUR_FORMAT = new Intl.NumberFormat("en-IE", { style: "currency", currency: "EUR" });
+import PlanAmountCell from "./PlanAmountCell";
 
 interface PlanLineRowProps {
     sectionId: string;
@@ -82,13 +81,15 @@ export default function PlanLineRow({
                 </div>
             )}
             {months.map((month) => (
-                <span
+                <PlanAmountCell
                     key={month}
-                    aria-label={`${line.name} ${month}`}
-                    className="flex items-center justify-end border-l border-slate-100 px-3 py-2 tabular-nums"
-                >
-                    {line.amountsCents[month] === null ? "—" : EUR_FORMAT.format(line.amountsCents[month] / 100)}
-                </span>
+                    sectionId={sectionId}
+                    lineId={line.id}
+                    label={`${line.name} ${month}`}
+                    month={month}
+                    cell={line.amounts[month]}
+                    disabled={disabled || isEditing}
+                />
             ))}
         </li>
     );

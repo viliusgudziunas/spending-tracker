@@ -1,18 +1,20 @@
 import uuid
 from collections.abc import Sequence
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_db
-from app.api.schemas.month_schemas import parse_month_range
+from app.api.schemas.month_schemas import MonthKey, parse_month_range
 from app.api.schemas.plan_schemas import (
     CreatePlanLineInput,
     CreatePlanSectionInput,
     PlanGridResponse,
     PlanLineResponse,
     PlanSectionResponse,
+    SetPlanValueInput,
     UpdatePlanLineInput,
     UpdatePlanSectionInput,
 )
@@ -84,6 +86,31 @@ def update_plan_line(
 def delete_plan_line(line_id: uuid.UUID, db: Annotated[Session, Depends(get_db)]) -> None:
     try:
         plan_service.delete_plan_line(db=db, line_id=line_id)
+    except PlanLineNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan line not found") from exc
+
+
+@router.put("/lines/{line_id}/values/{month}", status_code=status.HTTP_204_NO_CONTENT)
+def set_plan_value(
+    line_id: uuid.UUID,
+    month: MonthKey,
+    form_data: SetPlanValueInput,
+    db: Annotated[Session, Depends(get_db)],
+) -> None:
+    try:
+        plan_service.set_plan_value(db=db, line_id=line_id, month=month, amount=Decimal(form_data.amount))
+    except PlanLineNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan line not found") from exc
+
+
+@router.delete("/lines/{line_id}/values/{month}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_plan_value(
+    line_id: uuid.UUID,
+    month: MonthKey,
+    db: Annotated[Session, Depends(get_db)],
+) -> None:
+    try:
+        plan_service.delete_plan_value(db=db, line_id=line_id, month=month)
     except PlanLineNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Plan line not found") from exc
 

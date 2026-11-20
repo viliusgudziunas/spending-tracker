@@ -17,6 +17,10 @@ class CreatePlanLineInput(BaseModel):
     name: PlanLineName
 
 
+class SetPlanValueInput(BaseModel):
+    amount: PlanFixedAmount
+
+
 class UpdatePlanLineInput(BaseModel):
     name: PlanLineName | None = None
     position: PlanLinePosition | None = None
@@ -73,12 +77,17 @@ class PlanSectionResponse(BaseModel):
     lines: list[PlanLineResponse]
 
 
-class PlanGridLineResponse(PlanLineResponse):
-    amounts: dict[str, Decimal | None]
+class PlanGridCellResponse(BaseModel):
+    amount: Decimal | None
+    is_override: bool
 
-    @field_serializer("amounts")
-    def serialize_amounts(self, values: dict[str, Decimal | None]) -> dict[str, str | None]:
-        return {month: None if amount is None else format(amount, ".2f") for month, amount in values.items()}
+    @field_serializer("amount")
+    def serialize_amount(self, value: Decimal | None) -> str | None:
+        return None if value is None else format(value, ".2f")
+
+
+class PlanGridLineResponse(PlanLineResponse):
+    amounts: dict[str, PlanGridCellResponse]
 
 
 class PlanGridSectionResponse(BaseModel):

@@ -34,7 +34,16 @@ function formatPlanMonth(date: Date): string {
     return `${String(date.getFullYear()).padStart(4, "0")}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export function getInitialPlanMonthRange(today: Date): PlanMonthRange {
+export function getInitialPlanMonthRange(today: Date, storedRange: string | null = null): PlanMonthRange {
+    if (storedRange !== null) {
+        try {
+            const parsed: unknown = JSON.parse(storedRange);
+            return PlanMonthRangeSchema.parse(parsed);
+        } catch {
+            // Invalid saved preferences fall back to the current six-month range.
+        }
+    }
+
     const lastMonth = new Date(today);
     lastMonth.setDate(1);
     lastMonth.setMonth(lastMonth.getMonth() + 5);

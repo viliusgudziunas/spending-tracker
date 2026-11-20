@@ -32,6 +32,10 @@ export interface UpdatePlanLinePayload {
     fixedAmountCents?: number | null;
 }
 
+export interface SetPlanValuePayload {
+    amountCents: number;
+}
+
 export interface MovePlanLinePayload {
     position: number;
 }

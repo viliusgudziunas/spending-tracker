@@ -83,14 +83,16 @@ const ApiPlanTotalSchema = z
         "Plan total exceeds safe integer cents.",
     );
 
+const ApiPlanCellSchema = z
+    .object({ amount: ApiPlanLineSchema.shape.fixed_amount, is_override: z.boolean() })
+    .refine((cell) => !cell.is_override || cell.amount !== null, "An override must have an amount.");
+
 export const ApiPlanGridSchema = z
     .object({
         months: PlanMonthsSchema,
         sections: z.array(
             ApiPlanSectionSchema.extend({
-                lines: z.array(
-                    ApiPlanLineSchema.extend({ amounts: z.record(z.string(), ApiPlanLineSchema.shape.fixed_amount) }),
-                ),
+                lines: z.array(ApiPlanLineSchema.extend({ amounts: z.record(z.string(), ApiPlanCellSchema) })),
                 totals: z.record(z.string(), ApiPlanTotalSchema),
             }),
         ),

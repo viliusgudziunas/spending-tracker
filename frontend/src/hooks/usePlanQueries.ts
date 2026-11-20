@@ -14,6 +14,7 @@ import {
     type CreatePlanLinePayload,
     type CreatePlanSectionPayload,
     type MovePlanLinePayload,
+    type SetPlanValuePayload,
     type UpdatePlanLinePayload,
     type UpdatePlanSectionPayload,
 } from "@/clients/backendClient/types";
@@ -71,6 +72,39 @@ export function useUpdatePlanLineMutation(
     return useMutation({
         mutationKey: [...PLAN_LINE_UPDATE_MUTATION_KEY, sectionId],
         mutationFn: ({ lineId, payload }: UpdatePlanLineVariables) => client.updatePlanLine(lineId, payload),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: PLAN_QUERY_KEY });
+        },
+    });
+}
+
+interface PlanValueVariables {
+    lineId: string;
+    month: string;
+}
+
+interface SetPlanValueVariables extends PlanValueVariables {
+    payload: SetPlanValuePayload;
+}
+
+export function useSetPlanValueMutation(sectionId: string): UseMutationResult<void, Error, SetPlanValueVariables> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: [...PLAN_LINE_UPDATE_MUTATION_KEY, sectionId],
+        mutationFn: ({ lineId, month, payload }: SetPlanValueVariables) => client.setPlanValue(lineId, month, payload),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: PLAN_QUERY_KEY });
+        },
+    });
+}
+
+export function useDeletePlanValueMutation(sectionId: string): UseMutationResult<void, Error, PlanValueVariables> {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationKey: [...PLAN_LINE_UPDATE_MUTATION_KEY, sectionId],
+        mutationFn: ({ lineId, month }: PlanValueVariables) => client.deletePlanValue(lineId, month),
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: PLAN_QUERY_KEY });
         },

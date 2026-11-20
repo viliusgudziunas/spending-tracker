@@ -23,10 +23,11 @@ CURRENT_REPORT_SCHEMA_VERSION: Final[int] = 2
 
 class Report(Base):
     __tablename__ = "report"
+    __table_args__ = (sa.UniqueConstraint("month", name="report_month_key"),)
 
     id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
-    month: Mapped[str | None] = mapped_column(String, nullable=True, unique=True)
+    month: Mapped[str | None] = mapped_column(String, nullable=True)
     schema_version: Mapped[int] = mapped_column(Integer, default=CURRENT_REPORT_SCHEMA_VERSION, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=naive_utcnow, nullable=False)
@@ -76,7 +77,7 @@ class Transaction(Base):
 
     report_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(),
-        ForeignKey("report.id", ondelete="CASCADE"),
+        ForeignKey("report.id", name="transaction_report_id_fkey", ondelete="CASCADE"),
         nullable=False,
     )
     report: Mapped[Report] = relationship(back_populates="transactions")
@@ -143,6 +144,18 @@ class PlanLine(Base):
     section: Mapped[PlanSection] = relationship(back_populates="lines")
 
 
+class PlanValue(Base):
+    __tablename__ = "plan_value"
+    __table_args__ = (sa.UniqueConstraint("line_id", "month", name="uq_plan_value_line_id_month"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(sa.UUID(), primary_key=True, default=uuid.uuid4)
+    line_id: Mapped[uuid.UUID] = mapped_column(
+        sa.UUID(), ForeignKey("plan_line.id", ondelete="CASCADE"), nullable=False
+    )
+    month: Mapped[str] = mapped_column(String, nullable=False)
+    amount: Mapped[Decimal] = mapped_column(sa.Numeric(12, 2), nullable=False)
+
+
 class Filter(Base):
     __tablename__ = "filter"
 
@@ -152,7 +165,7 @@ class Filter(Base):
 
     category_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(),
-        ForeignKey("category.id", ondelete="CASCADE"),
+        ForeignKey("category.id", name="filter_category_id_fkey", ondelete="CASCADE"),
         nullable=False,
     )
     category: Mapped[Category] = relationship(back_populates="filters")
@@ -181,7 +194,7 @@ class RuleGroup(Base):
 
     filter_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(),
-        ForeignKey("filter.id", ondelete="CASCADE"),
+        ForeignKey("filter.id", name="rule_group_filter_id_fkey", ondelete="CASCADE"),
         nullable=False,
     )
     filter: Mapped[Filter] = relationship(back_populates="rule_groups")
@@ -218,7 +231,7 @@ class Rule(Base):
 
     group_id: Mapped[uuid.UUID] = mapped_column(
         sa.UUID(),
-        ForeignKey("rule_group.id", ondelete="CASCADE"),
+        ForeignKey("rule_group.id", name="rule_group_id_fkey", ondelete="CASCADE"),
         nullable=False,
     )
     group: Mapped[RuleGroup] = relationship(back_populates="rules")

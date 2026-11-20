@@ -11,9 +11,29 @@ import PlanSectionLines from "./PlanSectionLines";
 import RenameSectionForm from "./RenameSectionForm";
 import SectionRow from "./SectionRow";
 
+const PLAN_MONTH_RANGE_STORAGE_KEY = "app:plan:month-range";
+
+function readStoredPlanMonthRange(): PlanMonthRange {
+    const today = new Date();
+    try {
+        return getInitialPlanMonthRange(today, window.localStorage.getItem(PLAN_MONTH_RANGE_STORAGE_KEY));
+    } catch {
+        return getInitialPlanMonthRange(today);
+    }
+}
+
 export default function PlanPage(): JSX.Element {
-    const [range, setRange] = useState(() => getInitialPlanMonthRange(new Date()));
+    const [range, setRange] = useState(readStoredPlanMonthRange);
     const isPending = useIsPlanPending();
+
+    function applyRange(nextRange: PlanMonthRange): void {
+        setRange(nextRange);
+        try {
+            window.localStorage.setItem(PLAN_MONTH_RANGE_STORAGE_KEY, JSON.stringify(nextRange));
+        } catch {
+            // Applying a range still works when browser storage is unavailable.
+        }
+    }
 
     return (
         <main className="flex min-w-0 flex-col gap-4">
@@ -22,7 +42,7 @@ export default function PlanPage(): JSX.Element {
                 <p className="mb-0 mt-1 text-sm text-slate-500">
                     Arrange sections in the order money should flow through your monthly plan.
                 </p>
-                <PlanMonthRangeForm range={range} isPending={isPending} onApply={setRange} />
+                <PlanMonthRangeForm range={range} isPending={isPending} onApply={applyRange} />
             </section>
             <PlanSections range={range} />
         </main>

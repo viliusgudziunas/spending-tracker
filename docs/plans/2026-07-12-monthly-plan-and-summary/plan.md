@@ -2,7 +2,7 @@
 
 > **Phases 2 and 3 (steps 7–14) are superseded** by [2026-09-06-month-breakdown-mvp](../2026-09-06-month-breakdown-mvp/plan.md), which ships the month-by-month actuals view (`/breakdown`) on its own — explicit report months, always-expanded category/filter rows, automatic month columns — without the plan-vs-actual columns, month-range picker and category kinds designed here. Follow that folder for actuals month columns; the steps below retain the original reporting design rationale. **Phase 1 (steps 1–6, the `/plan` grid) still stands.**
 
-> **Current scope:** Step 3a (fixed monthly amounts and section totals) is committed in `0d5dc98`. Step 3b (read-only month columns and range controls) is committed; implementation and acceptance are complete; deletion is user-verified and the user explicitly skipped slow-request and failed-save browser checks. The [Step 3 spec](step-03-month-columns-fixed-defaults.md) defines the active contract. Overrides, left-over rows, percentages, and category/filter links below remain roadmap context.
+> **Current scope:** Step 3a (fixed monthly amounts and section totals) is committed in `0d5dc98`. Step 3b (read-only month columns and range controls) is committed; implementation and acceptance are complete; deletion is user-verified and the user explicitly skipped slow-request and failed-save browser checks. Step 4 per-month overrides and formatted input are committed with automated verification complete and user acceptance received; remaining manual scenarios were explicitly skipped. Applied-month-range persistence is also implemented and automatically verified; its normal-use reload check remains after shipping. The [Step 4 spec](step-04-per-month-overrides.md) defines the current cell contract. Left-over rows, percentages, and category/filter links remain roadmap context.
 
 Expand the spending tracker with two features: a monthly planning grid (replacing the budget Google Sheet) and a month-by-month plan-vs-actual summary grid (replacing the summary Google Sheet), built on the existing category/filter taxonomy.
 
@@ -70,7 +70,7 @@ Migrations are created incrementally, one per build step that needs new schema (
 ## Frontend (TanStack Router, backendClient + Zod, TanStack Query, hand-rolled plan grid, AG Grid summary)
 
 - **Report upload/detail**: month picker on [ReportUploadPage.tsx](../../../frontend/src/components/ReportUploadPage.tsx); editable month on [ReportDetailPage.tsx](../../../frontend/src/components/report-detail/ReportDetailPage.tsx) for backfilling existing reports.
-- **`/plan` page**: CSS grid with read-only month columns, sticky names/actions, ordered sections/lines, and per-month totals. From/To controls default to the current local month plus five; ranges are inclusive, limited to 120 months, and not persisted. Row editing changes the recurring default. Cell overrides, left-over rows, percentages, and category/filter links come later.
+- **`/plan` page**: CSS grid with editable month columns, sticky names/actions, ordered sections/lines, and per-month totals. From/To controls default to the current local month plus five; ranges are inclusive and limited to 120 months. The last valid applied range is persisted in this browser and restored on reload; missing or invalid saved data uses the default range. Row editing changes the recurring default; editing a month cell saves an independent override, including zero. Overrides have a visible marker and revert action; failed writes retain the draft/error. Left-over rows, percentages, and category/filter links come later.
 - **`/summary` page**: AG Grid — months as columns (two sub-columns Plan | Actual for submitted months, one Plan column otherwise), category rows expandable to filters, FINAL/SPENDING/SPENDING % pinned at bottom, toggle for both/plan-only/actual-only.
 - Sidebar ([AppSidebar.tsx](../../../frontend/src/components/AppSidebar.tsx)): links to Plan and Summary.
 
@@ -116,9 +116,13 @@ Final browser check (2026-11-04): at 390px width, even with the sidebar collapse
 
 Committed: validated computed-grid endpoint, backend Decimal totals, one range-keyed query with mutation invalidation, read-only month columns, sticky names/actions, and From/To controls. No new storage or monthly copies. The automated checkpoint passed on 2026-11-04: 242 backend tests, 97 frontend tests, root `make lint`, and the frontend build. All 68 named feature tests are green. Formatting made no changes; the existing bundle-size warning remains. Focused browser checks passed under explicit user authorization; the final browser checklist is resolved with two user-approved skips. See the [verification record](step-03-month-columns-fixed-defaults.md#verification-so-far). The compact Add row control sits beside Monthly total and expands its form on demand. Step 3b is complete; step 4 requires separate authorization.
 
-#### [Step 4 — Per-month overrides](step-04-per-month-overrides.md) [PENDING]
+#### [Step 4 — Per-month overrides](step-04-per-month-overrides.md) [COMMITTED]
 
 Migration: `plan_value`. Click a cell to enter/edit a value for that month; overridden cells visually distinct with revert-to-default. `GET /plan?from&to` returns resolved amounts + `is_override`.
+
+Final checkpoint: **194 frontend tests passed**, including 18 new range-persistence tests; lint, formatting, types, and production build passed. The backend QA run passed **286 tests**, including six additional cases for canonical month keys. All 55 original override tests remain green (59 with the added write-path cases). The user accepted monthly editing and formatted input and explicitly skipped remaining manual scenarios. Browser range restoration has only the agreed after-ship normal-use check pending. See the [current closeout](step-04-per-month-overrides.md#current-closeout--2026-11-20).
+
+Implementation is committed with the feature closeout; deployment is not claimed. Keep the existing code and saved values. The [month-locking rework handoff](step-04-per-month-overrides.md#month-locking-rework-handoff) records reusable pieces, preservation requirements, and unresolved lifecycle/default choices for a separate plan. Resolve that design before advancing the waterfall/percentage roadmap below.
 
 #### [Step 5 — Waterfall](step-05-waterfall.md) [PENDING]
 

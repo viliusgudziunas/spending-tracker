@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 import pytest
@@ -39,6 +40,8 @@ class TestGetPlanGridEndpoint:
             ({"to": "2026-11"}, 422),
             ({"from": "", "to": "2026-11"}, 400),
             ({"from": "2026-1", "to": "2026-11"}, 400),
+            ({"from": "\uff12\uff10\uff12\uff16-11", "to": "2026-12"}, 400),
+            ({"from": "2026-11", "to": "\u0662\u0660\u0662\u0666-12"}, 400),
             ({"from": "2026-00", "to": "2026-11"}, 400),
             ({"from": "2026-11", "to": "2026-13"}, 400),
             ({"from": "2026-11-01", "to": "2026-12"}, 400),
@@ -91,8 +94,12 @@ class TestGetPlanGridEndpoint:
                     "position": 2,
                     "is_income": False,
                     "lines": [
-                        {**utilities.json(), "position": 1, "amounts": {"2026-11": None}},
-                        {**moved_line.json(), "amounts": {"2026-11": "1034.89"}},
+                        {
+                            **utilities.json(),
+                            "position": 1,
+                            "amounts": {"2026-11": {"amount": None, "is_override": False}},
+                        },
+                        {**moved_line.json(), "amounts": {"2026-11": {"amount": "1034.89", "is_override": False}}},
                     ],
                     "totals": {"2026-11": "1034.89"},
                 },
@@ -125,10 +132,14 @@ class TestGetPlanGridEndpoint:
             assert section["totals"] == {"2026-12": expected, "2027-01": expected}
         for line, expected in zip(sections[0]["lines"], ["0.10", "0.20", None, "0.00"], strict=True):
             assert line["fixed_amount"] == expected
-            assert line["amounts"] == {"2026-12": expected, "2027-01": expected}
+            assert line["amounts"] == {month: {"amount": expected, "is_override": False} for month in grid["months"]}
         assert sections[1]["lines"] == []
-        assert sections[2]["lines"][0]["amounts"] == {"2026-12": None, "2027-01": None}
-        assert sections[3]["lines"][0]["amounts"] == {"2026-12": "5.00", "2027-01": "5.00"}
+        assert sections[2]["lines"][0]["amounts"] == {
+            month: {"amount": None, "is_override": False} for month in grid["months"]
+        }
+        assert sections[3]["lines"][0]["amounts"] == {
+            month: {"amount": "5.00", "is_override": False} for month in grid["months"]
+        }
 
     def test_totals_can_exceed_one_line_amount_limit(
         self, client: TestClient, plan_section_factory: PlanSectionFactory
@@ -185,7 +196,9 @@ class TestGetPlanGridEndpoint:
         for months in ranges:
             before = client.get("/plan", params={"from": months[0], "to": months[-1]})
             assert before.status_code == 200
-            assert before.json()["sections"][0]["lines"][0]["amounts"] == dict.fromkeys(months, initial_amount)
+            assert before.json()["sections"][0]["lines"][0]["amounts"] == {
+                month: {"amount": initial_amount, "is_override": False} for month in months
+            }
 
         updated = client.patch(f"/plan/lines/{line_id}", json={"fixed_amount": replacement})
         assert updated.status_code == 200
@@ -200,12 +213,23 @@ class TestGetPlanGridEndpoint:
             assert [section["name"] for section in grid["sections"]] == ["Home", "Savings"]
             home_section, savings_section = grid["sections"]
             assert home_section["lines"] == [
-                {**updated.json(), "amounts": dict.fromkeys(months, replacement)},
-                {**sibling.json(), "fixed_amount": "0.10", "amounts": dict.fromkeys(months, "0.10")},
+                {
+                    **updated.json(),
+                    "amounts": {month: {"amount": replacement, "is_override": False} for month in months},
+                },
+                {
+                    **sibling.json(),
+                    "fixed_amount": "0.10",
+                    "amounts": {month: {"amount": "0.10", "is_override": False} for month in months},
+                },
             ]
             assert home_section["totals"] == dict.fromkeys(months, expected_total)
             assert savings_section["lines"] == [
-                {**reserve.json(), "fixed_amount": "500.00", "amounts": dict.fromkeys(months, "500.00")},
+                {
+                    **reserve.json(),
+                    "fixed_amount": "500.00",
+                    "amounts": {month: {"amount": "500.00", "is_override": False} for month in months},
+                },
             ]
             assert savings_section["totals"] == dict.fromkeys(months, "500.00")
 
@@ -243,7 +267,7 @@ class TestGetPlanGridEndpoint:
                     **remaining_row.json(),
                     "position": 1,
                     "fixed_amount": "0.10",
-                    "amounts": dict.fromkeys(months, "0.10"),
+                    "amounts": {month: {"amount": "0.10", "is_override": False} for month in months},
                 },
             ]
             assert section["totals"] == dict.fromkeys(months, "0.10")
@@ -880,3 +904,213 @@ class TestDeletePlanLineEndpoint:
 
         assert response.status_code == 404
         assert response.json()["detail"] == "Plan line not found"
+
+
+@pytest.fixture
+def plan_value_line(client: TestClient, plan_section_factory: PlanSectionFactory) -> str:
+    section = plan_section_factory()
+    line_ids = []
+    for name, amount in [("Groceries", "700.00"), ("Sibling", "0.10")]:
+        created = client.post(f"/plan/sections/{section.id}/lines", json={"name": name})
+        assert created.status_code == 201
+        line_id = created.json()["id"]
+        saved = client.patch(f"/plan/lines/{line_id}", json={"fixed_amount": amount})
+        assert saved.status_code == 200
+        line_ids.append(line_id)
+    return line_ids[0]
+
+
+@pytest.mark.integration
+class TestPlanMonthValues:
+    @pytest.mark.parametrize("amount", ["800.00", "700.00", "0.00", "9999999999.99"])
+    def test_override_lifecycle_preserves_default_and_other_months(
+        self, client: TestClient, db: Session, plan_value_line: str, amount: str
+    ) -> None:
+        url = f"/plan/lines/{plan_value_line}/values/2026-12"
+        for replacement in ["800.00", amount, amount]:
+            saved = client.put(url, json={"amount": replacement})
+            assert saved.status_code == 204
+            assert saved.content == b""
+        outside_range = client.put(f"/plan/lines/{plan_value_line}/values/2025-12", json={"amount": "99.00"})
+        assert outside_range.status_code == 204
+        assert db.scalar(
+            text("SELECT amount FROM plan_value WHERE line_id = :id AND month = '2026-12'"),
+            {"id": plan_value_line},
+        ) == Decimal(amount)
+        assert (
+            db.scalar(
+                text("SELECT count(*) FROM plan_value WHERE line_id = :id AND month = '2026-12'"),
+                {"id": plan_value_line},
+            )
+            == 1
+        )
+
+        for default in ["700.00", "900.00"]:
+            if default == "900.00":
+                changed = client.patch(f"/plan/lines/{plan_value_line}", json={"fixed_amount": default})
+                assert changed.status_code == 200
+            db.expire_all()
+            response = client.get("/plan", params={"from": "2026-12", "to": "2027-01"})
+            assert response.status_code == 200
+            section = response.json()["sections"][0]
+            line, sibling = section["lines"]
+            assert line["fixed_amount"] == default
+            assert line["amounts"] == {
+                "2026-12": {"amount": amount, "is_override": True},
+                "2027-01": {"amount": default, "is_override": False},
+            }
+            assert sibling["amounts"] == {
+                month: {"amount": "0.10", "is_override": False} for month in ["2026-12", "2027-01"]
+            }
+            assert section["totals"] == {
+                "2026-12": format(Decimal(amount) + Decimal("0.10"), ".2f"),
+                "2027-01": format(Decimal(default) + Decimal("0.10"), ".2f"),
+            }
+
+    @pytest.mark.parametrize("amount", ["0.00", "0.20"])
+    def test_manual_and_zero_values_without_default(
+        self, client: TestClient, db: Session, plan_value_line: str, amount: str
+    ) -> None:
+        cleared = client.patch(f"/plan/lines/{plan_value_line}", json={"fixed_amount": None})
+        assert cleared.status_code == 200
+        saved = client.put(f"/plan/lines/{plan_value_line}/values/2026-12", json={"amount": amount})
+        assert saved.status_code == 204
+
+        db.expire_all()
+        response = client.get("/plan", params={"from": "2026-12", "to": "2027-01"})
+        assert response.status_code == 200
+        section = response.json()["sections"][0]
+        assert section["lines"][0]["fixed_amount"] is None
+        assert section["lines"][0]["amounts"] == {
+            "2026-12": {"amount": amount, "is_override": True},
+            "2027-01": {"amount": None, "is_override": False},
+        }
+        assert section["totals"] == {
+            "2026-12": format(Decimal(amount) + Decimal("0.10"), ".2f"),
+            "2027-01": "0.10",
+        }
+
+    @pytest.mark.parametrize("default", [None, "0.00", "900.00"])
+    def test_revert_uses_current_default_or_null(
+        self, client: TestClient, db: Session, plan_value_line: str, default: str | None
+    ) -> None:
+        url = f"/plan/lines/{plan_value_line}/values/2026-12"
+        assert client.put(url, json={"amount": "800.00"}).status_code == 204
+        assert client.patch(f"/plan/lines/{plan_value_line}", json={"fixed_amount": default}).status_code == 200
+
+        for _ in range(2):
+            removed = client.delete(url)
+            assert removed.status_code == 204
+            assert removed.content == b""
+        db.expire_all()
+        assert db.scalar(text("SELECT count(*) FROM plan_value WHERE line_id = :id"), {"id": plan_value_line}) == 0
+        response = client.get("/plan", params={"from": "2026-12", "to": "2027-01"})
+        assert response.status_code == 200
+        section = response.json()["sections"][0]
+        assert section["lines"][0]["amounts"] == {
+            month: {"amount": default, "is_override": False} for month in ["2026-12", "2027-01"]
+        }
+        expected_total = format(Decimal(default or "0.00") + Decimal("0.10"), ".2f")
+        assert section["totals"] == dict.fromkeys(["2026-12", "2027-01"], expected_total)
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {},
+            *(
+                {"amount": value}
+                for value in [
+                    None,
+                    "-0.01",
+                    "1.001",
+                    "1.230",
+                    "10000000000.00",
+                    "bad",
+                    "",
+                    "NaN",
+                    "Infinity",
+                    "1e2",
+                    "1,00",
+                    700,
+                    1.25,
+                    True,
+                ]
+            ),
+        ],
+    )
+    def test_rejects_invalid_values_without_changes(
+        self, client: TestClient, db: Session, plan_value_line: str, payload: dict[str, object]
+    ) -> None:
+        before = client.get("/plan", params={"from": "2026-12", "to": "2027-01"})
+        assert before.status_code == 200
+        response = client.put(f"/plan/lines/{plan_value_line}/values/2026-12", json=payload)
+        assert response.status_code == 422
+        db.expire_all()
+        after = client.get("/plan", params={"from": "2026-12", "to": "2027-01"})
+        assert after.status_code == 200
+        assert after.json() == before.json()
+        assert db.scalar(text("SELECT count(*) FROM plan_value WHERE line_id = :id"), {"id": plan_value_line}) == 0
+
+    @pytest.mark.parametrize(
+        "month",
+        [
+            "2026-1",
+            "2026-00",
+            "2026-13",
+            "2026-12-01",
+            "\uff12\uff10\uff12\uff16-12",
+            "\u0662\u0660\u0662\u0666-12",
+            "bad",
+        ],
+    )
+    @pytest.mark.parametrize("method", ["PUT", "DELETE"])
+    def test_rejects_invalid_months_without_changes(
+        self, client: TestClient, db: Session, plan_value_line: str, month: str, method: str
+    ) -> None:
+        before = client.get("/plan/sections")
+        assert before.status_code == 200
+        response = client.request(method, f"/plan/lines/{plan_value_line}/values/{month}", json={"amount": "10.00"})
+        assert response.status_code == 422
+        db.expire_all()
+        after = client.get("/plan/sections")
+        assert after.status_code == 200
+        assert after.json() == before.json()
+        assert db.scalar(text("SELECT count(*) FROM plan_value WHERE line_id = :id"), {"id": plan_value_line}) == 0
+
+    @pytest.mark.parametrize("method", ["PUT", "DELETE"])
+    def test_missing_line_returns_not_found_detail(self, client: TestClient, method: str) -> None:
+        response = client.request(method, f"/plan/lines/{uuid.uuid4()}/values/2026-12", json={"amount": "10.00"})
+        assert response.status_code == 404
+        assert response.json()["detail"] == "Plan line not found"
+
+    @pytest.mark.parametrize("parent", ["line", "section"])
+    def test_parent_deletion_cascades_values(
+        self,
+        client: TestClient,
+        db: Session,
+        plan_value_line: str,
+        plan_section_factory: PlanSectionFactory,
+        parent: str,
+    ) -> None:
+        home_id = client.get("/plan/sections").json()[0]["id"]
+        other = plan_section_factory(name="Other")
+        created = client.post(f"/plan/sections/{other.id}/lines", json={"name": "Independent"})
+        assert created.status_code == 201
+        other_line_id = created.json()["id"]
+        for line_id in [plan_value_line, other_line_id]:
+            assert client.put(f"/plan/lines/{line_id}/values/2026-12", json={"amount": "0.20"}).status_code == 204
+        before = client.get("/plan", params={"from": "2026-12", "to": "2027-01"})
+        assert before.status_code == 200
+        assert before.json()["sections"][0]["totals"] == {"2026-12": "0.30", "2027-01": "700.10"}
+
+        path = f"/plan/lines/{plan_value_line}" if parent == "line" else f"/plan/sections/{home_id}"
+        assert client.delete(path).status_code == 204
+        db.expire_all()
+        assert db.scalar(text("SELECT count(*) FROM plan_value WHERE line_id = :id"), {"id": plan_value_line}) == 0
+        assert db.scalar(text("SELECT count(*) FROM plan_value WHERE line_id = :id"), {"id": other_line_id}) == 1
+        after = client.get("/plan", params={"from": "2026-12", "to": "2027-01"})
+        assert after.status_code == 200
+        expected_other = {**before.json()["sections"][-1], "position": 1 if parent == "section" else 2}
+        assert after.json()["sections"][-1] == expected_other
+        if parent == "line":
+            assert after.json()["sections"][0]["totals"] == {"2026-12": "0.10", "2027-01": "0.10"}
